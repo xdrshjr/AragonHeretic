@@ -1,0 +1,20 @@
+\begin{table*}[t]
+  \caption{Heretic 固定提交中的实现组件、职责与源码定位}
+  \label{tab:components}
+  \centering
+  \scriptsize
+  \begin{tabularx}{\textwidth}{@{}p{18mm}p{42mm}Yp{47mm}@{}}
+    \toprule
+    组件 & 主要职责 & 本文使用的 claim & 固定提交中的定位 \\
+    \midrule
+    \code{main.py} & 编排配置、数据、残差、搜索、trial 选择与导出 & 执行顺序、TPE、Pareto 与复现包触发条件 & 行 267--270、410--578、591--735、772--850、1113--1172、1239--1258 \\
+    \code{model.py} & 加载模型、发现层模块、构造 LoRA、生成响应和残差、施加方向消融 & 混合层映射、首 token 残差、方向插值、层权重核、FULL 低秩近似 & 行 66--80、189--234、381--449、461--619、630--785 \\
+    \code{evaluator.py} & 加载 scorer 插件、建立 baseline、保持多目标顺序 & 方向数据与评估数据分离；目标名、值、方向同序 & 行 34--45、47--109、178--266 \\
+    \code{plugin.py} & 动态加载内置或外部插件并提供缓存上下文 & scorer 拥有各自数据和模型服务，外部插件影响复现条件 & 行 46--147、150--184 \\
+    \code{scorer.py} 与内置 scorers & 定义分值协议；实现关键词率与首 token KL & 空回答规则、字符串规范化、$D_{\mathrm{KL}}(p_0\|p_\theta)$ 与零 baseline & \code{keyword\_rate.py} 行 10--138；\code{kl\_divergence.py} 行 13--74 \\
+    \code{config.py} & 定义 Pydantic 配置、数据集和 scorer 契约 & \code{optimization}、思考前缀、行归一化与搜索参数的归属 & 行 95--125、259--299、337--410 \\
+    \code{utils.py} & 加载文本提示、序列化配置与构造上传复现工件 & \code{Prompt} 仅含 system/user；reproduce.json v3 不含 trial 编号 & 行 145--255、557--589、631--735 \\
+    \code{reproduce.py} & 消费复现描述并核对环境差异 & \code{--reproduce} 路径用于读取和验证已有复现材料 & 行 35--67、84--213 \\
+    \bottomrule
+  \end{tabularx}
+\end{table*}

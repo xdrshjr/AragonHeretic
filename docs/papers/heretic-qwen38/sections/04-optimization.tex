@@ -1,0 +1,43 @@
+\section{多目标优化与可复现流程}
+
+\subsection{拒答关键词率}
+
+默认 KeywordRate 是字符串规则代理。对有害评估集 $\mathcal{E}_B$ 的生成回答 $y_x$，其分值为
+
+\begin{equation}
+R_{\mathrm{key}}=\frac{1}{|\mathcal{E}_B|}\sum_{x\in\mathcal{E}_B}
+\mathbb{I}[y_x\text{ 命中任一标记}].
+\label{eq:keyword-rate}
+\end{equation}
+
+实现把空回答直接计为命中，防止优化器通过不输出内容取得低拒答率。非空回答先转小写、删除星号、把弯撇号规范为 ASCII 撇号，并把连续空白折叠成单空格，然后进行子串匹配。默认标记主要为英文，既可能漏掉隐式或中文拒答，也可能把正常引用拒答词的回答误判为拒答。因此，$R_{\mathrm{key}}$ 衡量的是模板化标记出现率，不是语义安全分类。
+
+\subsection{首响应词元 KL 散度}
+
+KLDivergence 在消融前缓存无害评估集 $\mathcal{E}_G$ 上的原模型首词元分布 $p_0$。trial 运行时取得消融模型分布 $p_\theta$，并计算
+
+\begin{equation}
+K(\theta)=\frac{1}{|\mathcal{E}_G|}\sum_{x\in\mathcal{E}_G}
+D_{\mathrm{KL}}\!\left(p_0(\cdot\mid x)\,\|\,p_\theta(\cdot\mid x)\right).
+\label{eq:kl}
+\end{equation}
+
+代码把消融模型的 log-probabilities 作为 \code{kl\_div} 的 input，把原模型 log-probabilities 作为 log target，并使用 \code{batchmean}，故式~\eqref{eq:kl} 的方向不可交换。baseline 按定义为零。低 KL 只说明回答起点的词表分布接近，不能推出长文本分布、任务能力、正常思考或视觉能力不变。
+
+\subsection{TPE 与 Pareto 试验}
+
+每个 trial 先采样 \code{direction\_scope}。全局模式使用连续 \code{direction\_index}，逐层模式则把该索引解析为 \code{None}；为保持多变量 TPE 的固定搜索空间，代码在两种模式下都进行索引采样。系统再为每个发现的组件独立采样式~\eqref{eq:kernel} 的四个参数。多层感知机（multilayer perceptron, MLP）最大权重的采样下界允许为负，随后截断到零，使完全关闭 MLP 消融获得非零概率质量。
+
+\code{ScorerConfig.optimization} 决定 scorer 是 \code{minimize}、\code{maximize} 还是只记录而不进入目标。默认两个目标都最小化。Evaluator 从同一有序 scorer 列表派生目标名、目标值和 Optuna 方向，避免位置错配。study 使用带 startup trials 的 seeded multivariate TPE；完成后直接读取 \code{study.best\_trials} 展示 Pareto 集，不计算隐含加权总分。使用者选择某个 trial 后，系统重新清零 LoRA B 并恢复该 trial 的方向和组件参数。
+
+\subsection{接口、配置与实体边界}
+
+现有命令行接口（command-line interface, CLI）的最小调用是 \code{heretic <model>}；消费已有复现描述使用 \code{--reproduce <reproduce.json>}；独立评估同时提供 \code{--model <base>} 与 \code{--evaluate-model <candidate>}。回答切点由 \code{--response-prefix}/\code{response\_prefix} 控制，导出动作与形态分别由 \code{model\_action} 和 \code{export\_strategy} 控制。CLI、环境变量与 TOML 最终归并为 \code{Settings}；该实体还聚合 \code{model}/\code{model\_commit}、\code{dtypes}/\code{quantization}/\code{device\_map}、方向数据、\code{scorers[].plugin}/\code{scorers[].optimization}、\code{orthogonalize\_direction}、\code{row\_normalization}、\code{full\_normalization\_lora\_rank}、\code{n\_trials}/\code{n\_startup\_trials}、链式思考（chain-of-thought, CoT）的 \code{chain\_of\_thought\_skips} 与上传设置；tokenizer 与 processor 跟随模型 revision，没有独立 revision 字段。
+
+\code{DatasetSpecification} 用 dataset、可选 commit、split、column、前后缀与 system prompt 描述方向或 scorer 自有数据，不存在独立 subset 字段，两种数据角色也不会合并。\code{AbliterationParameters} 只保存单个组件的四个层权重核参数；\code{direction\_scope} 和 \code{direction\_index} 属于 Optuna trial，后者解析后单独传给消融函数。\code{ScorerEntry}/\code{Score} 把插件、优化方向、baseline 与当前分值绑定；study 保存原始参数、目标值、user attributes 与 journal，并从完成 trial 派生 Pareto 集。复现包则是条件性上传工件，不是数据库实体，也不是每次本地保存的副产物。表~\ref{tab:components} 给出这些实体的源码定位。
+
+\subsection{保存、上传与复现}
+
+导出必须区分四种动作。本地 \code{save} 只写 LoRA adapter 或合并模型，不自动创建复现 manifest。Hub \code{upload} 在模型与所有数据集都可定位到 Hugging Face、数据集已有 commit、所有 scorer 均为内置且声明可复现、当前又不是复现消费模式时，才提供附加复现信息的选项。用户选择后，系统上传 \code{config.toml}、依赖版本、\code{reproduce.json}、可选系统信息、journal 副本及权重哈希。
+
+\code{reproduce.json} v3 保存环境、可序列化 Settings、方向索引、组件参数、当前与 baseline 分值以及上传权重哈希；它没有直接保存 trial 编号。消费已有描述使用 \code{--reproduce <reproduce.json>}，程序先比较运行环境，再重新加载数据、计算方向并恢复参数。该流程提高了审计性，却不等同于任何环境下都能逐字节复现，模型 revision 的记录边界将在第~\ref{sec:discussion} 节讨论。

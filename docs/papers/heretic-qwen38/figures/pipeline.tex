@@ -1,0 +1,47 @@
+\begin{figure*}[t]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    node distance=8mm and 8mm,
+    box/.style={draw, rounded corners=2pt, align=center, minimum height=11mm,
+      minimum width=29mm, fill=blue!4},
+    data/.style={box, fill=green!6},
+    score/.style={box, fill=orange!8},
+    artifact/.style={box, fill=purple!6},
+    flow/.style={-{Latex[length=2.2mm]}, thick},
+    state/.style={-{Latex[length=2.2mm]}, thick, dashed},
+    optional/.style={-{Latex[length=2.2mm]}, thick, dashed}
+  ]
+    \node[box] (settings) {解析 \code{Settings}\\固定或生成随机种子};
+    \node[box, right=of settings] (model) {同一模型 revision\\加载处理器与模型\\发现模块并置零 LoRA B};
+    \node[data, right=of model] (directiondata) {加载 good/bad 数据\\探测 batch 与回答前缀};
+    \node[score, right=of directiondata] (baseline) {加载 scorer 评估数据\\在未消融模型上\\建立 baseline};
+    \node[box, right=of baseline] (residuals) {方向数据的首次生成步\\提示末位残差};
+    \node[box, right=of residuals] (directions) {均值差方向\\可选 projected 处理};
+
+    \node[box, below=15mm of directions] (trial) {Optuna trial\\方向范围、方向层与\\各组件层权重核};
+    \node[score, below=15mm of baseline] (scoring) {重置后施加消融\\由 scorer 计算\\当前 trial 分值};
+    \node[score, left=of scoring] (pareto) {multivariate TPE\\多目标 Pareto 集\\用户选择 trial};
+    \node[artifact, left=of pareto] (export) {保存 LoRA adapter\\或合并模型};
+    \node[artifact, left=of export] (reproduce) {可选复现包\\config、requirements、JSON、\\journal 与哈希};
+
+    \draw[flow] (settings) -- (model);
+    \draw[flow] (model) -- (directiondata);
+    \draw[flow] (directiondata) -- (baseline);
+    \draw[flow] (baseline) -- (residuals);
+    \draw[flow] (residuals) -- (directions);
+    \draw[flow] (directions) -- (trial);
+    \draw[flow] (trial) -- node[above, sloped, font=\scriptsize]{评估} (scoring);
+    \draw[flow] (scoring) -- (pareto);
+    \draw[flow] (pareto) -- (export);
+    \draw[optional] (export) -- node[above, font=\scriptsize]{仅 Hub 上传且满足条件} (reproduce);
+    \draw[state] (baseline) -- node[right, font=\scriptsize]
+      {缓存基线供比较} (scoring);
+  \end{tikzpicture}%
+  }
+  \caption{Heretic 在固定源码基线中的端到端执行顺序。Evaluator 先加载 scorer
+  自有评估数据并缓存未消融 baseline，方向计算完成后各 trial 才调用 scorer 评分；
+  方向数据与评估数据角色分离。本地保存不会自动生成复现包，虚线表示状态依赖或
+  满足数据固定、内置可复现 scorer 与 Hub 上传等条件后的可选分支。}
+  \label{fig:pipeline}
+\end{figure*}

@@ -1,0 +1,35 @@
+\section{Qwen3.8-27B 公开实践分析}
+
+\subsection{官方架构与代码适配面}
+
+Qwen 官方模型卡把 Qwen3.8-27B 描述为带视觉编码器的因果语言模型：语言栈含 64 层，hidden size 为 5120，由 16 个重复块组成，每块依次包含三层 Gated DeltaNet 与一层 Gated Attention，原生上下文长度为 262,144~\cite{qwen38official}。这些参数属于官方声明。当前 Heretic 仓库没有 Qwen3.8-27B 的本地或持续集成测试，故本文不把模型卡架构与属性探测的组合写成独立兼容性验证。
+
+源码可直接验证的适配面集中在语言层输出投影。Gated Attention 层暴露 \code{self\_attn.o\_proj}，Gated DeltaNet 层暴露 \code{linear\_attn.out\_proj}；模型扫描把二者统一纳入逻辑组件 \code{attn.o\_proj}，同时处理每层 \code{mlp.down\_proj}。辅助案例模型卡报告 64 个注意力输出模块和 64 个 MLP 下投影均按该映射处理~\cite{qwen38auxcase}。这份第三方观察与代码结构一致，但不是仓库测试结果。
+
+可加载多模态模型也不等于已执行多模态消融。Heretic 内部 \code{Prompt} 只有 \code{system} 与 \code{user} 文本，方向数据和默认 scorer 没有图像或视频字段。代码通过语言模型层路径修改输出投影，不修改视觉编码器或多词元预测（multi-token prediction, MTP）模块。由此只能说当前机制覆盖被发现的语言层投影，不能推断图像、视频或 MTP 质量已经得到保持。
+
+\subsection{默认 thinking 与测量切点}
+
+Qwen3.8 官方卡说明 thinking 默认开启，并允许逐请求关闭~\cite{qwen38official}。辅助案例进一步记录：聊天模板可能已经在生成提示末尾写入开放的 \code{<think>}，而 Heretic 的共同前缀探测只比较新生成文本；此时 opener 不一定出现在可比较的回答中。当前默认 CoT 跳过把 \code{<think>} 替换成精确的 \code{<think></think>}，也不等于 Qwen 模板带换行的闭合形式。
+
+辅助案例因此显式设置如下 TOML 字符串，把残差与 KL 的测量位置移到非思考回答起点~\cite{qwen38auxcase}：
+
+\begin{verbatim}
+response_prefix = "\n</think>\n\n"
+\end{verbatim}
+
+这个前缀只是测量切点，不应写入发布模型的聊天模板。主案例卡所称 \code{disable\_thinking=true} 或 \code{enable\_thinking=False} 属于外部 Heretic WebUI 与 Qwen 模板调用语境，不是当前 Heretic \code{Settings} 的 CLI 字段。当前源码内可验证的控制点是 \code{response\_prefix}、共同前缀探测和 CoT skip 列表。
+
+\subsection{主案例：第三方公开报告}
+
+表~\ref{tab:qwen-case} 汇总冻结到特定 revision 的公开证据。主案例模型卡报告：运行使用单张 RTX 5090 32 GB 与 Heretic \code{bedb94e}；Optuna 共运行 350 个 trial，其中 60 个为 startup；方向数据分别包含 400 条 harmful 与 400 条 harmless 训练提示，评估数据分别包含 100 条留出 harmful 与 100 条 harmless 提示~\cite{qwen38maincase}。其运行时基础模型 revision、数据集 commit 和完整公开 journal 均为 \code{not reported}，不能用当前官方 revision 或辅助案例 revision 回填。
+
+\input{tables/qwen38-case}
+
+同一第三方卡报告，基础模型在 100 条 harmful 评估提示上有 99 次关键词拒答，派生模型有 4 次；100 条 harmless 提示的首词元 KL 为 0.0796~\cite{qwen38maincase}。这组数字只说明固定标记与回答起点分布的变化。模型卡没有运行 MMLU、GSM8K、编程、视觉或正常 thinking 基准，也没有评价剩余 96 个回答的正确性与安全性，故“4/100”不能改写为“96 个请求均被正确回答”。
+
+数值精度进一步限制结果归属。模型卡称搜索在 bitsandbytes 4-bit 基础模型副本上完成，选定 adapter 后才在中央处理器上合并到 16 位脑浮点（bfloat16，BF16）基础权重。0.0796 与 4/100 属于 4-bit 搜索运行，而发布的 BF16 合并模型没有单独复评分~\cite{qwen38maincase}。因此，本文把它视为量化搜索到高精度导出的工程实践，未声称两个数值系统行为相同。
+
+\subsection{辅助案例：切点与兼容性观察}
+
+辅助案例固定了官方基础 revision \code{1d4bf0f...}，报告 Heretic 1.4.0 运行 200/60 个 trial，并使用精确 \code{response\_prefix}。其模型卡给出英文关键词命中由 98/100 变为 27/100、KL 为 0.0446~\cite{qwen38auxcase}。该卡未报告运行硬件、方向数据数量或搜索数值精度，也没有测量中文拒答、视觉、多 token 预测和 thinking-mode 拒答。本文只用它解释模板切点及提供另一份混合层兼容性观察，不与主案例求平均，也不从中补齐主案例缺失字段。

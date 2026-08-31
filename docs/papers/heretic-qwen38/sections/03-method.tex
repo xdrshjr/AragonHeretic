@@ -1,0 +1,78 @@
+\section{系统与方法}
+
+\subsection{端到端执行顺序}
+
+Heretic 的执行顺序决定了各分值的含义。图~\ref{fig:pipeline} 从配置解析开始：系统在 seed 为空时生成随机数，再由 Transformers 同时设置 Python、NumPy 与 PyTorch 随机状态。\code{Model} 随后从同一模型标识和可选 \code{model\_commit} 加载 tokenizer、可选 processor 与模型，发现可消融模块，并初始化零增量 LoRA。模型和文本处理器没有彼此独立的 revision 参数。
+
+\input{figures/pipeline}
+
+方向发现数据在 scorer 之前加载。系统先取得 good/bad 提示，探测可行 batch size，并在用户没有给出 \code{response\_prefix} 时比较生成回答的共同前缀。此后 \code{Evaluator} 才加载插件及各插件自己的评估提示，并在尚未消融的模型上缓存 baseline。默认配置中，方向使用训练切片，KeywordRate 与 KLDivergence 使用测试切片；两类数据承担不同角色，不能统称为“训练集”或“评估集”。表~\ref{tab:components} 给出每个步骤的源码定位。
+
+\input{tables/components}
+
+\subsection{回答起点的逐层方向}
+
+设层索引为 $l$，有害提示集为 $\mathcal{B}$，无害提示集为 $\mathcal{G}$。$h_l(x)$ 表示模型开始生成回答时，提示末位用于预测首个新词元的残差向量。实现调用只生成一个词元的 \code{generate}，读取首次生成步的 hidden states，再抽取各层张量的最后一个提示位置。由此定义
+
+\begin{align}
+\mu_l^{B} &= \frac{1}{|\mathcal{B}|}\sum_{x\in\mathcal{B}} h_l(x), &
+\mu_l^{G} &= \frac{1}{|\mathcal{G}|}\sum_{x\in\mathcal{G}} h_l(x), \\
+r_l &= \operatorname{norm}\!\left(\mu_l^{B}-\mu_l^{G}\right),
+\label{eq:direction}
+\end{align}
+
+其中 \(\operatorname{norm}(z)=z/\lVert z\rVert_2\)。普通路径逐 batch 把 32 位浮点（FP32）残差在中央处理器上以 64 位浮点（FP64）累加，求均值后转回 FP32。开启残差几何打印或绘图时，系统则物化 FP32 全量残差并直接求均值。两条路径不能合并描述为共同的 FP64 计算。若启用 winsorization，系统对每个“提示$\times$层”向量沿隐藏分量维计算绝对值分位点并对称截断；它没有跨样本删除提示。
+
+投影式方向先从 $r_l$ 中删去其在无害均值单位方向上的分量。令 $g_l=\operatorname{norm}(\mu_l^G)$，则
+
+\begin{equation}
+\widetilde r_l=\operatorname{norm}\!\left(r_l-(r_l^{\top}g_l)g_l\right).
+\label{eq:projected-direction}
+\end{equation}
+
+为统一表示，启用投影式方向时令 $q_l=\widetilde r_l$，否则令 $q_l=r_l$。trial 可选择逐层使用 $q_l$，也可采样浮点全局索引 $j$。令 $k=\lfloor j\rfloor$、$\alpha=j-k$，全局单位方向为
+
+\begin{equation}
+v(j)=\operatorname{norm}\!\left((1-\alpha)q_k+\alpha q_{k+1}\right).
+\label{eq:direction-interp}
+\end{equation}
+
+因此，浮点索引既不是层号四舍五入，也不是权重矩阵插值。源码中残差数组还包含 embedding 状态，实际取数组时相对 Transformer 层索引偏移一位；该存储细节不改变式~\eqref{eq:direction-interp} 的层间插值含义。
+
+\subsection{组件发现与层权重核}
+
+模型扫描把标准注意力的 \code{self\_attn.o\_proj} 与线性注意力的 \code{linear\_attn.out\_proj} 统一标记为 \code{attn.o\_proj}，并把稠密前馈网络的 \code{mlp.down\_proj} 标记为另一组件。LoRA targeting 仍保存每个真实叶模块全名，因而混合层可以共享搜索参数而不要求物理模块同名。若某层找不到任何受支持投影，系统以断言失败，而不是静默跳过整个架构。
+
+每个组件 $c$ 独立采样最大权重 $M_c$、连续峰值位置 $p_c$、边界权重 $m_c$ 与支撑半径 $d_c$。整数层 $l$ 的权重为
+
+\begin{equation}
+\lambda_{c,l}=\begin{cases}
+M_c+\dfrac{|l-p_c|}{d_c}(m_c-M_c), & |l-p_c|\le d_c,\\[3pt]
+0, & |l-p_c|>d_c.
+\end{cases}
+\label{eq:kernel}
+\end{equation}
+
+图~\ref{fig:weight-kernel} 展示该核。当 $m_c>0$ 时，支撑边界内的值与边界外零值之间存在跳变。$p_c$ 是连续采样值，只有它恰落在整数层上时，某个实际层才严格取得 $M_c$；一般情况下，最近整数层的权重略低于连续核峰值。
+
+\input{figures/weight-kernel}
+
+\subsection{矩阵投影与 LoRA 近似}
+
+对无行归一化的基础路径，令 $W_{c,l}\in\mathbb{R}^{d_{\mathrm{out}}\times d_{\mathrm{in}}}$，选定单位方向 $v\in\mathbb{R}^{d_{\mathrm{out}}}$，则更新为
+
+\begin{equation}
+W'_{c,l}=W_{c,l}-\lambda_{c,l}v(v^{\top}W_{c,l}).
+\label{eq:weight-edit}
+\end{equation}
+
+系统用 $B=-\lambda_{c,l}v$ 与 $A=v^{\top}W_{c,l}$ 表示该秩一增量。若基础权重为 4-bit，代码先把它反量化为 FP32 再计算。每个 trial 开始前，系统清零所有 LoRA B 矩阵，因此新的参数不会叠加在前一个 trial 上。
+
+预归一化（pre-normalization, PRE）模式先对 $W$ 的每一行归一化。设行范数对角矩阵为 $D_s$、$\widehat W=D_s^{-1}W$，则代码实际设置
+
+\begin{equation}
+A=v^{\top}\widehat W,\qquad B=-\lambda D_s v.
+\label{eq:pre}
+\end{equation}
+
+这一步把原行范数乘入 B，而不是简单复用式~\eqref{eq:weight-edit} 的两个因子。全量归一化（full normalization, FULL）模式在 $\widehat W$ 上先施加秩一更新，再把调整后矩阵逐行归一化并恢复原始行范数，最后减去原 $W$ 得到完整差值。代码在每个模块分解前重设随机种子，调用 \code{torch.svd\_lowrank}，并截取配置 rank 写入 LoRA。该过程是固定 seed 的随机低秩近似；有限 rank 的 adapter 不保证严格复现完整差值，也不保证合成后的每行范数完全等于原矩阵。

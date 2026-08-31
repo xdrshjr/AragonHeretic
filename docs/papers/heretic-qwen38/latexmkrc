@@ -1,0 +1,6 @@
+$pdf_mode = 5;
+$xelatex = 'xelatex -file-line-error -halt-on-error -interaction=nonstopmode %O %S';
+$bibtex = 'bibtex %O %B';
+$bibtex_use = 2;
+$max_repeat = 5;
+$cleanup_includes_cusdep_generated = 1;
