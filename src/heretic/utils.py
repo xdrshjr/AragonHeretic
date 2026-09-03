@@ -260,6 +260,17 @@ def batchify(items: list[T], batch_size: int) -> list[list[T]]:
 
 
 def get_trial_parameters(trial: Trial | FrozenTrial) -> dict[str, str]:
+    if trial.user_attrs.get("method") == "ara":
+        payload = trial.user_attrs["ara_parameters"]
+        params = {
+            "layer_start": str(payload["start_layer_index"]),
+            "layer_end": str(payload["end_layer_index"]),
+        }
+        for component, values in payload["components"].items():
+            for name, value in values.items():
+                params[f"{component}.{name}"] = f"{value:.4f}"
+        return params
+
     params = {}
 
     direction_index = trial.user_attrs["direction_index"]
@@ -314,10 +325,23 @@ def get_readme_intro(
     else:
         reproducibility_instructions = ""
 
+    method = trial.user_attrs.get("method", "directional")
+    method_description = (
+        f"Calibrated Arbitrary-Rank Ablation (CARA-LoRA), rank {settings.ara_lora_rank}"
+        if method == "ara"
+        else "directional ablation"
+    )
+    gate_status = trial.user_attrs.get("acceptance_status", "not evaluated")
+
     return f"""# This is a decensored version of {
         model_link
     }, made using [Heretic](https://heretic-project.org) v{version("heretic-llm")}
 {reproducibility_instructions}
+## Method
+
+- **Method:** {method_description}
+- **Acceptance gate:** {gate_status}
+
 ## Abliteration parameters
 
 | Parameter | Value |
@@ -565,9 +589,11 @@ def generate_reproduce_json(
 
     version_info = get_heretic_version_info()
 
+    from .trial_methods import parameter_envelope, parameters_from_trial
+
     data = {
-        # Version 3: plugin-based schema with generic scores/baseline scores.
-        "version": "3",
+        # Version 4: method-discriminated parameters and study identity.
+        "version": "4",
         "timestamp": timestamp,
         "system": None,  # Defined here to preserve insertion order.
         "environment": {
@@ -580,12 +606,13 @@ def generate_reproduce_json(
             "requirements": get_requirements_dict(),
         },
         "settings": settings.model_dump(),
-        "parameters": {
-            "direction_index": trial.user_attrs["direction_index"],
-            "abliteration_parameters": trial.user_attrs["parameters"],
-        },
+        "parameters": parameter_envelope(parameters_from_trial(trial)),
         "scores": trial.user_attrs["scores"],
         "hashes": uploaded_model_hashes,
+        "model_fingerprint": trial.user_attrs.get("model_fingerprint"),
+        "study_fingerprint": trial.user_attrs.get("study_fingerprint"),
+        "calibration_fingerprint": trial.user_attrs.get("calibration_fingerprint"),
+        "acceptance": _acceptance_binding(settings),
     }
 
     if include_system_information:
@@ -602,6 +629,21 @@ def generate_reproduce_json(
         del data["system"]
 
     return json.dumps(data, indent=4)
+
+
+def _acceptance_binding(settings: Settings) -> dict[str, Any] | None:
+    if settings.acceptance_gate is None:
+        return None
+    report_path = Path(settings.acceptance_gate.report_path)
+    if not report_path.is_file():
+        return {"status": "missing"}
+    report_bytes = report_path.read_bytes()
+    report = json.loads(report_bytes)
+    return {
+        "status": report.get("status", "invalid"),
+        "sha256": hashlib.sha256(report_bytes).hexdigest(),
+        "path": report_path.name,
+    }
 
 
 def generate_sha256sums(hashes: dict[str, str]) -> str:
@@ -641,8 +683,9 @@ def create_reproduce_folder(
 
     checkpoint_filename = Path(checkpoint_path).name
 
-    # Fetch commit hash for the base model.
-    settings.model_commit = huggingface_hub.model_info(settings.model).sha
+    # Preserve an explicitly loaded revision; only resolve an unpinned model.
+    if settings.model_commit is None:
+        settings.model_commit = huggingface_hub.model_info(settings.model).sha
 
     # Strip microseconds and timezone for a clean format.
     timestamp = (

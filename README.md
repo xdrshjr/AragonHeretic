@@ -126,6 +126,38 @@ After Heretic has finished decensoring a model, you are given the option to
 save the model, upload it to Hugging Face, chat with it to test how well it works,
 run standard benchmarks on it, or any combination of those actions.
 
+### Calibrated Arbitrary-Rank Ablation (CARA)
+
+The default `directional` method is unchanged. For models whose refusal
+behavior is not well represented by one residual direction, Heretic also
+provides `abliteration_method = "ara"`. CARA captures clean module input/output
+pairs for harmless and harmful calibration prompts, then optimizes a bounded,
+scale-normalized objective directly in a high-rank LoRA adapter. The base model
+remains frozen, including when it is loaded with bitsandbytes NF4 quantization.
+
+A pinned Qwen3.8-27B research baseline is provided in
+[`config.qwen38-27b-cara.toml`](config.qwen38-27b-cara.toml). Copy it to
+`config.toml`, review its paths, and run:
+
+```sh
+cp config.qwen38-27b-cara.toml config.toml
+uv run heretic
+```
+
+The baseline targets two 24 GiB GPUs using `device_map = "balanced"`, a
+22 GiB per-device cap, NF4, rank 128, and capture batch size 1. It separates
+calibration (`train[:300]`), validation (`train[300:400]`), and the one-time
+audit (`test[:100]`) at fixed dataset revisions. A candidate is exportable only
+after deterministic replay, the configured Keywords/KL gate, and a clean-process
+adapter reload all pass; `acceptance.json` is the machine-readable result.
+
+CARA is still a local linear proxy: it does not prove a global causal mechanism,
+semantic safety, multilingual coverage, or preservation of visual, long-context,
+coding, and thinking-mode behavior. Lower keyword rate is not equivalent to a
+correct or safe answer. The Qwen baseline therefore exports an adapter only and
+does not upload it automatically; a BF16 merge requires a separate memory check
+and full re-evaluation.
+
 
 ## Research features
 

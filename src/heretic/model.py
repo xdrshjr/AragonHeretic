@@ -1,17 +1,14 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025-2026  Philipp Emanuel Weidmann <pew@worldwidemann.com> + contributors
 
-import math
+import hashlib
+import json
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any, Type, cast
 
-import bitsandbytes as bnb
 import torch
-import torch.linalg as LA
-import torch.nn.functional as F
 from peft import LoraConfig, PeftModel, get_peft_model
-from peft.tuners.lora.layer import Linear
 from torch import FloatTensor, LongTensor, Tensor
 from torch.nn import Module, ModuleList
 from transformers import (
@@ -31,20 +28,57 @@ from transformers.generation import (
     GenerateDecoderOnlyOutput,  # ty:ignore[possibly-missing-import]
 )
 
-from .config import QuantizationMethod, RowNormalization, Settings
+from . import ara
+from .config import AbliterationMethod, QuantizationMethod, RowNormalization, Settings
 from .system import empty_cache
+from .targeting import discover_layer_modules
 from .utils import Prompt, batchify, format_exception, print
 
 
 def get_model_class(
     model: str,
+    *,
+    revision: str | None = None,
 ) -> Type[AutoModelForImageTextToText] | Type[AutoModelForCausalLM]:
-    configs = PretrainedConfig.get_config_dict(model)
+    configs = PretrainedConfig.get_config_dict(model, revision=revision)
 
     if any([("vision_config" in config) for config in configs]):
         return AutoModelForImageTextToText
     else:
         return AutoModelForCausalLM
+
+
+def merge_generation_kwargs(
+    configured: dict[str, Any],
+    callsite: dict[str, Any],
+    reserved: dict[str, Any],
+) -> dict[str, Any]:
+    """Merge generation settings with explicit, deterministic precedence."""
+    merged = {"do_sample": False, **configured, **callsite}
+    merged.update(reserved)
+    return merged
+
+
+def _manifest_fingerprint(manifest: dict[str, Any]) -> str:
+    return hashlib.sha256(
+        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
+    ).hexdigest()
+
+
+def _base_target_name(name: str) -> str:
+    return name.removeprefix("base_model.model.")
+
+
+_QWEN_TARGET_COUNTS = {
+    "self_attn.o_proj": 16,
+    "linear_attn.out_proj": 48,
+    "mlp.down_proj": 64,
+}
+_QWEN_TARGET_SHAPES = {
+    "self_attn.o_proj": (5120, 6144),
+    "linear_attn.out_proj": (5120, 6144),
+    "mlp.down_proj": (5120, 17408),
+}
 
 
 @dataclass
@@ -62,6 +96,8 @@ class Model:
     processor: ProcessorMixin | None
     peft_config: LoraConfig
     dtype: torch.dtype
+    ara_targets: tuple[ara.TargetModule, ...]
+    adapter_initial_state: ara.AdapterInitialState | None
 
     def __init__(self, settings: Settings):
         self.settings = settings
@@ -71,23 +107,27 @@ class Model:
         if settings.model_commit is not None:
             self.revision_kwargs["revision"] = settings.model_commit
 
+        print(f"* Chat template kwargs: [bold]{settings.chat_template_kwargs}[/]")
+        print(f"* Generation kwargs: [bold]{settings.generation_kwargs}[/]")
+
         print()
         print(f"Loading model [bold]{settings.model}[/]...")
 
-        self.tokenizer = AutoTokenizer.from_pretrained(
-            settings.model,
-            **self.revision_kwargs,
+        self.tokenizer = cast(
+            PreTrainedTokenizerBase,
+            AutoTokenizer.from_pretrained(settings.model, **self.revision_kwargs),
         )
 
-        # Multimodal models have a processor we'll want to save.
         self.processor = None
-        if get_model_class(settings.model) == AutoModelForImageTextToText:
+        if (
+            get_model_class(settings.model, revision=settings.model_commit)
+            == AutoModelForImageTextToText
+        ):
             self.processor = AutoProcessor.from_pretrained(
                 settings.model,
                 **self.revision_kwargs,
             )
 
-        # Fallback for tokenizers that don't declare a special pad token.
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
 
@@ -112,12 +152,12 @@ class Model:
                 quantization_config = self._get_quantization_config(dtype)
 
                 extra_kwargs = {}
-                # Only include quantization_config if it's not None
-                # (some models like gpt-oss have issues with explicit None).
                 if quantization_config is not None:
                     extra_kwargs["quantization_config"] = quantization_config
 
-                self.model = get_model_class(settings.model).from_pretrained(
+                self.model = get_model_class(
+                    settings.model, revision=settings.model_commit
+                ).from_pretrained(
                     settings.model,
                     dtype=dtype,
                     device_map=settings.device_map,
@@ -168,10 +208,9 @@ class Model:
         if self.model is None:
             raise Exception("Failed to load model with all configured dtypes.")
 
+        self.ara_targets = ()
+        self.adapter_initial_state = None
         self._apply_lora()
-
-        # LoRA B matrices are initialized to zero by default in PEFT,
-        # so we don't need to do anything manually.
 
         print(f"* Transformer model with [bold]{len(self.get_layers())}[/] layers")
 
@@ -185,16 +224,58 @@ class Model:
         print("* Abliterable components:")
         for component, count in all_components.items():
             print(f"  * [bold]{component}[/]: [bold]{count}[/] modules total")
+        self._validate_ara_runtime()
+
+    def _validate_ara_runtime(self) -> None:
+        if not (
+            self.settings.abliteration_method == AbliterationMethod.ARA
+            and self.settings.model == "Qwen/Qwen3.8-27B"
+        ):
+            return
+        counts = dict.fromkeys(_QWEN_TARGET_COUNTS, 0)
+        unmatched = []
+        for target in self.ara_targets:
+            name = target.full_name
+            key = next((item for item in counts if item in name), "")
+            if key:
+                counts[key] += 1
+            else:
+                unmatched.append(name)
+        invalid_shapes = [
+            (target.full_name, (target.out_features, target.in_features))
+            for target in self.ara_targets
+            if any(
+                name in target.full_name
+                and (target.out_features, target.in_features) != shape
+                for name, shape in _QWEN_TARGET_SHAPES.items()
+            )
+        ]
+        if (
+            counts != _QWEN_TARGET_COUNTS
+            or len(self.ara_targets) != 128
+            or unmatched
+            or invalid_shapes
+        ):
+            raise RuntimeError(
+                f"Qwen CARA module inventory mismatch: counts={counts}, "
+                f"total={len(self.ara_targets)}, unmatched={unmatched}, "
+                f"invalid_shapes={invalid_shapes}"
+            )
+        devices = {
+            str(next(target.module.parameters()).device) for target in self.ara_targets
+        }
+        if not {"cuda:0", "cuda:1"}.issubset(devices):
+            raise RuntimeError(
+                f"Qwen CARA targets are not distributed across two GPUs: {devices}"
+            )
+        for index in (0, 1):
+            free_bytes, _ = torch.cuda.mem_get_info(index)
+            if free_bytes < 1.5 * 1024**3:
+                raise RuntimeError(f"cuda:{index} has less than 1.5 GiB free")
 
     def _apply_lora(self):
-        # Guard against calling this method at the wrong time.
         assert isinstance(self.model, PreTrainedModel)
 
-        # Always use LoRA adapters for abliteration (faster reload, no weight modification).
-        # Collect actual leaf module names from the model for LoRA targeting.
-        # This is more robust than splitting component keys (e.g. "attn.o_proj" -> "o_proj")
-        # because hybrid models like Qwen3.5 MoE have modules with different names
-        # across layers (e.g. "o_proj" on attention layers, "out_proj" on linear attention layers).
         target_modules_set: set[str] = set()
 
         module_id_to_full_name = {
@@ -211,7 +292,9 @@ class Model:
 
         target_modules = sorted(target_modules_set)
 
-        if self.settings.row_normalization != RowNormalization.FULL:
+        if self.settings.abliteration_method == AbliterationMethod.ARA:
+            lora_rank = self.settings.ara_lora_rank
+        elif self.settings.row_normalization != RowNormalization.FULL:
             # Rank 1 is sufficient for directional ablation without renormalization.
             lora_rank = 1
         else:
@@ -224,19 +307,26 @@ class Model:
             lora_alpha=lora_rank,  # Apply adapter at full strength.
             lora_dropout=0,
             bias="none",
-            # Even if we're using AutoModelForImageTextToText, this is still correct,
-            # as VL models are typically just causal LMs with an added image encoder.
+            use_rslora=False,
+            use_dora=False,
+            fan_in_fan_out=False,
+            revision=self.settings.model_commit,
             task_type="CAUSAL_LM",
         )
 
-        # self.peft_config is a LoraConfig object rather than a dictionary,
-        # so the result is a PeftModel rather than a PeftMixedModel.
         self.model = cast(PeftModel, get_peft_model(self.model, self.peft_config))
 
         display_targets = sorted({name.rsplit(".", 1)[-1] for name in target_modules})
         print(
             f"* LoRA adapters initialized (target types: {', '.join(display_targets)})"
         )
+
+        if self.settings.abliteration_method == AbliterationMethod.ARA:
+            self.ara_targets = self.get_target_modules()
+            self.adapter_initial_state = ara.snapshot_adapter_state(
+                self.ara_targets, cast(int, self.settings.seed)
+            )
+        self._verify_model_fingerprint()
 
     def _get_quantization_config(self, dtype: str) -> BitsAndBytesConfig | None:
         """
@@ -266,7 +356,6 @@ class Model:
     def get_merged_model(self) -> PreTrainedModel:
         # Guard against calling this method at the wrong time.
         assert isinstance(self.model, PeftModel)
-
         # Check if we need special handling for quantized models
         if self.settings.quantization == QuantizationMethod.BNB_4BIT:
             # Quantized models need special handling - we must reload the base model
@@ -280,7 +369,9 @@ class Model:
 
             # Load base model in full precision on CPU to avoid VRAM issues
             print("* Loading base model on CPU (this may take a while)...")
-            base_model = get_model_class(self.settings.model).from_pretrained(
+            base_model = get_model_class(
+                self.settings.model, revision=self.settings.model_commit
+            ).from_pretrained(
                 self.settings.model,
                 torch_dtype=self.model.dtype,
                 device_map="cpu",
@@ -289,6 +380,7 @@ class Model:
                 else None,
                 **self.revision_kwargs,
             )
+            self._verify_reloaded_base(base_model)
 
             # Apply LoRA adapters to the CPU model
             print("* Applying LoRA adapters...")
@@ -329,6 +421,10 @@ class Model:
             current_model = getattr(self.model.config, "name_or_path", None)
 
         if current_model == self.settings.model and not self.needs_reload:
+            if self.settings.abliteration_method == AbliterationMethod.ARA:
+                assert self.adapter_initial_state is not None
+                ara.restore_adapter_state(self.ara_targets, self.adapter_initial_state)
+                return
             # Reset LoRA adapters to zero (identity transformation).
             for name, module in self.model.named_modules():
                 if "lora_B" in name and hasattr(module, "weight"):
@@ -348,7 +444,9 @@ class Model:
         if quantization_config is not None:
             extra_kwargs["quantization_config"] = quantization_config
 
-        self.model = get_model_class(self.settings.model).from_pretrained(
+        self.model = get_model_class(
+            self.settings.model, revision=self.settings.model_commit
+        ).from_pretrained(
             self.settings.model,
             dtype=self.dtype,
             device_map=self.settings.device_map,
@@ -364,6 +462,15 @@ class Model:
 
         self.needs_reload = False
 
+    def load_adapter_for_evaluation(self, path: str) -> None:
+        """Load an exported adapter under a separate name and activate it."""
+
+        assert isinstance(self.model, PeftModel)
+        self.model.load_adapter(path, adapter_name="candidate")
+        self.model.set_adapter("candidate")
+        self._verify_model_fingerprint()
+        self._validate_ara_runtime()
+
     def get_layers(self) -> ModuleList:
         model = self.model
 
@@ -371,7 +478,6 @@ class Model:
         if isinstance(model, PeftModel):
             model = model.base_model.model
 
-        # Most multimodal models.
         with suppress(Exception):
             return model.model.language_model.layers
 
@@ -380,243 +486,117 @@ class Model:
 
     def get_layer_modules(self, layer_index: int) -> dict[str, list[Module]]:
         layer = self.get_layers()[layer_index]
-
-        modules = {}
-
-        def try_add(component: str, module: Any):
-            # Only add if it's a proper nn.Module (PEFT can wrap these with LoRA)
-            if isinstance(module, Module):
-                if component not in modules:
-                    modules[component] = []
-                modules[component].append(module)
-            else:
-                # Assert for unexpected types (catches architecture changes)
-                assert not isinstance(module, Tensor), (
-                    f"Unexpected Tensor in {component} - expected nn.Module"
-                )
-
-        # Standard self-attention out-projection (most models).
-        with suppress(Exception):
-            try_add("attn.o_proj", layer.self_attn.o_proj)  # ty:ignore[possibly-missing-attribute]
-
-        # Qwen3.5 MoE hybrid layers use GatedDeltaNet (linear attention) instead of
-        # standard self-attention, so self_attn.o_proj doesn't exist on those layers.
-        with suppress(Exception):
-            try_add("attn.o_proj", layer.linear_attn.out_proj)  # ty:ignore[possibly-missing-attribute]
-
-        # Most dense models.
-        with suppress(Exception):
-            try_add("mlp.down_proj", layer.mlp.down_proj)  # ty:ignore[possibly-missing-attribute]
-
-        # Some MoE models (e.g. Qwen3).
-        with suppress(Exception):
-            for expert in layer.mlp.experts:  # ty:ignore[possibly-missing-attribute, not-iterable]
-                try_add("mlp.down_proj", expert.down_proj)  # ty:ignore[possibly-missing-attribute]
-
-        # Phi-3.5-MoE (and possibly others).
-        with suppress(Exception):
-            for expert in layer.block_sparse_moe.experts:  # ty:ignore[possibly-missing-attribute, not-iterable]
-                try_add("mlp.down_proj", expert.w2)  # ty:ignore[possibly-missing-attribute]
-
-        # LFM dense operator blocks.
-        with suppress(Exception):
-            try_add("attn.o_proj", layer.conv.out_proj)  # ty:ignore[possibly-missing-attribute]
-
-        with suppress(Exception):
-            try_add("mlp.down_proj", layer.feed_forward.w2)  # ty:ignore[possibly-missing-attribute]
-
-        # LFM transformer blocks.
-        with suppress(Exception):
-            try_add("attn.o_proj", layer.self_attn.out_proj)  # ty:ignore[possibly-missing-attribute]
-
-        with suppress(Exception):
-            for expert in layer.feed_forward.experts:  # ty:ignore[possibly-missing-attribute, not-iterable]
-                try_add("mlp.down_proj", expert.w2)  # ty:ignore[possibly-missing-attribute]
-
-        # Granite MoE Hybrid - attention layers with shared_mlp.
-        with suppress(Exception):
-            try_add("mlp.down_proj", layer.shared_mlp.output_linear)  # ty:ignore[possibly-missing-attribute]
-
-        # Granite MoE Hybrid - MoE layers with experts.
-        with suppress(Exception):
-            for expert in layer.moe.experts:  # ty:ignore[possibly-missing-attribute, not-iterable]
-                try_add("mlp.down_proj", expert.output_linear)  # ty:ignore[possibly-missing-attribute]
-
-        # We need at least one module across all components for abliteration to work.
-        total_modules = sum(len(mods) for mods in modules.values())
-        assert total_modules > 0, "No abliterable modules found in layer"
-
+        modules = discover_layer_modules(layer, self.settings.target_components)
+        if not modules:
+            children = sorted(name for name, _ in layer.named_children())
+            raise RuntimeError(
+                f"No target modules found in layer {layer_index} "
+                f"({type(layer).__name__}); requested={self.settings.target_components}, "
+                f"children={children}"
+            )
         return modules
+
+    def get_target_modules(self) -> tuple[ara.TargetModule, ...]:
+        """Return stable, de-duplicated records for all configured projections."""
+        names = {id(module): name for name, module in self.model.named_modules()}
+        seen: dict[int, str] = {}
+        targets = []
+        for layer_index in range(len(self.get_layers())):
+            for component, modules in self.get_layer_modules(layer_index).items():
+                for module_index, module in enumerate(modules):
+                    previous = seen.get(id(module))
+                    if previous is not None and previous != component:
+                        raise RuntimeError(
+                            f"module mapped to {previous} and {component}"
+                        )
+                    if previous is not None:
+                        continue
+                    seen[id(module)] = component
+                    base = getattr(module, "base_layer", module)
+                    targets.append(
+                        ara.TargetModule(
+                            key=ara.ModuleKey(layer_index, component, module_index),
+                            full_name=names[id(module)],
+                            module=module,
+                            in_features=int(getattr(base, "in_features")),
+                            out_features=int(getattr(base, "out_features")),
+                        )
+                    )
+        return tuple(targets)
+
+    def capture_ara_module_io(self, prompts: list[Prompt]) -> ara.ModuleIO:
+        """Capture CARA calibration tensors through the model generation path."""
+
+        def generate_one_token(batch: list[Prompt]) -> Any:
+            return self.generate(batch, max_new_tokens=1, use_cache=False)
+
+        config = ara.ARACaptureConfig(batch_size=self.settings.ara_capture_batch_size)
+        return ara.capture_module_io(
+            self.ara_targets, prompts, generate_one_token, config
+        )
+
+    def _model_manifest(self) -> dict[str, Any]:
+        config = self.model.config
+        targets = [
+            {
+                "name": _base_target_name(target.full_name),
+                "shape": [target.out_features, target.in_features],
+            }
+            for target in self.get_target_modules()
+        ]
+        template = str(self.tokenizer.chat_template or "")
+        return {
+            "model": self.settings.model,
+            "requested_revision": self.settings.model_commit,
+            "commit": getattr(config, "_commit_hash", None),
+            "model_type": getattr(config, "model_type", None),
+            "layers": len(self.get_layers()),
+            "targets": targets,
+            "chat_template_sha256": hashlib.sha256(template.encode()).hexdigest(),
+        }
+
+    def _verify_reloaded_base(self, base_model: PreTrainedModel) -> None:
+        modules = dict(base_model.named_modules())
+        targets = []
+        for expected in self.model_manifest["targets"]:
+            module = modules.get(expected["name"])
+            weight = getattr(module, "weight", None)
+            if weight is None or len(weight.shape) != 2:
+                raise RuntimeError(f"merged base has no target {expected['name']}")
+            targets.append({"name": expected["name"], "shape": list(weight.shape)})
+        try:
+            layers = base_model.model.language_model.layers  # ty:ignore[unresolved-attribute]
+        except AttributeError:
+            layers = base_model.model.layers  # ty:ignore[unresolved-attribute]
+        config = base_model.config
+        manifest = {
+            **self.model_manifest,
+            "commit": getattr(config, "_commit_hash", None),
+            "model_type": getattr(config, "model_type", None),
+            "layers": len(layers),
+            "targets": targets,
+        }
+        if _manifest_fingerprint(manifest) != self.model_fingerprint:
+            raise RuntimeError(
+                "merged base model fingerprint does not match loaded model"
+            )
+
+    def _verify_model_fingerprint(self) -> None:
+        manifest = self._model_manifest()
+        fingerprint = _manifest_fingerprint(manifest)
+        previous = getattr(self, "model_fingerprint", None)
+        if previous is not None and previous != fingerprint:
+            raise RuntimeError("model fingerprint changed during reload")
+        self.model_manifest = manifest
+        self.model_fingerprint = fingerprint
 
     def get_abliterable_components(self) -> list[str]:
         components: set[str] = set()
 
-        # Scan all layers because hybrid models (e.g. Qwen3.5 MoE) have different
-        # components on different layers (some have self_attn, others linear_attn).
         for layer_index in range(len(self.get_layers())):
             components.update(self.get_layer_modules(layer_index).keys())
 
         return sorted(components)
-
-    def abliterate(
-        self,
-        residual_directions: Tensor,
-        direction_index: float | None,
-        parameters: dict[str, AbliterationParameters],
-    ):
-        if direction_index is None:
-            residual_direction = None
-        else:
-            # The index must be shifted by 1 because the first element
-            # of residual_directions is the direction for the embeddings.
-            weight, index = math.modf(direction_index + 1)
-            residual_direction = F.normalize(
-                residual_directions[int(index)].lerp(
-                    residual_directions[int(index) + 1],
-                    weight,
-                ),
-                p=2,
-                dim=0,
-            )
-
-        # Note that some implementations of abliteration also orthogonalize
-        # the embedding matrix, but it's unclear if that has any benefits.
-        for layer_index in range(len(self.get_layers())):
-            for component, modules in self.get_layer_modules(layer_index).items():
-                params = parameters[component]
-
-                # Type inference fails here for some reason.
-                distance = cast(float, abs(layer_index - params.max_weight_position))
-
-                # Don't orthogonalize layers that are more than
-                # min_weight_distance away from max_weight_position.
-                if distance > params.min_weight_distance:
-                    continue
-
-                # Interpolate linearly between max_weight and min_weight
-                # over min_weight_distance.
-                weight = params.max_weight + (distance / params.min_weight_distance) * (
-                    params.min_weight - params.max_weight
-                )
-
-                # A weight of 0 disables this component's ablation. reset_model() has
-                # already left the adapter at identity, so abort before the otherwise
-                # wasteful decomposition (which would also be operating on a zero matrix).
-                if weight == 0:
-                    continue
-
-                if residual_direction is None:
-                    # The index must be shifted by 1 because the first element
-                    # of residual_directions is the direction for the embeddings.
-                    layer_residual_direction = residual_directions[layer_index + 1]
-                else:
-                    layer_residual_direction = residual_direction
-
-                for module in modules:
-                    # FIXME: This cast is potentially invalid, because the program logic
-                    #        does not guarantee that the module is of type Linear, and in fact
-                    #        the retrieved modules might not conform to the interface assumed
-                    #        below (though they do in practice). However, this is difficult
-                    #        to fix cleanly, because get_layer_modules is called twice on
-                    #        different model configurations, and PEFT employs different
-                    #        module types depending on the chosen quantization.
-                    module = cast(Linear, module)
-
-                    # LoRA abliteration: delta W = -lambda * v * (v^T W)
-                    # lora_B = -lambda * v
-                    # lora_A = v^T W
-
-                    # Use the FP32 residual direction directly (no downcast/upcast)
-                    # and move to the correct device.
-                    v = layer_residual_direction.to(module.weight.device)
-
-                    # Get W (dequantize if necessary).
-                    #
-                    # FIXME: This cast is valid only under the assumption that the original
-                    #        module wrapped by the LoRA adapter has a weight attribute.
-                    #        See the comment above for why this is currently not guaranteed.
-                    base_weight = cast(Tensor, module.base_layer.weight)
-                    quant_state = getattr(base_weight, "quant_state", None)
-
-                    if quant_state is None:
-                        W = base_weight.to(torch.float32)
-                    else:
-                        # 4-bit quantization.
-                        # This cast is always valid. Type inference fails here because the
-                        # bnb.functional module is not found by ty for some reason.
-                        W = cast(
-                            Tensor,
-                            bnb.functional.dequantize_4bit(  # ty:ignore[possibly-missing-attribute]
-                                base_weight.data,
-                                quant_state,
-                            ).to(torch.float32),
-                        )
-
-                    # Flatten weight matrix to (out_features, in_features).
-                    W = W.view(W.shape[0], -1)
-
-                    if self.settings.row_normalization == RowNormalization.FULL:
-                        # Keep a reference to the original weight matrix so we can subtract it later.
-                        W_org = W
-
-                    if self.settings.row_normalization != RowNormalization.NONE:
-                        # Get the row norms.
-                        W_row_norms = LA.vector_norm(W, dim=1, keepdim=True)
-                        # Normalize the weight matrix along the rows.
-                        W = F.normalize(W, p=2, dim=1)
-
-                    # Calculate lora_A = v^T W
-                    # v is (d_out,), W is (d_out, d_in)
-                    # v @ W -> (d_in,)
-                    lora_A = (v @ W).view(1, -1)
-
-                    # Calculate lora_B = -weight * v
-                    # v is (d_out,)
-                    lora_B = (-weight * v).view(-1, 1)
-
-                    if self.settings.row_normalization == RowNormalization.PRE:
-                        # Make the LoRA adapter apply to the original weight matrix.
-                        lora_B = W_row_norms * lora_B
-                    elif self.settings.row_normalization == RowNormalization.FULL:
-                        # Approximates https://huggingface.co/blog/grimjim/norm-preserving-biprojected-abliteration
-                        W = W + lora_B @ lora_A
-                        # Normalize the adjusted weight matrix along the rows.
-                        W = F.normalize(W, p=2, dim=1)
-                        # Restore the original row norms of the weight matrix.
-                        W = W * W_row_norms
-                        # Subtract the original matrix to turn W into a delta.
-                        W = W - W_org
-                        # Use a low-rank SVD to get an approximation of the matrix.
-                        r = self.peft_config.r
-
-                        # svd_lowrank is randomized:
-                        # https://github.com/pytorch/pytorch/blob/20919052303c0b5ba87f8bf7e19237dc33ab09d3/torch/_lowrank.py#L108-L109
-                        # Reseed immediately before the call so restoring a trial is independent of RNG history.
-                        torch.manual_seed(self.settings.seed)
-                        # "It's safe to call this function if CUDA is not available;
-                        # in that case, it is silently ignored."
-                        torch.cuda.manual_seed_all(self.settings.seed)  # ty:ignore[invalid-argument-type]
-                        U, S, Vh = torch.svd_lowrank(W, q=2 * r + 4, niter=6)
-
-                        # Truncate it to the part we want to store in the LoRA adapter.
-                        # Note: svd_lowrank actually returns V, so transpose it to get Vh.
-                        U = U[:, :r]
-                        S = S[:r]
-                        Vh = Vh[:, :r].T
-                        # Transfer it into the LoRA adapter components. Split the singular values
-                        # evenly between the two components to keep their norms balanced and avoid
-                        # potential issues with numerical stability.
-                        sqrt_S = torch.sqrt(S)
-                        lora_B = U @ torch.diag(sqrt_S)
-                        lora_A = torch.diag(sqrt_S) @ Vh
-
-                    # Assign to adapters. The adapter name is "default", because that's
-                    # what PEFT uses when no name is explicitly specified, as above.
-                    # These casts are therefore valid.
-                    weight_A = cast(Tensor, module.lora_A["default"].weight)
-                    weight_B = cast(Tensor, module.lora_B["default"].weight)
-                    weight_A.data = lora_A.to(weight_A.dtype)
-                    weight_B.data = lora_B.to(weight_B.dtype)
 
     def generate(
         self,
@@ -631,16 +611,7 @@ class Model:
             for prompt in prompts
         ]
 
-        # This cast is valid because list[str] is the return type
-        # for batched operation with tokenize=False.
-        chat_prompts = cast(
-            list[str],
-            self.tokenizer.apply_chat_template(
-                chats,
-                add_generation_prompt=True,
-                tokenize=False,
-            ),
-        )
+        chat_prompts = cast(list[str], self._render_chat_template(chats))
 
         if self.settings.response_prefix:
             # Append the common response prefix to the prompts so that evaluation happens
@@ -658,12 +629,12 @@ class Model:
 
         # FIXME: The type checker has been disabled here because of the extremely complex
         #        interplay between different generate() signatures and dynamic delegation.
-        outputs = self.model.generate(
-            **inputs,
-            **kwargs,
-            pad_token_id=self.tokenizer.pad_token_id,
-            do_sample=False,  # Use greedy decoding to ensure deterministic outputs.
-        )  # ty:ignore[call-non-callable]
+        generation_kwargs = merge_generation_kwargs(
+            self.settings.generation_kwargs,
+            kwargs,
+            {"pad_token_id": self.tokenizer.pad_token_id},
+        )
+        outputs = self.model.generate(**inputs, **generation_kwargs)  # ty:ignore[call-non-callable]
 
         return inputs, outputs
 
@@ -822,16 +793,7 @@ class Model:
         return torch.cat(logits, dim=0)
 
     def stream_chat_response(self, chat: list[dict[str, str]]) -> str:
-        # This cast is valid because str is the return type
-        # for single-chat operation with tokenize=False.
-        chat_prompt = cast(
-            str,
-            self.tokenizer.apply_chat_template(
-                chat,
-                add_generation_prompt=True,
-                tokenize=False,
-            ),
-        )
+        chat_prompt = cast(str, self._render_chat_template(chat))
 
         inputs = self.tokenizer(
             chat_prompt,
@@ -850,11 +812,15 @@ class Model:
 
         # FIXME: The type checker has been disabled here because of the extremely complex
         #        interplay between different generate() signatures and dynamic delegation.
-        outputs = self.model.generate(
-            **inputs,
-            streamer=streamer,
-            max_new_tokens=4096,
-        )  # ty:ignore[call-non-callable]
+        generation_kwargs = merge_generation_kwargs(
+            self.settings.generation_kwargs,
+            {"max_new_tokens": 4096},
+            {
+                "pad_token_id": self.tokenizer.pad_token_id,
+                "streamer": streamer,
+            },
+        )
+        outputs = self.model.generate(**inputs, **generation_kwargs)  # ty:ignore[call-non-callable]
 
         # This cast is valid because str is the return type
         # when passing a sequence of token IDs.
@@ -865,3 +831,20 @@ class Model:
                 skip_special_tokens=True,
             ),
         )
+
+    def _render_chat_template(self, chat: Any) -> str | list[str]:
+        rendered = cast(
+            str | list[str],
+            self.tokenizer.apply_chat_template(
+                chat,
+                add_generation_prompt=True,
+                tokenize=False,
+                **self.settings.chat_template_kwargs,
+            ),
+        )
+        prompts = [rendered] if isinstance(rendered, str) else rendered
+        if self.settings.chat_template_kwargs.get("enable_thinking") is False and any(
+            prompt.count("<think>") != prompt.count("</think>") for prompt in prompts
+        ):
+            raise RuntimeError("chat template rendered an unclosed <think> block")
+        return rendered

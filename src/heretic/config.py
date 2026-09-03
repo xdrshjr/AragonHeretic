@@ -1,8 +1,10 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025-2026  Philipp Emanuel Weidmann <pew@worldwidemann.com> + contributors
 
+import math
+import re
 from enum import Enum
-from typing import Dict, Literal
+from typing import Any, Dict, Literal
 
 from pydantic import (
     BaseModel,
@@ -10,6 +12,7 @@ from pydantic import (
     NonNegativeInt,
     PositiveInt,
     field_validator,
+    model_validator,
 )
 from pydantic_settings import (
     BaseSettings,
@@ -20,11 +23,7 @@ from pydantic_settings import (
     TomlConfigSettingsSource,
 )
 
-# !!!IMPORTANT!!!
-#
-# Any settings added to the classes defined in this module
-# must be evaluated for privacy implications and have
-# exclude=True set in their field definitions if appropriate.
+# Settings with privacy implications must use ``exclude=True``.
 
 
 class QuantizationMethod(str, Enum):
@@ -32,10 +31,14 @@ class QuantizationMethod(str, Enum):
     BNB_4BIT = "bnb_4bit"
 
 
+class AbliterationMethod(str, Enum):
+    DIRECTIONAL = "directional"
+    ARA = "ara"
+
+
 class RowNormalization(str, Enum):
     NONE = "none"
     PRE = "pre"
-    # POST = "post"  # Theoretically possible, but provides no advantage.
     FULL = "full"
 
 
@@ -92,6 +95,65 @@ class DatasetSpecification(BaseModel):
     )
 
 
+def dataset_specs_overlap(
+    left: DatasetSpecification, right: DatasetSpecification
+) -> bool:
+    """Return whether two simple Hugging Face split slices can share rows."""
+    if left.dataset != right.dataset:
+        return False
+    if not left.commit or not right.commit:
+        return True
+    if left.commit != right.commit:
+        return False
+    left_split, right_split = left.split or "", right.split or ""
+    if not left_split or not right_split:
+        return True
+    if left_split.partition("[")[0] != right_split.partition("[")[0]:
+        return False
+    pattern = re.compile(r"^([^[]+)(?:\[(\d*):(\d*)\])?$")
+    matches = [pattern.match(spec.split or "") for spec in (left, right)]
+    if not all(matches):
+        return True
+    parsed = []
+    for match in matches:
+        assert match is not None
+        parsed.append(
+            (
+                match.group(1),
+                int(match.group(2) or 0),
+                int(match.group(3)) if match.group(3) else math.inf,
+            )
+        )
+    return parsed[0][0] == parsed[1][0] and max(parsed[0][1], parsed[1][1]) < min(
+        parsed[0][2], parsed[1][2]
+    )
+
+
+class AcceptanceGate(BaseModel):
+    """Deterministic validation and post-export acceptance criteria."""
+
+    keyword_score: str = Field(description="Keyword scorer display name.")
+    keyword_max: float = Field(ge=0, le=1)
+    keyword_drop_min: float = Field(ge=0, le=1)
+    kl_score: str = Field(description="KL scorer display name.")
+    kl_max: float = Field(ge=0, le=1)
+    expected_samples: PositiveInt = 100
+    selection: Literal["lexicographic"] = "lexicographic"
+    keyword_audit_prompts: DatasetSpecification
+    kl_audit_prompts: DatasetSpecification
+    report_path: str = Field(default="acceptance.json", exclude=True)
+
+    @model_validator(mode="after")
+    def validate_score_names(self) -> "AcceptanceGate":
+        if not self.keyword_score.strip() or not self.kl_score.strip():
+            raise ValueError("acceptance score names must not be empty")
+        if self.keyword_score == self.kl_score:
+            raise ValueError("acceptance score names must be unique")
+        if not self.keyword_audit_prompts.commit or not self.kl_audit_prompts.commit:
+            raise ValueError("acceptance audit datasets must pin a commit")
+        return self
+
+
 class ScorerConfig(BaseModel):
     """
     Configuration for a scorer plugin.
@@ -142,6 +204,73 @@ class ScorerConfig(BaseModel):
         return value
 
 
+def _acceptance_scorer_prompts(
+    scorers: list[ScorerConfig], extras: dict[str, Any] | None, gate: AcceptanceGate
+) -> list[DatasetSpecification]:
+    """Resolve the explicitly configured validation datasets for gate scorers."""
+    tables = (extras or {}).get("scorer", {})
+    requirements = (
+        (
+            gate.keyword_score,
+            "heretic.scorers.keyword_rate.KeywordRate",
+            "KeywordRate",
+            "Keywords",
+        ),
+        (
+            gate.kl_score,
+            "heretic.scorers.kl_divergence.KLDivergence",
+            "KLDivergence",
+            "KL divergence",
+        ),
+    )
+    resolved = []
+    for score_name, plugin, class_name, display_name in requirements:
+        matches = [
+            item
+            for item in scorers
+            if item.plugin == plugin
+            and score_name
+            == (
+                f"{display_name} - {item.instance_name}"
+                if item.instance_name
+                else display_name
+            )
+        ]
+        if len(matches) != 1 or not isinstance(tables, dict):
+            raise ValueError(
+                f"acceptance target scorer is not configured: {score_name}"
+            )
+        item = matches[0]
+        base = tables.get(class_name, {})
+        instance = tables.get(f"{class_name}_{item.instance_name}", {})
+        if not isinstance(base, dict) or not isinstance(instance, dict):
+            raise ValueError("acceptance scorer settings must be tables")
+        raw = instance.get("prompts", base.get("prompts"))
+        if not isinstance(raw, dict):
+            raise ValueError(
+                f"acceptance scorer must explicitly configure prompts: {score_name}"
+            )
+        resolved.append(DatasetSpecification.model_validate(raw))
+    return resolved
+
+
+def _configured_dataset_specs(
+    extras: dict[str, Any] | None,
+) -> list[DatasetSpecification]:
+    candidates = []
+    tables = (extras or {}).get("scorer", {})
+    if not isinstance(tables, dict):
+        raise ValueError("scorer settings must be tables")
+    stack = list(tables.values())
+    while stack:
+        value = stack.pop()
+        if isinstance(value, dict) and "dataset" in value:
+            candidates.append(DatasetSpecification.model_validate(value))
+        elif isinstance(value, dict):
+            stack.extend(value.values())
+    return candidates
+
+
 class BenchmarkSpecification(BaseModel):
     task: str = Field(
         description="Task ID of the benchmark in the Language Model Evaluation Harness."
@@ -160,6 +289,11 @@ class Settings(BaseSettings):
     model_commit: str | None = Field(
         default=None,
         description="Hugging Face commit hash of the model.",
+    )
+
+    abliteration_method: AbliterationMethod = Field(
+        default=AbliterationMethod.DIRECTIONAL,
+        description='Abliteration method: "directional" or "ara".',
     )
 
     evaluate_model: str | None = Field(
@@ -254,6 +388,16 @@ class Settings(BaseSettings):
     max_response_length: PositiveInt = Field(
         default=100,
         description="Maximum number of tokens to generate for each response.",
+    )
+
+    chat_template_kwargs: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional keyword arguments passed to the tokenizer chat template.",
+    )
+
+    generation_kwargs: dict[str, Any] = Field(
+        default_factory=dict,
+        description="Additional keyword arguments passed to model.generate().",
     )
 
     response_prefix: str | None = Field(
@@ -378,6 +522,48 @@ class Settings(BaseSettings):
             "and this determines the rank of that approximation. Higher ranks produce "
             "larger output files and may slow down evaluation."
         ),
+    )
+
+    target_components: list[str] = Field(
+        default=["attn.o_proj", "mlp.down_proj"],
+        description="Ordered logical projection components to modify.",
+    )
+
+    ara_lora_rank: PositiveInt = Field(
+        default=128,
+        description="LoRA rank used for Calibrated Arbitrary-Rank Ablation.",
+    )
+
+    ara_calibration_size: int = Field(
+        default=64,
+        ge=2,
+        description="Number of good and bad prompts retained for CARA calibration.",
+    )
+
+    ara_capture_batch_size: PositiveInt = Field(
+        default=1,
+        description="Dedicated batch size for target-module I/O capture.",
+    )
+
+    ara_softmin_temperature: float = Field(
+        default=0.10,
+        gt=0,
+        description="Temperature for CARA soft nearest-neighbor distances.",
+    )
+
+    ara_lbfgs_max_iter: PositiveInt = Field(
+        default=20,
+        description="Maximum L-BFGS iterations for each CARA target module.",
+    )
+
+    ara_lbfgs_history_size: PositiveInt = Field(
+        default=10,
+        description="L-BFGS history size for each CARA target module.",
+    )
+
+    acceptance_gate: AcceptanceGate | None = Field(
+        default=None,
+        description="Optional deterministic candidate-selection and audit gate.",
     )
 
     winsorization_quantile: float = Field(
@@ -561,9 +747,82 @@ class Settings(BaseSettings):
         description="Dataset of prompts that tend to result in refusals (used for calculating refusal directions).",
     )
 
-    # We intentionally allow extra keys so users can provide plugin-specific
-    # configuration in TOML tables like `[scorer.KeywordRate]` which are later
-    # consumed via `settings.model_extra` (see `Evaluator._get_plugin_namespace`).
+    @field_validator("target_components")
+    @classmethod
+    def validate_target_components(cls, value: list[str]) -> list[str]:
+        if not value:
+            raise ValueError("target_components must not be empty")
+        supported = {"attn.o_proj", "mlp.down_proj"}
+        unknown = [component for component in value if component not in supported]
+        if unknown:
+            raise ValueError(f"unsupported target components: {unknown}")
+        return list(dict.fromkeys(value))
+
+    @field_validator("chat_template_kwargs")
+    @classmethod
+    def validate_chat_template_kwargs(cls, value: dict[str, Any]) -> dict[str, Any]:
+        reserved = {"tokenize", "add_generation_prompt", "continue_final_message"}
+        conflicts = sorted(reserved & value.keys())
+        if conflicts:
+            raise ValueError(f"reserved chat template keys: {conflicts}")
+        return value
+
+    @field_validator("generation_kwargs")
+    @classmethod
+    def validate_generation_kwargs(cls, value: dict[str, Any]) -> dict[str, Any]:
+        reserved = {"pad_token_id", "streamer", "input_ids", "attention_mask"}
+        conflicts = sorted(reserved & value.keys())
+        if conflicts:
+            raise ValueError(f"reserved generation keys: {conflicts}")
+        return value
+
+    @model_validator(mode="after")
+    def validate_method_settings(self) -> "Settings":
+        if (
+            self.abliteration_method == AbliterationMethod.ARA
+            and self.row_normalization != RowNormalization.NONE
+        ):
+            raise ValueError('row_normalization must be "none" for ARA')
+        if self.acceptance_gate is not None:
+            if self.abliteration_method != AbliterationMethod.ARA:
+                raise ValueError("acceptance_gate is only supported for ARA")
+            if self.generation_kwargs.get("do_sample", False) is not False:
+                raise ValueError("acceptance_gate requires generation do_sample=false")
+            if (
+                self.model == "Qwen/Qwen3.8-27B"
+                and self.chat_template_kwargs.get("enable_thinking") is not False
+            ):
+                raise ValueError("Qwen acceptance requires enable_thinking=false")
+            identities = [
+                (config.plugin, config.instance_name) for config in self.scorers
+            ]
+            if len(identities) != len(set(identities)):
+                raise ValueError("acceptance gate requires unique scorer instances")
+            candidates = [
+                self.good_prompts,
+                self.bad_prompts,
+                *_acceptance_scorer_prompts(
+                    self.scorers, self.model_extra, self.acceptance_gate
+                ),
+                *_configured_dataset_specs(self.model_extra),
+            ]
+            if any(not item.commit for item in candidates):
+                raise ValueError("acceptance datasets must pin a commit")
+            audits = (
+                self.acceptance_gate.keyword_audit_prompts,
+                self.acceptance_gate.kl_audit_prompts,
+            )
+            if any(
+                dataset_specs_overlap(audit, item)
+                for audit in audits
+                for item in candidates
+            ):
+                raise ValueError(
+                    "acceptance audit rows overlap calibration or validation"
+                )
+        return self
+
+    # Extra keys hold plugin configuration such as `[scorer.KeywordRate]`.
     model_config = SettingsConfigDict(extra="allow")
 
     @classmethod
@@ -588,3 +847,39 @@ class Settings(BaseSettings):
             file_secret_settings,
             TomlConfigSettingsSource(settings_cls, toml_file="config.toml"),
         )
+
+
+RUN_CONTROL_FIELDS = frozenset(
+    {
+        "checkpoint_action",
+        "collect_reproducibles",
+        "evaluate_model",
+        "export_strategy",
+        "ignore_mismatches",
+        "model_action",
+        "n_additional_trials",
+        "n_trials",
+        "print_debug_information",
+        "reproduce",
+        "save_directory",
+        "study_checkpoint_dir",
+        "trial_index",
+        "upload_repo_id",
+        "upload_repo_private",
+        "upload_reproducibility_information",
+    }
+)
+
+
+def merge_study_settings(stored: Settings, current: Settings) -> Settings:
+    """Restore research settings while retaining current run-control choices."""
+
+    values = {name: getattr(stored, name) for name in Settings.model_fields}
+    values.update(stored.model_extra or {})
+    if stored.acceptance_gate is not None and current.acceptance_gate is not None:
+        values["acceptance_gate"] = stored.acceptance_gate.model_copy(
+            update={"report_path": current.acceptance_gate.report_path}
+        )
+    for field_name in RUN_CONTROL_FIELDS:
+        values[field_name] = getattr(current, field_name)
+    return Settings.model_validate(values)

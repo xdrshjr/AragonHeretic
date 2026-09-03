@@ -41,11 +41,11 @@ import os
 import random
 import time
 import warnings
-from dataclasses import asdict
+from dataclasses import asdict, replace
 from importlib.metadata import version
 from os.path import commonprefix
 from pathlib import Path
-from typing import Any
+from typing import Any, cast
 
 import huggingface_hub
 import lm_eval
@@ -53,7 +53,6 @@ import numpy as np
 import optuna
 import questionary
 import torch
-import torch.nn.functional as F
 import transformers
 from huggingface_hub import HfApi, ModelCard, ModelCardData
 from lm_eval.models.huggingface import HFLM
@@ -62,16 +61,20 @@ from optuna.exceptions import ExperimentalWarning
 from optuna.samplers import TPESampler
 from optuna.storages import JournalStorage
 from optuna.storages.journal import JournalFileBackend, JournalFileOpenLock
-from optuna.trial import FrozenTrial, TrialState, create_trial
+from optuna.trial import FrozenTrial, TrialState
 from pydantic import ValidationError
 from questionary import Choice, Style
 from rich.table import Table
 from rich.traceback import install
 
-from .analyzer import Analyzer
-from .config import ExportStrategy, QuantizationMethod
+from . import ara, trial_methods, workflow
+from .config import (
+    AbliterationMethod,
+    ExportStrategy,
+    merge_study_settings,
+)
 from .evaluator import Evaluator
-from .model import AbliterationParameters, Model, get_model_class
+from .model import Model
 from .reproduce import (
     check_environment,
     collect_reproducibles,
@@ -93,89 +96,7 @@ from .utils import (
 )
 
 
-def obtain_export_strategy(
-    settings: Settings,
-    model: Model,
-) -> ExportStrategy | None:
-    """
-    Gets the export strategy from settings or prompts the user.
-    Provides info to the user if the model is quantized on memory use.
-    Returns an export strategy, or None if cancelled.
-    """
-
-    if (
-        settings.quantization == QuantizationMethod.BNB_4BIT
-        and settings.export_strategy is None
-    ):
-        print()
-        print(
-            "The model was loaded with quantization. Merging requires reloading the base model."
-        )
-        print(
-            "[yellow]WARNING: CPU merging requires dequantizing the entire model to system RAM.[/]"
-        )
-        print("[yellow]This can lead to system freezes if you run out of memory.[/]")
-
-        try:
-            # Estimate memory requirements by loading the model structure on the "meta" device.
-            # This doesn't consume actual RAM but allows us to inspect the parameter count/dtype.
-            #
-            # Suppress warnings during meta device loading (e.g., "Some weights were not initialized").
-            # These are expected and harmless since we're only inspecting model structure, not running inference.
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                meta_model = get_model_class(settings.model).from_pretrained(
-                    settings.model,
-                    device_map="meta",
-                    torch_dtype=torch.bfloat16,
-                    trust_remote_code=True
-                    if settings.model in model.trusted_models
-                    else None,
-                    **model.revision_kwargs,
-                )
-                footprint_bytes = meta_model.get_memory_footprint()
-                footprint_gb = footprint_bytes / (1024**3)
-                print(
-                    f"[yellow]Estimated RAM required (excluding overhead): [bold]~{footprint_gb:.2f} GB[/][/]"
-                )
-        except Exception:
-            # Fallback if meta loading fails (e.g. owing to custom model code
-            # or bitsandbytes quantization config issues on the meta device).
-            print(
-                "[yellow]Rule of thumb: You need approximately 3x the parameter count in GB RAM.[/]"
-            )
-            print(
-                "[yellow]Example: A 27B model requires ~80GB RAM. A 70B model requires ~200GB RAM.[/]"
-            )
-
-        print()
-
-    return ask_if_unset(
-        settings.export_strategy,
-        questionary.select(
-            "How do you want to export the model?",
-            choices=[
-                Choice(
-                    title="Merge the abliteration LoRA and export the full model"
-                    + (
-                        ""
-                        if settings.quantization == QuantizationMethod.NONE
-                        else " (requires sufficient RAM)"
-                    ),
-                    value=ExportStrategy.MERGE,
-                ),
-                Choice(
-                    title="Export the abliteration LoRA only (can be merged later)",
-                    value=ExportStrategy.ADAPTER,
-                ),
-            ],
-            style=Style([("highlighted", "reverse")]),
-        ),
-    )
-
-
 def run():
-    # Enable expandable segments to reduce memory fragmentation on multi-GPU setups.
     if (
         "PYTORCH_ALLOC_CONF" not in os.environ
         and "PYTORCH_CUDA_ALLOC_CONF" not in os.environ
@@ -203,7 +124,6 @@ def run():
         # The last argument is a parameter value rather than a flag (such as "--help").
         and not sys.argv[-1].startswith("-")
     ):
-        # Assume the last argument is the model.
         sys.argv.insert(-1, "--model")
 
     # Work around the "model" argument being required
@@ -236,25 +156,19 @@ def run():
         return
 
     reproduction_mode = settings.reproduce is not None
+    reproduction_parameters = None
+    bound_acceptance_report = None
 
     if settings.reproduce is not None:
         print(f"Loading reproduction information from [bold]{settings.reproduce}[/]...")
-        # FIXME: "Reproduction"/"reproducibility" name inconsistency!
         reproduction_information = load_reproduction_information(settings.reproduce)
 
-        # Version 3 is the plugin-era schema, which stores generic scorer
-        # `scores`/`baseline_scores`. It is intentionally NOT compatible with the
-        # pre-plugin v1/v2 schema (hardcoded refusals/KL `metrics`), so those are
-        # rejected rather than silently failing on a missing key later.
-        if reproduction_information["version"] != "3":
-            print(
-                (
-                    f"[red]Unsupported file format version: [bold]{reproduction_information['version']}[/].[/] "
-                    "This version of Heretic reads version 3 (plugin scorer) reproduce.json files. "
-                    "Older files were produced before the scorer-plugin refactor and are not supported. "
-                    "Please install Heretic 1.4 to use these files."
-                )
+        try:
+            reproduction_parameters = trial_methods.normalize_reproduction_parameters(
+                reproduction_information
             )
+        except ValueError as error:
+            print(f"[red]Invalid reproduction information: [bold]{error}[/][/]")
             return
 
         if not check_environment(settings, reproduction_information):
@@ -262,13 +176,19 @@ def run():
 
         print()
 
-        settings = Settings.model_validate(reproduction_information["settings"])
+        stored_settings = Settings.model_validate(reproduction_information["settings"])
+        bound_acceptance_report = workflow.load_reproduction_acceptance(
+            settings.reproduce,
+            reproduction_information,
+            stored_settings.acceptance_gate is not None,
+        )
+        settings = merge_study_settings(stored_settings, settings)
 
     if settings.seed is None:
         settings.seed = random.randint(0, 2**32 - 1)
-
     transformers.set_seed(settings.seed)
-
+    if settings.abliteration_method == AbliterationMethod.ARA:
+        workflow.configure_runtime_determinism()
     print(get_accelerator_info())
 
     if settings.print_debug_information:
@@ -319,7 +239,6 @@ def run():
     lock_obj = JournalFileOpenLock(study_checkpoint_file)
     backend = JournalFileBackend(study_checkpoint_file, lock_obj=lock_obj)
     storage = JournalStorage(backend)
-
     try:
         existing_study = storage.get_all_studies()[0]
     except IndexError:
@@ -332,7 +251,7 @@ def run():
     ):
         choices = []
 
-        if existing_study.user_attrs["finished"]:
+        if existing_study.user_attrs.get("finished", False):
             if settings.checkpoint_action is None:
                 print()
                 print(
@@ -399,15 +318,23 @@ def run():
             return
 
         if action == "continue":
-            settings = Settings.model_validate_json(
+            stored_settings = Settings.model_validate_json(
                 existing_study.user_attrs["settings"]
+            )
+            settings = merge_study_settings(stored_settings, settings)
+            study_fingerprint, study_manifest = trial_methods.validate_study_identity(
+                existing_study.user_attrs.get("study_fingerprint"),
+                existing_study.user_attrs.get("study_manifest"),
+                settings,
             )
         elif action == "restart":
             os.unlink(study_checkpoint_file)
             backend = JournalFileBackend(study_checkpoint_file, lock_obj=lock_obj)
             storage = JournalStorage(backend)
 
+    workflow.ensure_acceptance_study_unlocked(settings, study_checkpoint_file)
     model = Model(settings)
+    workflow.validate_reproduction_model(model, bound_acceptance_report)
     print()
     print_memory_usage()
 
@@ -420,6 +347,29 @@ def run():
     print(f"Loading bad prompts from [bold]{settings.bad_prompts.dataset}[/]...")
     bad_prompts = load_prompts(settings, settings.bad_prompts)
     print(f"* [bold]{len(bad_prompts)}[/] prompts loaded")
+
+    calibration_manifest = None
+    if settings.abliteration_method == AbliterationMethod.ARA:
+        good_prompts, bad_prompts, calibration_manifest = (
+            workflow.select_calibration_prompts(
+                good_prompts,
+                bad_prompts,
+                settings.ara_calibration_size,
+                cast(int, settings.seed),
+            )
+        )
+        calibration_manifest = replace(
+            calibration_manifest,
+            capture_batch_size=settings.ara_capture_batch_size,
+            good_dataset=settings.good_prompts.dataset,
+            good_revision=settings.good_prompts.commit,
+            bad_dataset=settings.bad_prompts.dataset,
+            bad_revision=settings.bad_prompts.commit,
+        )
+        print(
+            f"* Selected [bold]{len(good_prompts)}+{len(bad_prompts)}[/] "
+            "CARA calibration prompts"
+        )
 
     if settings.batch_size == 0:
         print()
@@ -511,6 +461,8 @@ def run():
         else:
             print("* None found")
 
+    study_fingerprint = trial_methods.build_study_fingerprint(settings)
+    study_manifest = trial_methods.build_study_manifest(settings)
     evaluator = Evaluator(settings, model)
 
     if settings.evaluate_model is not None:
@@ -534,51 +486,37 @@ def run():
         )
         return
 
-    print()
-    print("Calculating per-layer residual directions...")
-
-    needs_full_residuals = settings.print_residual_geometry or settings.plot_residuals
-
-    if needs_full_residuals:
-        print("* Obtaining residuals for good prompts...")
-        good_residuals = model.get_residuals_batched(good_prompts)
-        print("* Obtaining residuals for bad prompts...")
-        bad_residuals = model.get_residuals_batched(bad_prompts)
-
-        good_means = good_residuals.mean(dim=0)
-        bad_means = bad_residuals.mean(dim=0)
-
-        analyzer = Analyzer(settings, model, good_residuals, bad_residuals)
-
-        if settings.print_residual_geometry:
-            analyzer.print_residual_geometry()
-
-        if settings.plot_residuals:
-            analyzer.plot_residuals()
-
-        # We don't need the full residuals after computing their means and analyzing geometry.
-        del good_residuals, bad_residuals, analyzer
-    else:
-        print("* Obtaining residual mean for good prompts...")
-        good_means = model.get_residuals_mean(good_prompts)
-        print("* Obtaining residual mean for bad prompts...")
-        bad_means = model.get_residuals_mean(bad_prompts)
-
-    residual_directions = F.normalize(bad_means - good_means, p=2, dim=1)
-
-    if settings.orthogonalize_direction:
-        # Implements https://huggingface.co/blog/grimjim/projected-abliteration
-        # Adjust the residual directions so that only the component that is
-        # orthogonal to the good direction is subtracted during abliteration.
-        good_directions = F.normalize(good_means, p=2, dim=1)
-        projection_vector = torch.sum(residual_directions * good_directions, dim=1)
-        residual_directions = (
-            residual_directions - projection_vector.unsqueeze(1) * good_directions
+    if settings.abliteration_method == AbliterationMethod.ARA:
+        assert calibration_manifest is not None
+        assert model.adapter_initial_state is not None
+        print()
+        print("Capturing clean CARA module I/O...")
+        print("* Capturing good prompts...")
+        good_module_io = model.capture_ara_module_io(good_prompts)
+        print("* Capturing bad prompts...")
+        bad_module_io = model.capture_ara_module_io(bad_prompts)
+        calibration_bank = ara.build_calibration_bank(good_module_io, bad_module_io)
+        calibration_fingerprint = trial_methods.canonical_fingerprint(
+            asdict(calibration_manifest)
         )
-        residual_directions = F.normalize(residual_directions, p=2, dim=1)
-        del good_directions, projection_vector
-
-    del good_means, bad_means
+        method_artifacts = ara.ARAArtifacts(
+            calibration_bank=calibration_bank,
+            adapter_initial_state=model.adapter_initial_state,
+            calibration_manifest=calibration_manifest,
+            model_fingerprint=model.model_fingerprint,
+            study_fingerprint=study_fingerprint,
+            targets=model.ara_targets,
+            optimizer_config=ara.ARAOptimizerConfig(
+                max_iter=settings.ara_lbfgs_max_iter,
+                history_size=settings.ara_lbfgs_history_size,
+                temperature=settings.ara_softmin_temperature,
+            ),
+        )
+    else:
+        calibration_fingerprint = None
+        method_artifacts = workflow.prepare_directional_artifacts(
+            settings, model, good_prompts, bad_prompts
+        )
 
     # Clear cache before starting the optimization study.
     # This should free up memory from the objects released with the del statements above.
@@ -593,83 +531,16 @@ def run():
         trial_index += 1
         trial.set_user_attr("index", trial_index)
 
-        direction_scope = trial.suggest_categorical(
-            "direction_scope",
-            [
-                "global",
-                "per layer",
-            ],
+        method_context = trial_methods.MethodContext(
+            settings=settings,
+            layer_count=len(model.get_layers()),
+            components=tuple(model.get_abliterable_components()),
         )
-
-        last_layer_index = len(model.get_layers()) - 1
-
-        # Discrimination between "harmful" and "harmless" inputs is usually strongest
-        # in layers slightly past the midpoint of the layer stack. See the original
-        # abliteration paper (https://arxiv.org/abs/2406.11717) for a deeper analysis.
-        #
-        # Note that we always sample this parameter even though we only need it for
-        # the "global" direction scope. The reason is that multivariate TPE doesn't
-        # work with conditional or variable-range parameters.
-        direction_index = trial.suggest_float(
-            "direction_index",
-            0.4 * last_layer_index,
-            0.9 * last_layer_index,
-        )
-
-        if direction_scope == "per layer":
-            direction_index = None
-
-        parameters = {}
-
-        for component in model.get_abliterable_components():
-            # The parameter ranges are based on experiments with various models
-            # and much wider ranges. They are not set in stone and might have to be
-            # adjusted for future models.
-            #
-            # The MLP gets a negative lower bound that is then clamped to 0, so the
-            # optimizer can fully disable its ablation. The clamp puts a positive
-            # probability mass on exactly 0 (the continuous sampler would otherwise
-            # reach 0 with probability zero). Ablating the MLP is often unnecessary for
-            # removing refusals and tends to damage model intelligence more than
-            # ablating the attention output, so on many models the optimum is to leave
-            # it (mostly) untouched. See issue #202.
-            max_weight_lower_bound = -0.25 if component == "mlp.down_proj" else 0.8
-            max_weight = max(
-                0.0,
-                trial.suggest_float(
-                    f"{component}.max_weight",
-                    max_weight_lower_bound,
-                    1.5,
-                ),
-            )
-            max_weight_position = trial.suggest_float(
-                f"{component}.max_weight_position",
-                0.6 * last_layer_index,
-                1.0 * last_layer_index,
-            )
-            # For sampling purposes, min_weight is expressed as a fraction of max_weight,
-            # again because multivariate TPE doesn't support variable-range parameters.
-            # The value is transformed into the actual min_weight value below.
-            min_weight = trial.suggest_float(
-                f"{component}.min_weight",
-                0.0,
-                1.0,
-            )
-            min_weight_distance = trial.suggest_float(
-                f"{component}.min_weight_distance",
-                1.0,
-                max(0.6 * last_layer_index, 1.0),
-            )
-
-            parameters[component] = AbliterationParameters(
-                max_weight=max_weight,
-                max_weight_position=max_weight_position,
-                min_weight=(min_weight * max_weight),
-                min_weight_distance=min_weight_distance,
-            )
-
-        trial.set_user_attr("direction_index", direction_index)
-        trial.set_user_attr("parameters", {k: asdict(v) for k, v in parameters.items()})
+        parameters = trial_methods.sample_method_parameters(trial, method_context)
+        trial.set_user_attr("model_fingerprint", model.model_fingerprint)
+        trial.set_user_attr("study_fingerprint", study_fingerprint)
+        if calibration_fingerprint is not None:
+            trial.set_user_attr("calibration_fingerprint", calibration_fingerprint)
 
         print()
         print(
@@ -678,12 +549,15 @@ def run():
         print("* Parameters:")
         for name, value in get_trial_parameters(trial).items():
             print(f"  * {name} = [bold]{value}[/]")
-        print("* Resetting model...")
-        model.reset_model()
         print("* Abliterating...")
-        model.abliterate(residual_directions, direction_index, parameters)
-        print("* Evaluating...")
-        scores = evaluator.get_scores()
+        try:
+            summary = trial_methods.apply_trial(model, parameters, method_artifacts)
+            if summary.ara is not None:
+                trial.set_user_attr("ara_summary", asdict(summary.ara))
+            print("* Evaluating...")
+            scores = evaluator.get_scores()
+        finally:
+            trial_methods.cleanup_trial(model, method_artifacts)
         objective_values = evaluator.get_objective_values(scores)
 
         print("  * Metrics:")
@@ -711,12 +585,25 @@ def run():
     def objective_wrapper(trial: Trial) -> tuple[float, ...]:
         try:
             return objective(trial)
+        except ara.ARAOptimizationError as error:
+            trial.set_user_attr("failure", trial_methods.failure_record(error, "ara"))
+            raise TrialPruned() from error
+        except torch.OutOfMemoryError as error:
+            trial.set_user_attr("failure", trial_methods.failure_record(error, "oom"))
+            trial_methods.cleanup_trial(model, method_artifacts)
+            empty_cache()
+            try:
+                model.generate(good_prompts[:1], max_new_tokens=1, use_cache=False)
+            except Exception:
+                raise error
+            raise TrialPruned() from error
         except KeyboardInterrupt:
-            # Stop the study gracefully on Ctrl+C.
             trial.study.stop()
-            raise TrialPruned()
+            raise
+        except BaseException as error:
+            trial.set_user_attr("failure", trial_methods.failure_record(error, "trial"))
+            raise
 
-    # Derive objective info from the configured scorers.
     objective_names = evaluator.get_objective_names()
     directions = evaluator.get_objective_directions()
 
@@ -735,6 +622,8 @@ def run():
         )
 
         study.set_user_attr("settings", settings.model_dump_json())
+        study.set_user_attr("study_fingerprint", study_fingerprint)
+        study.set_user_attr("study_manifest", study_manifest)
         study.set_user_attr("finished", False)
 
         start_index = trial_index = len(study.trials)
@@ -757,7 +646,7 @@ def run():
             study.set_user_attr("finished", True)
 
     trial_loop_active = True
-
+    automatic_trial = None
     while trial_loop_active:
         if not reproduction_mode:
             # If no trials at all have been evaluated, the study must have been stopped
@@ -784,6 +673,37 @@ def run():
                     for name in objective_names
                 ),
             )
+
+            if settings.acceptance_gate is not None:
+                try:
+                    automatic_trial = workflow.select_for_acceptance(
+                        study.trials,
+                        settings.acceptance_gate,
+                        study_fingerprint,
+                        settings.model,
+                    )
+                except trial_methods.AcceptanceGateError as error:
+                    trial_methods.write_acceptance_report(
+                        settings.acceptance_gate.report_path,
+                        trial_methods.AcceptanceReport(
+                            status="failed",
+                            reason=trial_methods.safe_failure_reason(error),
+                            model_fingerprint=model.model_fingerprint,
+                            study_fingerprint=study_fingerprint,
+                            calibration_fingerprint=calibration_fingerprint,
+                        ),
+                    )
+                    print(f"[red]Acceptance gate failed: {error}[/]")
+                    return
+                automatic_trial.user_attrs["failure_trials"] = (
+                    trial_methods.collect_failure_records(study.trials)
+                )
+                selection_path = Path(study_checkpoint_file).with_suffix(
+                    ".selection.jsonl"
+                )
+                trial_methods.append_selection_record(
+                    selection_path, automatic_trial, study_fingerprint
+                )
 
             def format_trial_title(trial: FrozenTrial) -> str:
                 prefix = f"[Trial {trial.user_attrs['index']:>3}]"
@@ -834,19 +754,13 @@ def run():
 
         while trial_loop_active:
             # Ensure a predefined trial is only processed once.
-            if settings.trial_index is not None:
+            if settings.trial_index is not None or automatic_trial is not None:
                 trial_loop_active = False
 
             if reproduction_mode:
-                parameters = reproduction_information["parameters"]
-
-                trial = create_trial(
-                    values=[],
-                    user_attrs={
-                        "direction_index": parameters["direction_index"],
-                        "parameters": parameters["abliteration_parameters"],
-                        "scores": reproduction_information["scores"],
-                    },
+                assert reproduction_parameters is not None
+                trial = workflow.make_reproduction_trial(
+                    reproduction_information, reproduction_parameters
                 )
 
                 print()
@@ -856,9 +770,13 @@ def run():
                     print()
 
                 trial = ask_if_unset(
-                    None
-                    if settings.trial_index is None
-                    else sorted_trials[settings.trial_index],
+                    automatic_trial
+                    if automatic_trial is not None
+                    else (
+                        None
+                        if settings.trial_index is None
+                        else sorted_trials[settings.trial_index]
+                    ),
                     questionary.select(
                         "Which trial do you want to use?",
                         choices=choices,
@@ -922,23 +840,46 @@ def run():
             # to restore the previous LoRA-ified state.
             def reset_trial_model():
                 print("* Resetting model...")
-                model.reset_model()
                 print("* Abliterating...")
-                model.abliterate(
-                    residual_directions,
-                    trial.user_attrs["direction_index"],
-                    {
-                        k: AbliterationParameters(**v)
-                        for k, v in trial.user_attrs["parameters"].items()
-                    },
+                trial_methods.apply_trial(
+                    model,
+                    trial_methods.parameters_from_trial(trial),
+                    method_artifacts,
                 )
 
             reset_trial_model()
 
+            acceptance_audit_records = None
+            if settings.acceptance_gate is not None:
+                runtime = workflow.AcceptanceRuntime(
+                    settings, model, method_artifacts, evaluator
+                )
+                try:
+                    acceptance_audit_records = workflow.run_acceptance_gate(
+                        runtime,
+                        cast(FrozenTrial, trial),
+                    )
+                except BaseException as error:
+                    trial_methods.cleanup_trial(model, method_artifacts)
+                    trial_methods.write_acceptance_report(
+                        settings.acceptance_gate.report_path,
+                        trial_methods.AcceptanceReport(
+                            status="failed",
+                            reason=trial_methods.safe_failure_reason(error),
+                            model_fingerprint=model.model_fingerprint,
+                            study_fingerprint=study_fingerprint,
+                            calibration_fingerprint=calibration_fingerprint,
+                            selected_trial_number=trial.number,
+                            parameters=trial_methods.parameter_envelope(
+                                trial_methods.parameters_from_trial(trial)
+                            ),
+                        ),
+                    )
+                    raise
+
             action_loop_active = True
 
             while action_loop_active:
-                # Ensure a predefined action is only executed once.
                 if settings.model_action is not None:
                     action_loop_active = False
 
@@ -983,9 +924,6 @@ def run():
                     else:
                         break
 
-                # All actions are wrapped in a try/except block so that if an error occurs,
-                # another action can be tried, instead of the program crashing and losing
-                # the optimized model.
                 try:
                     match action:
                         case "save":
@@ -999,11 +937,60 @@ def run():
                             if not save_directory:
                                 continue
 
-                            strategy = obtain_export_strategy(settings, model)
+                            strategy = workflow.obtain_export_strategy(settings, model)
                             if strategy is None:
                                 continue
 
-                            if strategy == ExportStrategy.ADAPTER:
+                            if settings.acceptance_gate is not None:
+                                if strategy != ExportStrategy.ADAPTER:
+                                    raise ValueError(
+                                        "CARA acceptance export requires adapter strategy"
+                                    )
+                                if acceptance_audit_records is None:
+                                    raise RuntimeError(
+                                        "acceptance audit has not completed"
+                                    )
+                                export_evidence = workflow.AcceptedExport(
+                                    runtime=workflow.AcceptanceRuntime(
+                                        settings,
+                                        model,
+                                        method_artifacts,
+                                        evaluator,
+                                    ),
+                                    trial=cast(FrozenTrial, trial),
+                                    audit_scores=acceptance_audit_records,
+                                    study_fingerprint=study_fingerprint,
+                                    calibration_fingerprint=calibration_fingerprint,
+                                    checkpoint_path=study_checkpoint_file,
+                                )
+                                try:
+                                    workflow.export_accepted_adapter(
+                                        Path(save_directory), export_evidence
+                                    )
+                                except BaseException as error:
+                                    action_loop_active = False
+                                    trial_methods.write_acceptance_report(
+                                        settings.acceptance_gate.report_path,
+                                        trial_methods.AcceptanceReport(
+                                            status="failed",
+                                            reason=trial_methods.safe_failure_reason(
+                                                error
+                                            ),
+                                            model_fingerprint=model.model_fingerprint,
+                                            study_fingerprint=study_fingerprint,
+                                            calibration_fingerprint=calibration_fingerprint,
+                                            selected_trial_number=trial.number,
+                                            parameters=trial_methods.parameter_envelope(
+                                                trial_methods.parameters_from_trial(
+                                                    trial
+                                                )
+                                            ),
+                                            audit_scores=acceptance_audit_records,
+                                        ),
+                                    )
+                                    raise
+                                action_loop_active = False
+                            elif strategy == ExportStrategy.ADAPTER:
                                 print("Saving LoRA adapter...")
                                 model.model.save_pretrained(
                                     save_directory,
@@ -1042,18 +1029,19 @@ def run():
                                                 f"[bold]{filename}:[/] [green]Hash matches[/]"
                                             )
                                         else:
-                                            print(
-                                                f"[bold]{filename}:[/] [yellow]Hash doesn't match[/]"
+                                            raise RuntimeError(
+                                                f"reproduced file hash mismatch: {filename}"
                                             )
                                     else:
-                                        print(
-                                            f"[bold]{filename}:[/] [red]File not found[/]"
+                                        raise RuntimeError(
+                                            f"reproduced file is missing: {filename}"
                                         )
 
                         case "upload":
-                            # We don't use huggingface_hub.login() because that stores the token on disk,
-                            # and since this program will often be run on rented or shared GPU servers,
-                            # it's better to not persist credentials.
+                            if settings.acceptance_gate is not None:
+                                raise ValueError(
+                                    "CARA gate requires verified local staging"
+                                )
                             token = huggingface_hub.get_token()
                             if not token:
                                 # NOTE: Unlike for most other values obtained from interactive inputs, it is
@@ -1106,7 +1094,7 @@ def run():
                                 continue
                             private = visibility == "Private"
 
-                            strategy = obtain_export_strategy(settings, model)
+                            strategy = workflow.obtain_export_strategy(settings, model)
                             if strategy is None:
                                 continue
 

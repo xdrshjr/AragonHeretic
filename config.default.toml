@@ -1,6 +1,10 @@
 # Rename this file to config.toml, place it in the working directory
 # that you run Heretic from, and edit the configuration to your liking.
 
+# Abliteration method. "directional" preserves the existing residual-direction
+# workflow; "ara" enables Calibrated Arbitrary-Rank Ablation with a LoRA adapter.
+abliteration_method = "directional"
+
 # List of PyTorch dtypes to try when loading model tensors.
 # If loading with a dtype fails, the next dtype in the list will be tried.
 dtypes = [
@@ -41,6 +45,14 @@ max_batch_size = 128
 
 # Maximum number of tokens to generate for each response.
 max_response_length = 100
+
+# Extra tokenizer chat-template arguments. Heretic reserves `tokenize`,
+# `add_generation_prompt`, and `continue_final_message`.
+chat_template_kwargs = {}
+
+# Extra model generation arguments. Heretic keeps greedy generation by default.
+# `pad_token_id`, `streamer`, `input_ids`, and `attention_mask` are reserved.
+generation_kwargs = {}
 
 # List of pairs of the form [cot_initializer, closed_cot_block] used to skip
 # the Chain-of-Thought block in responses, so that evaluation happens
@@ -110,6 +122,25 @@ row_normalization = "full"
 # and this determines the rank of that approximation. Higher ranks produce
 # larger output files and may slow down evaluation.
 full_normalization_lora_rank = 3
+
+# Ordered projection components targeted by either method. Unknown names are
+# rejected and duplicates are removed while preserving this order.
+target_components = ["attn.o_proj", "mlp.down_proj"]
+
+# CARA uses a high-rank FP32 LoRA on top of a frozen (optionally 4-bit) base.
+# CARA requires row_normalization = "none".
+ara_lora_rank = 128
+
+# Number of good and bad prompts sampled once from their calibration pools.
+ara_calibration_size = 64
+
+# Capture is intentionally independent from the response-scoring batch size.
+ara_capture_batch_size = 1
+
+# CARA soft-neighbor distance and local L-BFGS optimizer settings.
+ara_softmin_temperature = 0.10
+ara_lbfgs_max_iter = 20
+ara_lbfgs_history_size = 10
 
 # The symmetric winsorization to apply to the per-prompt, per-layer residual vectors,
 # expressed as the quantile to clamp to (between 0 and 1). Disabled by default.
@@ -224,3 +255,8 @@ column = "text"
 dataset = "mlabonne/harmless_alpaca"
 split = "test[:100]"
 column = "text"
+
+# An optional acceptance gate can automatically select a unique CARA trial and
+# require an independent audit. Keep this table absent for the default
+# interactive directional workflow. See config.qwen38-27b-cara.toml for a fully
+# pinned example and all required fields.
