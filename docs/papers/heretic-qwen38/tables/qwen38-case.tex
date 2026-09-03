@@ -1,5 +1,5 @@
 \begin{table*}[t]
-  \caption{Qwen3.8-27B 架构与第三方 Heretic 实践的证据卡}
+  \caption{Qwen3.8-27B 架构与第三方方向消融实践的证据卡}
   \label{tab:qwen-case}
   \centering
   \scriptsize
@@ -8,10 +8,10 @@
     条目 & 事实 & 来源类型 & 复现状态 & 主要限制 \\
     \midrule
     官方架构 & 27B、hidden size 5120、64 层；16 个重复块各含三层 Gated DeltaNet 和一层 Gated Attention；原生上下文 262,144~\cite{qwen38official} & official-external & 固定模型卡 revision & 官方声明不是本文测量；模型另含视觉编码器与 MTP \\
-    主案例配置 & 单张 RTX 5090 32 GB；Heretic \code{bedb94e}；350 trials、60 startup；方向数据 good/bad 各 400，评估 harmful/harmless 各 100~\cite{qwen38maincase} & third-party-report & 基础模型 revision：\code{not reported} & WebUI 禁用 thinking 不是当前 Heretic CLI 字段；数据集 commit 与完整 journal 未随卡提供 \\
+    主案例配置 & 单张 RTX 5090 32 GB；系统提交 \code{bedb94e}；350 trials、60 startup；方向数据 good/bad 各 400，评估 harmful/harmless 各 100~\cite{qwen38maincase} & third-party-report & 基础模型 revision：\code{not reported} & WebUI 禁用 thinking 不是当前系统 CLI 字段；数据集 commit 与完整 journal 未随卡提供 \\
     主案例分值 & 模型卡报告基础模型关键词拒答 99/100，派生模型 4/100；无害提示首 token KL 为 0.0796~\cite{qwen38maincase} & third-party-report & 本文未独立复现 & 关键词率和首 token KL 都是代理；未跑 MMLU、GSM8K、编程、视觉或正常思考基准 \\
     主案例精度链 & 在 bitsandbytes 4-bit 副本上搜索，在中央处理器上将 adapter 合并到 16 位脑浮点（bfloat16，BF16）权重~\cite{qwen38maincase} & third-party-report & BF16 合并模型未复评分 & 选择 trial 的数值系统与发布权重不同，不能把 4-bit 分值直接归于 BF16 工件 \\
-    辅助案例 & Heretic 1.4.0；200/60 trials；显式 \code{response\_prefix="\textbackslash n</think>\textbackslash n\textbackslash n"}；报告 98$\rightarrow$27/100 与 KL 0.0446~\cite{qwen38auxcase} & third-party-report & 基础模型固定到 \code{1d4bf0f}; 本文未复现 & 仅用于模板切点与兼容性观察；不得同主案例合并统计，中文、视觉与 MTP 未评估 \\
+    辅助案例 & 系统版本 1.4.0；200/60 trials；显式 \code{response\_prefix="\textbackslash n</think>\textbackslash n\textbackslash n"}；报告 98$\rightarrow$27/100 与 KL 0.0446~\cite{qwen38auxcase} & third-party-report & 基础模型固定到 \code{1d4bf0f}; 本文未复现 & 仅用于模板切点与兼容性观察；不得同主案例合并统计，中文、视觉与 MTP 未评估 \\
     \bottomrule
   \end{tabularx}
 \end{table*}

@@ -2,7 +2,7 @@
 
 \subsection{端到端执行顺序}
 
-Heretic 的执行顺序决定了各分值的含义。图~\ref{fig:pipeline} 从配置解析开始：系统在 seed 为空时生成随机数，再由 Transformers 同时设置 Python、NumPy 与 PyTorch 随机状态。\code{Model} 随后从同一模型标识和可选 \code{model\_commit} 加载 tokenizer、可选 processor 与模型，发现可消融模块，并初始化零增量 LoRA。模型和文本处理器没有彼此独立的 revision 参数。
+该系统的执行顺序决定了各分值的含义。图~\ref{fig:pipeline} 从配置解析开始：系统在 seed 为空时生成随机数，再由 Transformers 同时设置 Python、NumPy 与 PyTorch 随机状态。\code{Model} 随后从同一模型标识和可选 \code{model\_commit} 加载 tokenizer、可选 processor 与模型，发现可消融模块，并初始化零增量 LoRA。模型和文本处理器没有彼此独立的 revision 参数。
 
 \input{figures/pipeline}
 

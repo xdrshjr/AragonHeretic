@@ -2,7 +2,7 @@
 
 \usepackage{iftex}
 \ifXeTeX\else
-  \PackageError{heretic-paper}{This paper requires XeLaTeX}{Run latexmk -xelatex paper.tex}
+  \PackageError{paper-build}{This paper requires XeLaTeX}{Run the PowerShell build script}
 \fi
 
 \usepackage{xeCJK}
@@ -24,8 +24,7 @@
 \newcommand{\code}[1]{\texttt{#1}}
 \urlstyle{same}
 
-\title{Heretic：基于多目标优化方向消融的自动化大模型拒答抑制\\
-\large Qwen3.8-27B 公开实践的源码可追踪分析}
+\title{多目标优化方向消融的自动化大模型拒答抑制}
 
 \author{\IEEEauthorblockN{匿名作者（投稿占位）}
 \IEEEauthorblockA{匿名单位（投稿占位）\\

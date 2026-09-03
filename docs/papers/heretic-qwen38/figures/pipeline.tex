@@ -39,7 +39,7 @@
       {缓存基线供比较} (scoring);
   \end{tikzpicture}%
   }
-  \caption{Heretic 在固定源码基线中的端到端执行顺序。Evaluator 先加载 scorer
+  \caption{自动化系统在固定源码基线中的端到端执行顺序。Evaluator 先加载 scorer
   自有评估数据并缓存未消融 baseline，方向计算完成后各 trial 才调用 scorer 评分；
   方向数据与评估数据角色分离。本地保存不会自动生成复现包，虚线表示状态依赖或
   满足数据固定、内置可复现 scorer 与 Hub 上传等条件后的可选分支。}

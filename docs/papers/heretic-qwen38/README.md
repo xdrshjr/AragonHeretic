@@ -1,4 +1,4 @@
-# Heretic 与 Qwen3.8-27B 中文 IEEE 论文
+# 多目标优化方向消融的自动化大模型拒答抑制
 
 本目录保存论文的可审查事实源。入口为 `paper.tex`，正文按章节拆分，图形由 TikZ 源码生成，公开案例数据保存在 `evidence/` 的 RFC 4180 CSV 中。`paper.pdf` 是构建工件，不是事实源。
 
@@ -10,14 +10,14 @@
 | --- | --- |
 | 论文源码 | 源码静态验收通过（19 个计划文件，13 个唯一 label，11 个有效交叉引用、对应 10 个唯一目标，10 个已解析引用键） |
 | CSV 解析 | 通过（39 条 claim、2 条独立案例；表头、列数、证据枚举和主案例强制字段已核对） |
-| `latexmk` / XeLaTeX / BibTeX | 当前环境未安装 |
-| PDF 构建 | `not run` |
-| `paper.pdf` SHA-256 | `not applicable`（尚未生成） |
+| 构建工具链 | MiKTeX 25.12；MiKTeX-XeTeX 4.16；MiKTeX-BibTeX 4.2 |
+| PDF 构建 | 通过 `build.ps1 -Clean`，7 页，Letter 纸张 |
+| `paper.pdf` SHA-256 | `A01BEE3F763A04D2501BC38A151B6B2ADFFFD3EEC8CB5CACF4A0EF3B7AB1DE72` |
 | `git diff --check` | 已运行并返回 0；论文目录当前为未跟踪文件，另行执行的全文件尾随空白检查通过 |
 
-当前状态仅表示源码交付，不能解读为 PDF 发布验收通过。获得可用的 TeX 环境后，仍须执行两次构建、日志检查、字体检查和 PDF 可搜索性检查。
+本次构建已完成引用收敛、日志检查、字体嵌入检查、首页渲染检查和 PDF 可搜索性检查。最终日志中没有未解析引用、未解析交叉引用、overfull box 或缺字；PDF 可提取 17,632 个字符，其中 7,861 个为汉字。提交目标会议前仍需按当年要求人工核对页限、匿名、伦理和版权规则。
 
-静态验收还确认：所有 `\input` 路径存在；`\label` 唯一且每个 `\ref`/`\eqref` 均有目标；正文引用键与 `references.bib` 双向一致；两个 CSV 可由 Python `csv.DictReader` 以 UTF-8 和 `newline=''` 解析；计划目录内没有额外构建工件。当前 Git HEAD 为 `bedb94ef117a271532ac2058447fbc165d5051bd`。由于论文目录尚未被跟踪，`git diff --check` 不会读取其中的新增文件，因此另行对全部 19 个文件执行了尾随空白检查。
+静态验收还确认：所有 `\input` 路径存在；`\label` 唯一且每个 `\ref`/`\eqref` 均有目标；正文引用键与 `references.bib` 双向一致；两个 CSV 可由 Python `csv.DictReader` 以 UTF-8 和 `newline=''` 解析。当前 Git HEAD 为 `bedb94ef117a271532ac2058447fbc165d5051bd`。由于论文目录尚未被跟踪，`git diff --check` 不会读取其中的新增文件，因此另行对源码文件执行了尾随空白检查。
 
 ## 工具链
 
@@ -29,11 +29,24 @@
 - PGF/TikZ 及 `arrows.meta`、`calc`、`fit`、`positioning`、`shapes.geometric` 库；
 - FandolSong、FandolHei 与 FandolFang 字体。
 
-当前机器没有 TeX 工具，以上版本目标尚未在本机验证。发布者应在构建日志中记录 `latexmk -v`、`xelatex --version`、`bibtex --version`、TeX Live 年份、`IEEEtran.cls`、`xeCJK.sty`、PGF/TikZ 与 Fandol 字体的实际版本。
+本次已在 MiKTeX 25.12 上完成构建验证，并安装 Fandol 字体包。发布者在其他环境重建时仍应记录 `xelatex --version`、`bibtex --version`、TeX 发行版、`IEEEtran.cls`、`xeCJK.sty`、PGF/TikZ 与 Fandol 字体的实际版本。
 
 ## 离线构建
 
-在本目录运行：
+在 Windows PowerShell 中一键构建：
+
+```powershell
+.\build.ps1
+```
+
+如需先清理旧构建文件，或在成功后自动打开 PDF：
+
+```powershell
+.\build.ps1 -Clean
+.\build.ps1 -Open
+```
+
+脚本会检查 XeLaTeX 和 BibTeX，执行 `XeLaTeX → BibTeX → XeLaTeX × 2`，扫描常见日志警告，并输出 `paper.pdf` 的路径、大小与 SHA-256；不依赖 Perl。也可在带 Perl 的 TeX 环境中手动运行：
 
 ```text
 latexmk -xelatex paper.tex
@@ -69,7 +82,7 @@ Get-FileHash -Algorithm SHA256 paper.pdf  # Windows PowerShell
 
 ## 证据更新流程
 
-论文项目固定到 Heretic 提交 `bedb94ef117a271532ac2058447fbc165d5051bd`，Qwen 官方卡固定到 `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`，主案例固定到 `a19c62b58f9b2cbaac9ab6343aeacef4442f3f94`，辅助案例固定到 `1d759df09209def0a089f5c9250130af82ebf41c`。更新来源时应：
+论文项目固定到源码提交 `bedb94ef117a271532ac2058447fbc165d5051bd`，Qwen 官方卡固定到 `1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0`，主案例固定到 `a19c62b58f9b2cbaac9ab6343aeacef4442f3f94`，辅助案例固定到 `1d759df09209def0a089f5c9250130af82ebf41c`。更新来源时应：
 
 1. 新增或替换明确的 commit URL，不把可变 `main` 页面当作冻结证据；
 2. 先更新 `evidence/qwen38-case.csv` 和 `evidence/claim-traceability.csv`；
