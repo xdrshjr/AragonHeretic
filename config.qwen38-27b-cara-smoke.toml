@@ -1,0 +1,70 @@
+# Minimal single-GPU smoke test for the calibrated ARA workflow.
+# This intentionally validates plumbing, not model quality. Run it through
+# scripts/run_qwen38_27b_cara_smoke.sh so every invocation gets an isolated
+# checkpoint, log, and adapter directory.
+
+model = "/root/autodl-fs/models/Qwen3.8-27B"
+abliteration_method = "ara"
+dtypes = ["bfloat16"]
+quantization = "none"
+device_map = "auto"
+max_memory = { "0" = "90GiB", cpu = "850GiB" }
+offload_outputs_to_cpu = true
+
+batch_size = 1
+max_batch_size = 1
+max_response_length = 16
+chat_template_kwargs = { enable_thinking = false }
+generation_kwargs = { do_sample = false }
+response_prefix = ""
+seed = 42
+
+target_components = ["attn.o_proj", "mlp.down_proj"]
+row_normalization = "none"
+ara_lora_rank = 8
+ara_calibration_size = 2
+ara_capture_batch_size = 1
+ara_softmin_temperature = 0.10
+ara_lbfgs_max_iter = 1
+ara_lbfgs_history_size = 2
+
+n_trials = 1
+n_startup_trials = 1
+study_checkpoint_dir = "checkpoints"
+export_strategy = "adapter"
+trial_index = 0
+model_action = "save"
+save_directory = "adapter"
+print_debug_information = true
+
+scorers = [
+    { plugin = "heretic.scorers.keyword_rate.KeywordRate", optimization = "minimize" },
+    { plugin = "heretic.scorers.kl_divergence.KLDivergence", optimization = "minimize" },
+]
+
+[good_prompts]
+dataset = "mlabonne/harmless_alpaca"
+commit = "02c6a92cfcf11bb0c387334f8146d149d65b587f"
+split = "train[:4]"
+column = "text"
+
+[bad_prompts]
+dataset = "mlabonne/harmful_behaviors"
+commit = "01cead01398926d81f7c52bdb790ee8cf77ebba7"
+split = "train[:4]"
+column = "text"
+
+[scorer.KeywordRate]
+print_responses = false
+
+[scorer.KeywordRate.prompts]
+dataset = "mlabonne/harmful_behaviors"
+commit = "01cead01398926d81f7c52bdb790ee8cf77ebba7"
+split = "train[4:6]"
+column = "text"
+
+[scorer.KLDivergence.prompts]
+dataset = "mlabonne/harmless_alpaca"
+commit = "02c6a92cfcf11bb0c387334f8146d149d65b587f"
+split = "train[4:6]"
+column = "text"

@@ -506,6 +506,11 @@ def failure_record(error: BaseException, stage: str) -> dict[str, Any]:
     return {"type": type(error).__name__, "stage": stage, "message": str(error)[:500]}
 
 
+def failure_constraint(trial: FrozenTrial) -> tuple[float]:
+    """Keep value-less failed trials out of TPE's multi-objective model."""
+    return (1.0 if "failure" in trial.user_attrs else 0.0,)
+
+
 def safe_failure_reason(error: BaseException) -> str:
     """Remove local absolute roots before persisting an error reason."""
     message = str(error)[:1000]

@@ -619,20 +619,21 @@ def _ensure_finite(stage: str, key: ModuleKey, **values: Tensor) -> None:
 
 
 def _canonical_factors(lora_a: Tensor, lora_b: Tensor) -> tuple[Tensor, Tensor, Tensor]:
+    lora_a, lora_b = lora_a.detach().double(), lora_b.detach().double()
     q_a, r_a = torch.linalg.qr(lora_a.T, mode="reduced")
     q_b, r_b = torch.linalg.qr(lora_b, mode="reduced")
     u, singular_values, vh = torch.linalg.svd(r_b @ r_a.T, full_matrices=False)
     square_roots = singular_values.clamp_min(0).sqrt()
     candidate_b = (q_b @ u) * square_roots.unsqueeze(0)
     candidate_a = square_roots.unsqueeze(1) * (vh @ q_a.T)
-    return candidate_a, candidate_b, singular_values
+    return candidate_a.float(), candidate_b.float(), singular_values.float()
 
 
 def _canonicalize(
     calibration: ARACalibration, lora_a: Tensor, lora_b: Tensor
 ) -> tuple[float, float]:
     inputs = torch.cat((calibration.good_inputs, calibration.bad_inputs))
-    before = (inputs @ lora_a.T) @ lora_b.T
+    before = (inputs @ lora_a.detach().T) @ lora_b.detach().T
     candidate_a, candidate_b, singular_values = _canonical_factors(lora_a, lora_b)
     _ensure_finite(
         "canonicalization",
@@ -642,16 +643,25 @@ def _canonicalize(
         singular_values=singular_values,
     )
     after = (inputs @ candidate_a.T) @ candidate_b.T
-    error = float((after - before).abs().max().item())
-    if not torch.allclose(before, after, rtol=1e-5, atol=1e-6):
+    difference = after - before
+    error = float(difference.abs().max().item())
+    relative_error = (
+        torch.linalg.vector_norm(difference)
+        .div(torch.linalg.vector_norm(before).clamp_min(MIN_SCALE))
+        .item()
+    )
+    maximum_relative_error = float(
+        difference.abs().max().div(before.abs().max().clamp_min(MIN_SCALE)).item()
+    )
+    if relative_error > 1e-5 or maximum_relative_error > 1e-4:
         raise ARAOptimizationError(
             "canonicalization",
-            f"deployment output changed by {error:.3e}",
+            f"deployment output changed by {error:.3e}; relative errors "
+            f"norm={relative_error:.3e}, max={maximum_relative_error:.3e}",
             calibration.key,
         )
-    with torch.no_grad():
-        lora_a.copy_(candidate_a)
-        lora_b.copy_(candidate_b)
+    lora_a.detach().copy_(candidate_a)
+    lora_b.detach().copy_(candidate_b)
     maximum = float(singular_values.max().item()) if len(singular_values) else 0.0
     return error, maximum
 

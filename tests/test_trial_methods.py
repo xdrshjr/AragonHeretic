@@ -9,7 +9,8 @@ from unittest.mock import patch
 
 import optuna
 import torch
-from optuna import Trial
+from optuna import Trial, TrialPruned
+from optuna.samplers import TPESampler
 from optuna.trial import FixedTrial, TrialState, create_trial
 
 from heretic.ara import ARAComponentParameters, ARAParameters
@@ -26,6 +27,7 @@ from heretic.trial_methods import (
     MethodContext,
     build_study_fingerprint,
     cleanup_trial,
+    failure_constraint,
     parameter_envelope,
     parse_parameter_envelope,
     sample_method_parameters,
@@ -90,6 +92,27 @@ def trial(
 
 
 class TrialMethodTests(unittest.TestCase):
+    def test_tpe_handles_only_pruned_multiobjective_startup_trials(self) -> None:
+        sampler = TPESampler(
+            n_startup_trials=36,
+            multivariate=True,
+            seed=42,
+            constraints_func=failure_constraint,
+        )
+        study = optuna.create_study(
+            directions=["minimize", "minimize"], sampler=sampler
+        )
+
+        def objective(current: Trial):
+            current.suggest_float("value", 0.0, 1.0)
+            current.set_user_attr("failure", {"stage": "synthetic"})
+            raise TrialPruned()
+
+        study.optimize(objective, n_trials=37)
+
+        self.assertEqual(len(study.trials), 37)
+        self.assertTrue(all(item.state == TrialState.PRUNED for item in study.trials))
+
     def test_ara_parameter_envelope_round_trip(self) -> None:
         original = ARAParameters(
             2,

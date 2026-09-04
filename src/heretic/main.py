@@ -614,6 +614,7 @@ def run():
                 n_ei_candidates=128,
                 multivariate=True,
                 seed=settings.seed,
+                constraints_func=trial_methods.failure_constraint,
             ),
             storage=storage,
             directions=directions,

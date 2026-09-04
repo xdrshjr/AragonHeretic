@@ -22,6 +22,7 @@ from heretic.ara import (
     CalibrationManifest,
     ModuleKey,
     TargetModule,
+    _canonicalize,
     build_calibration_bank,
     calculate_ara_loss,
     capture_module_io,
@@ -187,6 +188,30 @@ class ARAMathTests(unittest.TestCase):
         self.assertTrue(torch.isfinite(lora_b).all())
         self.assertIsNone(lora_a.grad)
         self.assertIsNone(lora_b.grad)
+
+    def test_canonicalization_accepts_high_rank_roundoff(self) -> None:
+        torch.manual_seed(0)
+        inputs = torch.randn(32, 64)
+        lora_a = torch.empty(16, 64)
+        torch.nn.init.kaiming_uniform_(lora_a, a=5**0.5)
+        lora_b = torch.randn(64, 16)
+        calibration = ARACalibration(
+            ModuleKey(0, "attn.o_proj", 0),
+            inputs[:16],
+            torch.zeros(16, 64),
+            inputs[16:],
+            torch.zeros(16, 64),
+            torch.tensor(1.0),
+        )
+        before = (inputs @ lora_a.T) @ lora_b.T
+
+        _canonicalize(calibration, lora_a, lora_b)
+
+        after = (inputs @ lora_a.T) @ lora_b.T
+        relative_error = torch.linalg.vector_norm(after - before) / (
+            torch.linalg.vector_norm(before)
+        )
+        self.assertLess(float(relative_error), 1e-5)
 
     def test_optimizer_rolls_back_on_failure(self) -> None:
         calibration = make_calibration()
