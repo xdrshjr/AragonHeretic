@@ -1,9 +1,7 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025-2026  Philipp Emanuel Weidmann <pew@worldwidemann.com> + contributors
-
 """Method-neutral Optuna sampling, application, and acceptance logic."""
 
-import hashlib
 import json
 import math
 import statistics
@@ -17,14 +15,13 @@ import bitsandbytes.functional as bnbf
 import torch
 import torch.nn.functional as F
 from optuna import Trial
-from optuna.trial import FrozenTrial, TrialState
+from optuna.trial import FrozenTrial
 from peft.tuners.lora.layer import Linear
 from torch import Tensor
 
 from .ara import (
     ARAArtifacts,
     ARAComponentParameters,
-    ARAOptimizationError,
     ARAOptimizationStats,
     ARAOptimizationSummary,
     ARAParameters,
@@ -32,6 +29,30 @@ from .ara import (
     optimize_ara_module,
     restore_adapter_state,
 )
+from .ara_search import (
+    ARASamplingContext,
+    ARATrajectoryParameters,
+    SEARCH_SPACE_VERSION as TRAJECTORY_SEARCH_SPACE_VERSION,
+    parameter_envelope as trajectory_parameter_envelope,
+    parse_parameter_envelope as parse_trajectory_parameter_envelope,
+    sample_v2_parameters,
+)
+from .ara_trajectory import (
+    TrajectoryCalibration,
+    TrajectoryModuleParameters,
+    TrajectoryOptimizationStats,
+    TrajectoryOptimizerConfig,
+    optimize_trajectory_module,
+)
+from .acceptance import (
+    collect_legacy_failure_records,
+    legacy_failure_constraint,
+    legacy_trial_failure_record,
+    safe_failure_reason as _safe_failure_reason,
+    select_legacy_candidate,
+    validate_legacy_gate_records,
+)
+from .artifact_schema import canonical_sha256, manifest_differences
 from .config import (
     AbliterationMethod,
     AcceptanceGate,
@@ -45,6 +66,9 @@ from .utils import print
 SEARCH_SPACE_VERSION = "cara-search-v1"
 STUDY_SCHEMA_VERSION = "cara-study-v1"
 ACCEPTANCE_SCHEMA_VERSION = "cara-acceptance-v1"
+failure_constraint = legacy_failure_constraint
+failure_record = legacy_trial_failure_record
+safe_failure_reason = _safe_failure_reason
 
 
 @dataclass(frozen=True)
@@ -80,6 +104,18 @@ class MethodApplicationSummary:
 
 
 @dataclass(frozen=True)
+class TrajectoryArtifacts:
+    """Captured trajectory bank and adapter transaction state."""
+
+    calibration_bank: Mapping[Any, TrajectoryCalibration]
+    adapter_initial_state: Any
+    targets: tuple[Any, ...]
+    optimizer_config: TrajectoryOptimizerConfig
+    trajectory_fingerprint: str
+    trajectory_manifest: Mapping[str, Any]
+
+
+@dataclass(frozen=True)
 class AcceptanceReport:
     """Machine-readable evidence envelope for an acceptance decision."""
 
@@ -109,8 +145,8 @@ class AcceptanceReport:
         return asdict(self)
 
 
-MethodParameters = DirectionalParameters | ARAParameters
-MethodArtifacts = DirectionalArtifacts | ARAArtifacts
+MethodParameters = DirectionalParameters | ARAParameters | ARATrajectoryParameters
+MethodArtifacts = DirectionalArtifacts | ARAArtifacts | TrajectoryArtifacts
 
 
 class AcceptanceGateError(RuntimeError):
@@ -179,13 +215,18 @@ def _sample_ara(trial: Trial, context: MethodContext) -> ARAParameters:
     return ARAParameters(start, end, parameters)
 
 
-def sample_method_parameters(
-    trial: Trial, context: MethodContext
-) -> DirectionalParameters | ARAParameters:
+def sample_method_parameters(trial: Trial, context: MethodContext) -> MethodParameters:
     """Sample all dimensions for the configured method without conditional ranges."""
 
     if context.settings.abliteration_method == AbliterationMethod.ARA:
-        parameters: MethodParameters = _sample_ara(trial, context)
+        if context.settings.ara_objective_version == "trajectory-v2":
+            parameters = sample_v2_parameters(
+                trial,
+                ARASamplingContext(context.layer_count),
+                context.settings.ara_search_space,
+            )
+        else:
+            parameters = _sample_ara(trial, context)
     else:
         parameters = _sample_directional(trial, context)
     store_method_parameters(trial, parameters)
@@ -207,6 +248,8 @@ def parameter_envelope(parameters: MethodParameters) -> dict[str, Any]:
 
     if isinstance(parameters, ARAParameters):
         return {"method": "ara", "payload": _ara_payload(parameters)}
+    if isinstance(parameters, ARATrajectoryParameters):
+        return trajectory_parameter_envelope(parameters)
     return {
         "method": "directional",
         "payload": {
@@ -228,6 +271,14 @@ def store_method_parameters(trial: Trial, parameters: MethodParameters) -> None:
         trial.set_user_attr("search_space_version", SEARCH_SPACE_VERSION)
         trial.set_user_attr("ara_parameters", envelope["payload"])
         return
+    if isinstance(parameters, ARATrajectoryParameters):
+        trial.set_user_attr("objective_version", "trajectory-v2")
+        trial.set_user_attr(
+            "search_space_version",
+            TRAJECTORY_SEARCH_SPACE_VERSION,
+        )
+        trial.set_user_attr("ara_parameters", envelope)
+        return
     trial.set_user_attr("direction_index", parameters.direction_index)
     trial.set_user_attr(
         "parameters",
@@ -238,6 +289,8 @@ def store_method_parameters(trial: Trial, parameters: MethodParameters) -> None:
 def parse_parameter_envelope(envelope: Mapping[str, Any]) -> MethodParameters:
     """Validate and deserialize a reproduce-v4 method envelope."""
 
+    if envelope.get("objective_version") == "trajectory-v2":
+        return parse_trajectory_parameter_envelope(envelope)
     method = envelope.get("method")
     payload = envelope.get("payload")
     if not isinstance(payload, Mapping):
@@ -277,9 +330,10 @@ def parameters_from_trial(trial: Trial | FrozenTrial) -> MethodParameters:
 
     method = trial.user_attrs.get("method", "directional")
     if method == "ara":
-        return parse_parameter_envelope(
-            {"method": "ara", "payload": trial.user_attrs["ara_parameters"]}
-        )
+        raw_envelope = trial.user_attrs["ara_parameters"]
+        if trial.user_attrs.get("objective_version") == "trajectory-v2":
+            return parse_parameter_envelope(raw_envelope)
+        return parse_parameter_envelope({"method": "ara", "payload": raw_envelope})
     return parse_parameter_envelope(
         {
             "method": "directional",
@@ -298,7 +352,12 @@ def normalize_reproduction_parameters(information: Mapping[str, Any]) -> dict[st
     raw = information.get("parameters")
     if not isinstance(raw, Mapping):
         raise ValueError("reproduction information has no parameter object")
-    if version == "3":
+    if information.get("schema") == "cara-reproduce-v2":
+        from .artifact_schema import parse_reproduce
+
+        parse_reproduce(information)
+        envelope = dict(raw)
+    elif version == "3":
         envelope = {
             "method": "directional",
             "payload": {
@@ -349,6 +408,68 @@ def _apply_ara(
         restore_adapter_state(artifacts.targets, artifacts.adapter_initial_state)
         raise
     return _summarize_ara(stats, skipped, time.perf_counter() - started_at)
+
+
+def _trajectory_component(
+    target: Any,
+    parameters: ARATrajectoryParameters,
+) -> TrajectoryModuleParameters:
+    is_attention = "attn" in target.key.component
+    return TrajectoryModuleParameters(
+        strength=(
+            parameters.attn_strength if is_attention else parameters.mlp_strength
+        ),
+        push_weight=parameters.push_weight,
+        margin=parameters.margin,
+        deployment_gain=(
+            parameters.attn_deployment_gain
+            if is_attention
+            else parameters.mlp_deployment_gain
+        ),
+    )
+
+
+def _apply_trajectory(
+    model: Model,
+    parameters: ARATrajectoryParameters,
+    artifacts: TrajectoryArtifacts,
+) -> ARAOptimizationSummary:
+    restore_adapter_state(artifacts.targets, artifacts.adapter_initial_state)
+    stats: list[TrajectoryOptimizationStats] = []
+    skipped = 0
+    started_at = time.perf_counter()
+    try:
+        for target in artifacts.targets:
+            if not (
+                parameters.start_layer_index
+                <= target.key.layer_index
+                < parameters.end_layer_index
+            ):
+                skipped += 1
+                continue
+            lora_a, lora_b = get_lora_factors(target)
+            stats.append(
+                optimize_trajectory_module(
+                    artifacts.calibration_bank[target.key],
+                    lora_a,
+                    lora_b,
+                    _trajectory_component(target, parameters),
+                    artifacts.optimizer_config,
+                )
+            )
+    except BaseException:
+        restore_adapter_state(artifacts.targets, artifacts.adapter_initial_state)
+        raise
+    losses = [item.loss for item in stats]
+    return ARAOptimizationSummary(
+        processed_modules=len(stats),
+        skipped_modules=skipped,
+        failed_modules=0,
+        median_initial_loss=0.0,
+        median_final_loss=statistics.median(losses) if losses else 0.0,
+        max_final_loss=max(losses, default=0.0),
+        elapsed_seconds=time.perf_counter() - started_at,
+    )
 
 
 def _direction_at(
@@ -470,8 +591,8 @@ def _summarize_ara(
 
 def apply_trial(
     model: Model,
-    parameters: DirectionalParameters | ARAParameters,
-    artifacts: DirectionalArtifacts | ARAArtifacts,
+    parameters: MethodParameters,
+    artifacts: MethodArtifacts,
 ) -> MethodApplicationSummary:
     """Reset and apply either method using only resolved immutable parameters."""
 
@@ -481,6 +602,13 @@ def apply_trial(
             raise TypeError("directional parameters require directional artifacts")
         _apply_directional(model, parameters, artifacts)
         return MethodApplicationSummary(AbliterationMethod.DIRECTIONAL)
+    if isinstance(parameters, ARATrajectoryParameters):
+        if not isinstance(artifacts, TrajectoryArtifacts):
+            raise TypeError("trajectory parameters require trajectory artifacts")
+        return MethodApplicationSummary(
+            AbliterationMethod.ARA,
+            _apply_trajectory(model, parameters, artifacts),
+        )
     if not isinstance(artifacts, ARAArtifacts):
         raise TypeError("ARA parameters require ARA artifacts")
     return MethodApplicationSummary(
@@ -491,39 +619,19 @@ def apply_trial(
 def cleanup_trial(model: Model, artifacts: MethodArtifacts) -> None:
     """Enforce the clean-adapter postcondition after every trial exit path."""
 
-    if isinstance(artifacts, ARAArtifacts):
+    if isinstance(artifacts, (ARAArtifacts, TrajectoryArtifacts)):
         restore_adapter_state(artifacts.targets, artifacts.adapter_initial_state)
     else:
         model.reset_model()
     empty_cache()
 
 
-def failure_record(error: BaseException, stage: str) -> dict[str, Any]:
-    """Create a journal-safe structured failure record."""
-
-    if isinstance(error, ARAOptimizationError):
-        return error.to_record()
-    return {"type": type(error).__name__, "stage": stage, "message": str(error)[:500]}
-
-
-def failure_constraint(trial: FrozenTrial) -> tuple[float]:
-    """Keep value-less failed trials out of TPE's multi-objective model."""
-    return (1.0 if "failure" in trial.user_attrs else 0.0,)
-
-
-def safe_failure_reason(error: BaseException) -> str:
-    """Remove local absolute roots before persisting an error reason."""
-    message = str(error)[:1000]
-    for label, root in (("<workspace>", Path.cwd()), ("<home>", Path.home())):
-        for value in {str(root), root.as_posix()}:
-            message = message.replace(value, label)
-    return message
-
-
 _STUDY_FIELDS = frozenset(
     """abliteration_method acceptance_gate ara_calibration_size
     ara_capture_batch_size ara_lbfgs_history_size ara_lbfgs_max_iter ara_lora_rank
-    ara_softmin_temperature bad_prompts chat_template_kwargs
+    ara_max_good_delta_rms ara_max_singular_value ara_objective_version
+    ara_runtime_guard ara_search_space ara_seed_trials ara_softmin_temperature
+    ara_trajectory_decay ara_trajectory_tokens bad_prompts chat_template_kwargs
     full_normalization_lora_rank generation_kwargs good_prompts model model_commit
     max_response_length orthogonalize_direction quantization response_prefix
     row_normalization scorers seed system_prompt target_components
@@ -541,41 +649,37 @@ def build_study_manifest(settings: Settings) -> dict[str, Any]:
         manifest["scorer_settings"] = scorer_tables
     manifest.update(
         {
-            "schema_version": STUDY_SCHEMA_VERSION,
-            "search_space_version": SEARCH_SPACE_VERSION,
-            "optimizer_schema": "cara-lbfgs-v1",
-            "calibration_protocol": "cara-capture-v1",
+            "schema_version": (
+                "cara-study-v2"
+                if settings.ara_objective_version == "trajectory-v2"
+                else STUDY_SCHEMA_VERSION
+            ),
+            "search_space_version": (
+                TRAJECTORY_SEARCH_SPACE_VERSION
+                if settings.ara_objective_version == "trajectory-v2"
+                else SEARCH_SPACE_VERSION
+            ),
+            "optimizer_schema": (
+                "cara-trajectory-lbfgs-v2"
+                if settings.ara_objective_version == "trajectory-v2"
+                else "cara-lbfgs-v1"
+            ),
+            "calibration_protocol": (
+                "cara-teacher-forced-trajectory-v2"
+                if settings.ara_objective_version == "trajectory-v2"
+                else "cara-capture-v1"
+            ),
         }
     )
     return manifest
 
 
 def canonical_fingerprint(value: Mapping[str, Any]) -> str:
-    """Hash a mapping using deterministic JSON normalization."""
-
-    encoded = json.dumps(
-        value,
-        ensure_ascii=False,
-        allow_nan=False,
-        sort_keys=True,
-        separators=(",", ":"),
-    ).encode()
-    return hashlib.sha256(encoded).hexdigest()
+    return canonical_sha256(value)
 
 
 def build_study_fingerprint(settings: Settings) -> str:
-    """Return the semantic fingerprint for a study configuration."""
-
     return canonical_fingerprint(build_study_manifest(settings))
-
-
-def manifest_differences(
-    expected: Mapping[str, Any], actual: Mapping[str, Any]
-) -> list[str]:
-    """Return stable top-level field differences for a resume error."""
-
-    keys = sorted(set(expected) | set(actual))
-    return [key for key in keys if expected.get(key) != actual.get(key)]
 
 
 def validate_study_identity(
@@ -599,88 +703,14 @@ def validate_study_identity(
     return current_fingerprint, current_manifest
 
 
-def _score_records(trial: FrozenTrial) -> dict[str, dict[str, Any]]:
-    raw_records = trial.user_attrs.get("scores")
-    if not isinstance(raw_records, list):
-        raise AcceptanceGateError("trial has no generic score records")
-    records: dict[str, dict[str, Any]] = {}
-    for record in raw_records:
-        if not isinstance(record, dict) or not isinstance(record.get("name"), str):
-            raise AcceptanceGateError("trial contains a malformed score record")
-        if record["name"] in records:
-            raise AcceptanceGateError(f"duplicate score record: {record['name']}")
-        records[record["name"]] = record
-    return records
-
-
-def _finite_score(record: Mapping[str, Any], field: str) -> float:
-    container = record.get(field)
-    if not isinstance(container, Mapping):
-        raise AcceptanceGateError(f"score has no {field} object")
-    value = container.get("value")
-    if not isinstance(value, (int, float)) or not math.isfinite(float(value)):
-        raise AcceptanceGateError(f"score {field} value is not finite")
-    return float(value)
-
-
-def _validate_sample_count(record: Mapping[str, Any], expected: int) -> None:
-    score = record.get("score")
-    if not isinstance(score, Mapping):
-        raise AcceptanceGateError("keyword score is malformed")
-    display = str(score.get("md_display", score.get("rich_display", "")))
-    try:
-        denominator = int(display.rsplit("/", 1)[1])
-    except (IndexError, ValueError) as error:
-        raise AcceptanceGateError(
-            "keyword score does not expose a sample count"
-        ) from error
-    if denominator != expected:
-        raise AcceptanceGateError(
-            f"keyword score used {denominator} samples, expected {expected}"
-        )
-
-
 def validate_gate_records(
     score_records: list[dict[str, Any]], gate: AcceptanceGate
 ) -> tuple[float, float]:
-    """Validate generic scorer records and return keyword/KL values."""
-
-    records: dict[str, dict[str, Any]] = {}
-    for record in score_records:
-        name = record.get("name")
-        if not isinstance(name, str) or name in records:
-            raise AcceptanceGateError("score names must be present and unique")
-        records[name] = record
+    """Validate point-v1 scorer records and return keyword/KL values."""
     try:
-        keyword = records[gate.keyword_score]
-        divergence = records[gate.kl_score]
-    except KeyError as error:
-        raise AcceptanceGateError(f"missing gate score: {error.args[0]}") from error
-    _validate_sample_count(keyword, gate.expected_samples)
-    keyword_value = _finite_score(keyword, "score")
-    keyword_baseline = _finite_score(keyword, "baseline")
-    divergence_value = _finite_score(divergence, "score")
-    divergence_baseline = _finite_score(divergence, "baseline")
-    if any(
-        value < 0 or value > 1
-        for value in (
-            keyword_value,
-            keyword_baseline,
-            divergence_value,
-            divergence_baseline,
-        )
-    ):
-        raise AcceptanceGateError("gate scores must be in [0, 1]")
-    if keyword_value > gate.keyword_max or divergence_value > gate.kl_max:
-        raise AcceptanceGateError("trial exceeds an absolute gate threshold")
-    if keyword_baseline - keyword_value < gate.keyword_drop_min:
-        raise AcceptanceGateError("trial does not meet the relative keyword reduction")
-    return keyword_value, divergence_value
-
-
-def _passes_gate(trial: FrozenTrial, gate: AcceptanceGate) -> tuple[float, float]:
-    _score_records(trial)
-    return validate_gate_records(trial.user_attrs["scores"], gate)
+        return validate_legacy_gate_records(score_records, gate)
+    except (ValueError, RuntimeError) as error:
+        raise AcceptanceGateError(str(error)) from error
 
 
 def select_accepted_trial(
@@ -688,44 +718,17 @@ def select_accepted_trial(
     gate: AcceptanceGate,
     study_fingerprint: str,
 ) -> FrozenTrial:
-    """Filter and uniquely select the lexicographically best accepted trial."""
-
-    accepted: list[tuple[tuple[float, float, int], FrozenTrial]] = []
-    invalid_reasons: list[str] = []
-    for trial in trials:
-        if trial.state != TrialState.COMPLETE:
-            continue
-        if trial.user_attrs.get("method") != "ara":
-            continue
-        if trial.user_attrs.get("study_fingerprint") != study_fingerprint:
-            continue
-        try:
-            keyword, divergence = _passes_gate(trial, gate)
-        except AcceptanceGateError as error:
-            invalid_reasons.append(f"trial {trial.number}: {error}")
-            continue
-        accepted.append(((keyword, divergence, trial.number), trial))
-    if not accepted:
-        details = "; ".join(invalid_reasons[:5])
-        raise AcceptanceGateError(
-            "no trial passed the acceptance gate" + (f": {details}" if details else "")
-        )
-    accepted.sort(key=lambda item: item[0])
-    return accepted[0][1]
+    try:
+        return select_legacy_candidate(trials, gate, study_fingerprint)
+    except ValueError as error:
+        raise AcceptanceGateError(str(error)) from error
 
 
 def collect_failure_records(trials: Sequence[FrozenTrial]) -> list[dict[str, Any]]:
-    """Collect structured failure attributes for an acceptance report."""
-    return [
-        {"trial_number": trial.number, **trial.user_attrs["failure"]}
-        for trial in trials
-        if isinstance(trial.user_attrs.get("failure"), dict)
-    ]
+    return collect_legacy_failure_records(trials)
 
 
 def write_acceptance_report(path: str | Path, report: AcceptanceReport) -> None:
-    """Write an acceptance report without permitting a false passed status."""
-
     identities = (
         report.model_fingerprint,
         report.study_fingerprint,
@@ -786,5 +789,11 @@ def append_selection_record(
     }
     output = Path(path)
     output.parent.mkdir(parents=True, exist_ok=True)
+    serialized = json.dumps(record, ensure_ascii=False, sort_keys=True)
+    if output.is_file():
+        previous = output.read_text(encoding="utf-8").splitlines()
+        if serialized in previous:
+            return
+        raise AcceptanceGateError("acceptance candidate lock identity differs")
     with output.open("a", encoding="utf-8") as stream:
-        stream.write(json.dumps(record, ensure_ascii=False, sort_keys=True) + "\n")
+        stream.write(serialized + "\n")

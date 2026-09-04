@@ -1,7 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025-2026  Philipp Emanuel Weidmann <pew@worldwidemann.com> + contributors
 
-import hashlib
 import json
 import os
 import platform
@@ -11,7 +10,7 @@ from dataclasses import dataclass
 from datetime import datetime, timezone
 from importlib.metadata import version
 from pathlib import Path
-from typing import Any, TypeVar
+from typing import Any, Mapping, TypeVar
 
 import huggingface_hub
 import tomli_w
@@ -28,6 +27,12 @@ from psutil import Process
 from questionary import Question
 from rich.console import Console
 
+from .artifact_schema import (
+    acceptance_binding,
+    file_sha256 as _file_sha256,
+    generate_sha256sums as _generate_sha256sums,
+)
+from .ara_search import format_trial_parameters as get_trial_parameters
 from .config import DatasetSpecification, Settings
 from .system import (
     get_accelerator_info_dict,
@@ -39,11 +44,11 @@ from .system import (
 )
 
 T = TypeVar("T")
+generate_sha256sums = _generate_sha256sums
+get_file_sha256 = _file_sha256
 
 
 print = Console(highlight=False).print
-
-T = TypeVar("T")
 
 
 def deep_merge_dicts(base: dict[str, Any], override: dict[str, Any]) -> dict[str, Any]:
@@ -165,124 +170,101 @@ def get_split_slice(split_str: str, length: int) -> tuple[int, int]:
     return absolute_instruction.from_, absolute_instruction.to
 
 
+def _load_text_prompts(specification: DatasetSpecification) -> list[str]:
+    with open(specification.dataset, encoding="utf-8") as file:
+        prompts = [line.strip() for line in file if line.strip()]
+    if specification.split is not None:
+        start, end = get_split_slice(f"_{specification.split}", len(prompts))
+        prompts = prompts[start:end]
+    return prompts
+
+
+def _load_prompt_dataset(specification: DatasetSpecification) -> list[str]:
+    path, split = specification.dataset, specification.split
+    if split is None:
+        raise ValueError(f'The "split" field is required for datasets: {path}')
+    if specification.column is None:
+        raise ValueError(f'The "column" field is required for datasets: {path}')
+    if is_hf_path(path):
+        if specification.commit is None:
+            try:
+                specification.commit = huggingface_hub.dataset_info(path).sha
+            except Exception as error:
+                print(f"[yellow]Warning: dataset revision was not pinned ({error}).[/]")
+        dataset = load_dataset(path, revision=specification.commit, split=split)
+    elif Path(path, DATASET_STATE_JSON_FILENAME).exists():
+        dataset = load_from_disk(path)
+        assert not isinstance(dataset, DatasetDict), "Dataset dicts are unsupported"
+        start, end = get_split_slice(split, len(dataset))
+        dataset = dataset[start:end]
+    else:
+        dataset = load_dataset(
+            path,
+            split=split,
+            verification_mode=VerificationMode.NO_CHECKS,
+            download_mode=DownloadMode.FORCE_REDOWNLOAD,
+        )
+    return list(dataset[specification.column])
+
+
+def _format_prompts(
+    settings: Settings,
+    specification: DatasetSpecification,
+    prompts: list[str],
+) -> list[Prompt]:
+    if specification.prefix:
+        prompts = [f"{specification.prefix} {prompt}" for prompt in prompts]
+    if specification.suffix:
+        prompts = [f"{prompt} {specification.suffix}" for prompt in prompts]
+    system = settings.system_prompt
+    if specification.system_prompt is not None:
+        system = specification.system_prompt
+    return [Prompt(system=system, user=prompt) for prompt in prompts]
+
+
 def load_prompts(
     settings: Settings,
     specification: DatasetSpecification,
 ) -> list[Prompt]:
-    path = specification.dataset
-    split_str = specification.split
-
-    if os.path.isfile(path):
-        # Plain text file with one prompt per line. Empty lines are ignored.
-        with open(path, encoding="utf-8") as file:
-            prompts = [line.strip() for line in file if line.strip()]
-
-        # The split is optional for text files. When given, it selects a subset
-        # of the lines using slice notation (e.g. "[:400]"). A synthetic split
-        # name is prepended because ReadInstruction expects a named split.
-        if split_str is not None:
-            start, end = get_split_slice(f"_{split_str}", len(prompts))
-            prompts = prompts[start:end]
+    """Load and render prompts from text, disk datasets, or the Hub."""
+    if os.path.isfile(specification.dataset):
+        prompts = _load_text_prompts(specification)
     else:
-        # All dataset sources require an explicit split and column.
-        if split_str is None:
-            raise ValueError(f'The "split" field is required for datasets: {path}')
-
-        if specification.column is None:
-            raise ValueError(f'The "column" field is required for datasets: {path}')
-
-        if is_hf_path(path):
-            # Pin to the latest commit if not already set, so the exact dataset
-            # version is recorded for reproducibility.
-            if specification.commit is None:
-                try:
-                    specification.commit = huggingface_hub.dataset_info(path).sha
-                except Exception as error:
-                    # Fetching the commit hash requires internet access, but the
-                    # dataset itself may be fully cached locally. Proceed without
-                    # pinning; an unpinned dataset disables the reproducibility
-                    # offer during upload.
-                    print(
-                        f"[yellow]Warning: Could not fetch the latest commit hash for dataset [bold]{path}[/] ({error}). "
-                        "The dataset version will not be pinned.[/]"
-                    )
-            dataset = load_dataset(
-                path,
-                revision=specification.commit,
-                split=split_str,
-            )
-        elif Path(path, DATASET_STATE_JSON_FILENAME).exists():
-            # Dataset saved with datasets.save_to_disk; needs special handling.
-            # Path should be the subdirectory for a particular split.
-            dataset = load_from_disk(path)
-            assert not isinstance(dataset, DatasetDict), (
-                "Loading dataset dicts is not supported"
-            )
-            # Parse the split instructions and apply them.
-            start, end = get_split_slice(split_str, len(dataset))
-            dataset = dataset[start:end]
-        else:
-            # Path should be a local directory.
-            dataset = load_dataset(
-                path,
-                split=split_str,
-                # Don't require the number of examples (lines) per split to be pre-defined.
-                verification_mode=VerificationMode.NO_CHECKS,
-                # But also don't use cached data, as the dataset may have changed on disk.
-                download_mode=DownloadMode.FORCE_REDOWNLOAD,
-            )
-
-        prompts = list(dataset[specification.column])
-
-    if specification.prefix:
-        prompts = [f"{specification.prefix} {prompt}" for prompt in prompts]
-
-    if specification.suffix:
-        prompts = [f"{prompt} {specification.suffix}" for prompt in prompts]
-
-    system_prompt = (
-        settings.system_prompt
-        if specification.system_prompt is None
-        else specification.system_prompt
-    )
-
-    return [
-        Prompt(
-            system=system_prompt,
-            user=prompt,
-        )
-        for prompt in prompts
-    ]
+        prompts = _load_prompt_dataset(specification)
+    return _format_prompts(settings, specification, prompts)
 
 
 def batchify(items: list[T], batch_size: int) -> list[list[T]]:
     return [items[i : i + batch_size] for i in range(0, len(items), batch_size)]
 
 
-def get_trial_parameters(trial: Trial | FrozenTrial) -> dict[str, str]:
-    if trial.user_attrs.get("method") == "ara":
-        payload = trial.user_attrs["ara_parameters"]
-        params = {
-            "layer_start": str(payload["start_layer_index"]),
-            "layer_end": str(payload["end_layer_index"]),
-        }
-        for component, values in payload["components"].items():
-            for name, value in values.items():
-                params[f"{component}.{name}"] = f"{value:.4f}"
-        return params
-
-    params = {}
-
-    direction_index = trial.user_attrs["direction_index"]
-    params["direction_index"] = (
-        "per layer" if (direction_index is None) else f"{direction_index:.2f}"
+def _score_rows(trial: Trial | FrozenTrial) -> str:
+    return "\n".join(
+        f"| **{score['name']}** | {score['score']['md_display']} | "
+        f"{score['baseline']['md_display']} |"
+        for score in trial.user_attrs["scores"]
     )
 
-    for component, parameters in trial.user_attrs["parameters"].items():
-        for name, value in parameters.items():
-            params[f"{component}.{name}"] = f"{value:.2f}"
 
-    return params
+def _parameter_rows(trial: Trial | FrozenTrial) -> str:
+    return "\n".join(
+        f"| **{name}** | {value} |"
+        for name, value in get_trial_parameters(trial).items()
+    )
+
+
+def _reproduction_tip(settings: Settings) -> str:
+    target = (
+        "See [`reproduce.json`](reproduce.json) for the verified identity envelope."
+        if settings.ara_objective_version == "trajectory-v2"
+        else "See the [README](reproduce/README.md) in the `reproduce` directory."
+    )
+    return f"""
+> [!TIP]
+> **This model is reproducible!**
+>
+> {target}
+"""
 
 
 def get_readme_intro(
@@ -290,76 +272,39 @@ def get_readme_intro(
     trial: Trial | FrozenTrial,
     contains_reproducibility_information: bool,
 ) -> str:
-    if is_hf_path(settings.model):
-        model_link = f"[{settings.model}](https://huggingface.co/{settings.model})"
-    else:
-        # Hide the path, which may contain private information.
-        model_link = "a model"
-
-    scores_raw = trial.user_attrs["scores"]
-    scores_by_name: dict[str, dict[str, Any]] = {}
-    score_names: list[str] = []
-    for score in scores_raw:
-        name = score["name"]
-        scores_by_name[name] = score
-        score_names.append(name)
-
-    score_rows = "\n".join(
-        [
-            (
-                f"| **{name}** | "
-                f"{scores_by_name[name]['score']['md_display']} | "
-                f"{scores_by_name[name]['baseline']['md_display']} |"
-            )
-            for name in score_names
-        ]
+    model_link = (
+        f"[{settings.model}](https://huggingface.co/{settings.model})"
+        if is_hf_path(settings.model)
+        else "a model"
     )
-
-    if contains_reproducibility_information:
-        reproducibility_instructions = """
-> [!TIP]
-> **This model is reproducible!**
->
-> See the [README](reproduce/README.md) in the `reproduce` directory for more information.
-"""
-    else:
-        reproducibility_instructions = ""
-
+    reproducibility = (
+        _reproduction_tip(settings) if contains_reproducibility_information else ""
+    )
     method = trial.user_attrs.get("method", "directional")
-    method_description = (
+    description = (
         f"Calibrated Arbitrary-Rank Ablation (CARA-LoRA), rank {settings.ara_lora_rank}"
         if method == "ara"
         else "directional ablation"
     )
     gate_status = trial.user_attrs.get("acceptance_status", "not evaluated")
-
-    return f"""# This is a decensored version of {
-        model_link
-    }, made using [Heretic](https://heretic-project.org) v{version("heretic-llm")}
-{reproducibility_instructions}
+    return f"""# This is a decensored version of {model_link}, made using [Heretic](https://heretic-project.org) v{version("heretic-llm")}
+{reproducibility}
 ## Method
 
-- **Method:** {method_description}
+- **Method:** {description}
 - **Acceptance gate:** {gate_status}
 
 ## Abliteration parameters
 
 | Parameter | Value |
 | :-------- | :---: |
-{
-        chr(10).join(
-            [
-                f"| **{name}** | {value} |"
-                for name, value in get_trial_parameters(trial).items()
-            ]
-        )
-    }
+{_parameter_rows(trial)}
 
 ## Performance
 
 | Metric | This model | Original model ({model_link}) |
 | :----- | :--------: | :---------------------------: |
-{score_rows}
+{_score_rows(trial)}
 
 -----
 
@@ -397,205 +342,158 @@ def format_hf_link(
     return link
 
 
+_REPRODUCTION_GUIDE = """# Reproduction guide
+
+This directory contains the assets required to reproduce this Heretic run.
+{heterogeneous_warning}{origin_warning}
+## Models
+
+- **Base model:** {model_link}
+
+## Datasets
+
+- **Good prompts:** {good_link}
+- **Bad prompts:** {bad_link}
+
+## Selected trial
+
+- **Trial number:** {trial_index}
+{score_lines}
+
+{system_report}## Environment
+
+- **Heretic:** v{heretic_version}{origin_suffix}
+- **PyTorch:** {pytorch_version}
+- **Other dependencies:** See [`requirements.txt`](requirements.txt).
+
+## Contents
+
+- [`requirements.txt`](requirements.txt): exact package versions.
+- [`config.toml`](config.toml): effective configuration and RNG seed.
+- [`{checkpoint_filename}`]({checkpoint_filename}): Optuna study journal.
+- [`SHA256SUMS`](SHA256SUMS): weight-file hashes.
+- [`reproduce.json`](reproduce.json): machine-readable identities.
+
+## How to reproduce
+
+1. {system_instruction}Install the Heretic and PyTorch versions listed above.
+2. Install `requirements.txt`, place `config.toml` in the working directory, and run `heretic`.
+3. Select trial **{trial_index}** and compare all outputs with `SHA256SUMS`.
+
+The journal `{checkpoint_filename}` can resume the same study without re-running stored trials.
+"""
+
+
+def _accelerator_report() -> str:
+    accelerators = get_accelerator_info_dict()
+    if accelerators["type"] is None:
+        return "**No GPU or other accelerator detected.**"
+    devices = accelerators["devices"]
+    total = sum(device.get("vram_gb", 0) for device in devices)
+    lines = [
+        f"- **{accelerators['type']}:** {len(devices)} device(s), {total:.2f} GB VRAM"
+    ]
+    if accelerators.get("api_name") and accelerators.get("api_version"):
+        lines.append(
+            f"  - **{accelerators['api_name']}:** {accelerators['api_version']}"
+        )
+    if accelerators.get("driver_version"):
+        lines.append(f"  - **Driver Version:** {accelerators['driver_version']}")
+    lines.extend(
+        f"  - **Device {index}:** {device['name']}"
+        for index, device in enumerate(devices)
+    )
+    return "\n".join(lines)
+
+
+def _system_guide(include: bool) -> tuple[str, str, str]:
+    if not include:
+        return "", "", ""
+    warning = ""
+    if torch.cuda.is_available() and torch.cuda.device_count() > 1:
+        names = {
+            torch.cuda.get_device_name(i) for i in range(torch.cuda.device_count())
+        }
+        if len(names) > 1:
+            warning = "\n> [!WARNING]\n> Heterogeneous GPUs can prevent exact reproducibility.\n"
+    cpu, python = get_cpu_info_dict(), get_python_env_info_dict()
+    report = f"""## System
+
+- **Python:** {python["version"]} ({python["implementation"]})
+- **Operating system:** {platform.platform()} ({platform.machine()})
+- **CPU:** {cpu["brand"] or "Unknown"}
+
+### Accelerators
+
+{_accelerator_report()}
+
+"""
+    return warning, report, "Ensure the system matches the recorded system. "
+
+
+def _origin_warning(version_info: Any) -> str:
+    origin = version_info.origin
+    if version_info.is_standard_pypi or not origin:
+        return ""
+    if origin.startswith("Git"):
+        return (
+            f"\n> [!IMPORTANT]\n> Install Heretic from the recorded source: {origin}.\n"
+        )
+    if origin == "Local":
+        return "\n> [!WARNING]\n> Local source was used; exact reproduction is not guaranteed.\n"
+    return "\n> [!WARNING]\n> A non-standard Heretic installation was used.\n"
+
+
 def generate_reproduce_readme(
     settings: Settings,
     checkpoint_filename: str,
     trial: Trial | FrozenTrial,
     include_system_information: bool,
 ) -> str:
-    """Generates the contents of a README.md for the reproduce/ folder."""
-
-    heterogeneous_warning = ""
-
-    if include_system_information:
-        if torch.cuda.is_available():
-            count = torch.cuda.device_count()
-            if count > 1:
-                device_names = {torch.cuda.get_device_name(i) for i in range(count)}
-                if len(device_names) > 1:
-                    heterogeneous_warning = """
-> [!WARNING]
-> **Heterogeneous GPUs**
->
-> This model was generated using multiple non-identical GPUs. When operations are distributed across different GPUs
-> (e.g. via `device_map='auto'`), non-deterministic behavior can occur.
->
-> Reproducibility *cannot* be guaranteed in this environment.
-"""
-
-        cpu = get_cpu_info_dict()
-        python_env = get_python_env_info_dict()
-
-        accelerators = get_accelerator_info_dict()
-        if accelerators["type"] is None:
-            accelerator_report = "**No GPU or other accelerator detected.**"
-        else:
-            devices = accelerators["devices"]
-            total_vram = sum(device.get("vram_gb", 0) for device in devices)
-            vram_suffix = f" ({total_vram:.2f} GB total VRAM)" if total_vram > 0 else ""
-            accelerator_lines = [
-                f"- **{accelerators['type']}:** Detected {len(devices)} device(s){vram_suffix}"
-            ]
-
-            if accelerators.get("api_name") and accelerators.get("api_version"):
-                accelerator_lines.append(
-                    f"  - **{accelerators['api_name']}:** {accelerators['api_version']}"
-                )
-
-            if accelerators.get("driver_version"):
-                accelerator_lines.append(
-                    f"  - **Driver Version:** {accelerators['driver_version']}"
-                )
-
-            accelerator_lines.append("- **Devices:**")
-            for i, device in enumerate(devices):
-                vram = f" ({device['vram_gb']:.2f} GB)" if device.get("vram_gb") else ""
-                accelerator_lines.append(
-                    f"  - **{accelerators['type']} {i}:** {device['name']}{vram}"
-                )
-            accelerator_report = "\n".join(accelerator_lines)
-
-        system_report = f"""## System
-
-- **Python:** {python_env["version"]} ({python_env["implementation"]}, {python_env["compiler"]}) [{python_env["environment"]}]
-- **Operating system:** {platform.platform()} ({platform.machine()})
-- **CPU:** {cpu["brand"] or "Unknown"}
-
-### Accelerators
-
-{accelerator_report}
-
-"""
-        system_instructions = (
-            "1. Ensure your system matches the specifications in the **System** section above. "
-            "Exact reproducibility is only guaranteed if all aspects of your system are identical to the one the model was originally generated on.\n"
-        )
-    else:
-        system_report = ""
-        system_instructions = ""
-
+    """Generate the human-readable point-v1 reproduction guide."""
     version_info = get_heretic_version_info()
-    origin_warning = ""
-    if not version_info.is_standard_pypi:
-        if version_info.origin and version_info.origin.startswith("Git"):
-            repo_info = version_info.origin.split("Git (")[1].rstrip(")")
-            origin_warning = f"""
-> [!IMPORTANT]
-> **Git installation**
->
-> This system installed Heretic from a Git repository: {repo_info}
->
-> To reproduce the model, you must install Heretic from this exact repository and commit.
-"""
-        elif version_info.origin == "Local":
-            origin_warning = """
-> [!WARNING]
-> **Local code**
->
-> This system installed Heretic from a local directory or wheel. Uncommitted or experimental code may have been executed.
->
-> Reproducibility *cannot* be guaranteed in this environment.
-"""
-        else:
-            origin_warning = """
-> [!WARNING]
-> **Non-standard installation**
->
-> This system installed Heretic from an unknown non-standard source.
->
-> Reproducibility *cannot* be guaranteed in this environment.
-"""
-
-    pytorch_version = torch.__version__
-    pytorch_install_command = f"pip install torch=={pytorch_version}"
-    if "+" in pytorch_version:
-        suffix = pytorch_version.split("+")[1]
-        if suffix:
-            pytorch_install_command += (
-                f" --index-url https://download.pytorch.org/whl/{suffix}"
-            )
-
-    trial_scores = trial.user_attrs["scores"]
+    warning, system_report, instruction = _system_guide(include_system_information)
     score_lines = "\n".join(
-        (
-            f"- **{score['name']}:** {score['score']['md_display']}"
-            f" (baseline: {score['baseline']['md_display']})"
-        )
-        for score in trial_scores
+        f"- **{item['name']}:** {item['score']['md_display']} "
+        f"(baseline: {item['baseline']['md_display']})"
+        for item in trial.user_attrs["scores"]
+    )
+    return _REPRODUCTION_GUIDE.format(
+        heterogeneous_warning=warning,
+        origin_warning=_origin_warning(version_info),
+        model_link=format_hf_link(settings.model, settings.model_commit),
+        good_link=format_hf_link(
+            settings.good_prompts.dataset, settings.good_prompts.commit, True
+        ),
+        bad_link=format_hf_link(
+            settings.bad_prompts.dataset, settings.bad_prompts.commit, True
+        ),
+        trial_index=trial.user_attrs["index"],
+        score_lines=score_lines,
+        system_report=system_report,
+        heretic_version=version_info.version,
+        origin_suffix=f" (Origin: {version_info.origin})"
+        if version_info.origin
+        else "",
+        pytorch_version=torch.__version__,
+        checkpoint_filename=checkpoint_filename,
+        system_instruction=instruction,
     )
 
-    return f"""# Reproduction guide
 
-This directory contains the necessary information and assets to reproduce the results obtained during this Heretic run.{heterogeneous_warning}{origin_warning}
-
-## Models
-
-- **Base model:** {format_hf_link(settings.model, settings.model_commit)}
-
-## Datasets
-
-- **Good prompts:** {format_hf_link(settings.good_prompts.dataset, settings.good_prompts.commit, is_dataset=True)}
-- **Bad prompts:** {format_hf_link(settings.bad_prompts.dataset, settings.bad_prompts.commit, is_dataset=True)}
-
-## Selected trial
-
-- **Trial number:** {trial.user_attrs["index"]}
-{score_lines}
-
-{system_report}## Environment
-
-- **Heretic:** v{version_info.version}{f" (Origin: {version_info.origin})" if version_info.origin else ""}
-- **PyTorch:** {pytorch_version}
-- **Other dependencies:** See [`requirements.txt`](requirements.txt).
-
-## Contents of this directory
-
-- [`requirements.txt`](requirements.txt): The exact versions of all Python packages.
-- [`config.toml`](config.toml): The exact configuration used, including the RNG seed.
-- [`{checkpoint_filename}`]({checkpoint_filename}): The Optuna study journal containing the history of all trials.
-- [`SHA256SUMS`](SHA256SUMS): Cryptographic hashes for all weight files.
-- [`reproduce.json`](reproduce.json): A machine-readable file containing all reproducibility information.
-
-## How to reproduce
-
-> [!TIP]
-> You can automate this process, including all verification steps, by downloading the `reproduce.json` file and running
-> `heretic --reproduce reproduce.json`.
-
-{system_instructions}1. Install the exact version of Heretic indicated in the **Environment** section above, from its original source.
-1. Install the packages listed in `requirements.txt`: `pip install -r requirements.txt`
-1. Install the correct version of PyTorch: `{pytorch_install_command}`
-1. Place the provided `config.toml` in your working directory.
-1. Run Heretic without any additional arguments: `heretic`
-1. Wait for the run to finish, then select trial **{trial.user_attrs["index"]}** and export the model.
-1. Verify that the weight files have been exactly reproduced by comparing their SHA-256 hashes against those in `SHA256SUMS`:
-   `sha256sum -c SHA256SUMS` (or look at the hashes online if you uploaded to Hugging Face)
-
-> [!TIP]
-> To use the included Optuna study journal `{checkpoint_filename}`, place it in the checkpoints directory (usually `checkpoints/`) before running Heretic.
->
-> This allows you to export other models from the Pareto front, or to run additional trials without having to re-run the stored trials.
-"""
-
-
-def generate_reproduce_json(
+def _reproduce_base_data(
     settings: Settings,
     trial: Trial | FrozenTrial,
     timestamp: str,
-    uploaded_model_hashes: dict[str, str],
-    include_system_information: bool,
-) -> str:
-    """Generates the contents of a reproduce.json file for the reproduce/ folder."""
-
-    version_info = get_heretic_version_info()
-
+    hashes: dict[str, str],
+) -> dict[str, Any]:
     from .trial_methods import parameter_envelope, parameters_from_trial
 
-    data = {
-        # Version 4: method-discriminated parameters and study identity.
+    version_info = get_heretic_version_info()
+    return {
         "version": "4",
         "timestamp": timestamp,
-        "system": None,  # Defined here to preserve insertion order.
+        "system": None,
         "environment": {
             "heretic": {
                 "version": version_info.version,
@@ -608,66 +506,103 @@ def generate_reproduce_json(
         "settings": settings.model_dump(),
         "parameters": parameter_envelope(parameters_from_trial(trial)),
         "scores": trial.user_attrs["scores"],
-        "hashes": uploaded_model_hashes,
+        "hashes": hashes,
         "model_fingerprint": trial.user_attrs.get("model_fingerprint"),
         "study_fingerprint": trial.user_attrs.get("study_fingerprint"),
         "calibration_fingerprint": trial.user_attrs.get("calibration_fingerprint"),
         "acceptance": _acceptance_binding(settings),
     }
 
+
+def _add_trajectory_identity(
+    data: dict[str, Any], settings: Settings, trial: Trial | FrozenTrial
+) -> None:
+    from .ara_search import SAMPLER_PROTOCOL, SEARCH_SPACE_VERSION
+    from .artifact_schema import REPRODUCE_SCHEMA, canonical_sha256, ensure_finite_json
+
+    acceptance = data["acceptance"]
+    if not isinstance(acceptance, dict) or acceptance.get("status") != "passed":
+        raise ValueError("trajectory-v2 reproduction requires passed acceptance")
+    tables = (settings.model_extra or {}).get("scorer", {})
+    refusal = tables.get("RefusalLogOdds", {}) if isinstance(tables, dict) else {}
+    prefix_hash = canonical_sha256(
+        {
+            "refusal_prefixes": refusal.get("refusal_prefixes"),
+            "answer_prefixes": refusal.get("answer_prefixes"),
+        }
+    )
+    data.update(
+        {
+            "schema": REPRODUCE_SCHEMA,
+            "objective_version": "trajectory-v2",
+            "trajectory_manifest_sha256": trial.user_attrs.get(
+                "trajectory_fingerprint"
+            ),
+            "prefix_set_sha256": prefix_hash,
+            "search_space_version": SEARCH_SPACE_VERSION,
+            "sampler_protocol": SAMPLER_PROTOCOL,
+            "core_artifact_hashes": data["hashes"],
+            "acceptance_sha256": acceptance["sha256"],
+        }
+    )
+    ensure_finite_json(data)
+
+
+def generate_reproduce_json(
+    settings: Settings,
+    trial: Trial | FrozenTrial,
+    timestamp: str,
+    uploaded_model_hashes: dict[str, str],
+    include_system_information: bool,
+) -> str:
+    """Generate the machine-readable reproduction identity document."""
+    data = _reproduce_base_data(settings, trial, timestamp, uploaded_model_hashes)
+    if settings.ara_objective_version == "trajectory-v2":
+        _add_trajectory_identity(data, settings, trial)
     if include_system_information:
         data["system"] = {
             "python": get_python_env_info_dict(),
-            "os": {
-                "platform": platform.platform(),
-                "machine": platform.machine(),
-            },
+            "os": {"platform": platform.platform(), "machine": platform.machine()},
             "cpu": get_cpu_info_dict(),
             "accelerators": get_accelerator_info_dict(),
         }
     else:
         del data["system"]
-
     return json.dumps(data, indent=4)
 
 
 def _acceptance_binding(settings: Settings) -> dict[str, Any] | None:
     if settings.acceptance_gate is None:
         return None
-    report_path = Path(settings.acceptance_gate.report_path)
-    if not report_path.is_file():
-        return {"status": "missing"}
-    report_bytes = report_path.read_bytes()
-    report = json.loads(report_bytes)
-    return {
-        "status": report.get("status", "invalid"),
-        "sha256": hashlib.sha256(report_bytes).hexdigest(),
-        "path": report_path.name,
+    return acceptance_binding(settings.acceptance_gate.report_path)
+
+
+def _write_reproduction_files(
+    directory: Path,
+    settings: Settings,
+    checkpoint_name: str,
+    trial: Trial | FrozenTrial,
+    options: Mapping[str, Any],
+) -> None:
+    hashes = options["uploaded_model_hashes"]
+    include = bool(options["include_system_information"])
+    timestamp = (
+        datetime.now(timezone.utc).replace(microsecond=0, tzinfo=None).isoformat()
+    )
+    files = {
+        "requirements.txt": generate_requirements_txt(),
+        "config.toml": generate_config_toml(settings),
+        "reproduce.json": generate_reproduce_json(
+            settings, trial, timestamp, hashes, include
+        ),
+        "README.md": generate_reproduce_readme(
+            settings, checkpoint_name, trial, include
+        ),
     }
-
-
-def generate_sha256sums(hashes: dict[str, str]) -> str:
-    """Generates GNU Coreutils compatible SHA256SUMS file content."""
-
-    lines = []
-
-    for filename, sha256 in sorted(hashes.items()):
-        # Use '*' to indicate binary mode for model weights.
-        lines.append(f"{sha256} *{filename}")
-
-    return "\n".join(lines) + "\n"
-
-
-# TODO: Replace this with hashlib.file_digest when we drop support for Python 3.10.
-def get_file_sha256(file_path: str | Path) -> str:
-    hash = hashlib.sha256()
-
-    with open(file_path, "rb") as file:
-        # Read the file in 64 kB blocks.
-        for block in iter(lambda: file.read(65536), b""):
-            hash.update(block)
-
-    return hash.hexdigest()
+    if hashes:
+        files["SHA256SUMS"] = generate_sha256sums(hashes)
+    for name, content in files.items():
+        (directory / name).write_text(content, encoding="utf-8")
 
 
 def create_reproduce_folder(
@@ -675,105 +610,48 @@ def create_reproduce_folder(
     settings: Settings,
     checkpoint_path: str | Path,
     trial: Trial | FrozenTrial,
-    uploaded_model_hashes: dict[str, str],
-    include_system_information: bool,
-):
+    **options: Any,
+) -> None:
+    """Create a point-v1 reproduction directory from explicit options."""
     reproduce_dir = path / "reproduce"
     reproduce_dir.mkdir(parents=True, exist_ok=True)
-
-    checkpoint_filename = Path(checkpoint_path).name
-
-    # Preserve an explicitly loaded revision; only resolve an unpinned model.
     if settings.model_commit is None:
         settings.model_commit = huggingface_hub.model_info(settings.model).sha
+    checkpoint = Path(checkpoint_path)
+    _write_reproduction_files(reproduce_dir, settings, checkpoint.name, trial, options)
+    if checkpoint.exists():
+        (reproduce_dir / checkpoint.name).write_bytes(checkpoint.read_bytes())
 
-    # Strip microseconds and timezone for a clean format.
-    timestamp = (
-        datetime.now(timezone.utc).replace(microsecond=0, tzinfo=None).isoformat()
-    )
 
-    (reproduce_dir / "requirements.txt").write_text(
-        generate_requirements_txt(),
-        encoding="utf-8",
-    )
-
-    (reproduce_dir / "config.toml").write_text(
-        generate_config_toml(settings),
-        encoding="utf-8",
-    )
-
-    if uploaded_model_hashes:
-        (reproduce_dir / "SHA256SUMS").write_text(
-            generate_sha256sums(uploaded_model_hashes),
-            encoding="utf-8",
-        )
-
-    (reproduce_dir / "reproduce.json").write_text(
-        generate_reproduce_json(
-            settings,
-            trial,
-            timestamp=timestamp,
-            uploaded_model_hashes=uploaded_model_hashes,
-            include_system_information=include_system_information,
-        ),
-        encoding="utf-8",
-    )
-
-    (reproduce_dir / "README.md").write_text(
-        generate_reproduce_readme(
-            settings,
-            checkpoint_filename,
-            trial,
-            include_system_information=include_system_information,
-        ),
-        encoding="utf-8",
-    )
-
-    # Copy Optuna study journal.
-    checkpoint_file = Path(checkpoint_path)
-    if checkpoint_file.exists():
-        (reproduce_dir / checkpoint_file.name).write_bytes(checkpoint_file.read_bytes())
+def _uploaded_weight_hashes(info: Any) -> dict[str, str]:
+    if not info.siblings:
+        raise RuntimeError("Could not fetch uploaded model hashes.")
+    hashes = {}
+    for file in info.siblings:
+        if not file.rfilename.endswith(".safetensors"):
+            continue
+        sha256 = getattr(file, "lfs", {}).get("sha256")
+        if not sha256:
+            raise RuntimeError("Could not fetch uploaded model hashes.")
+        hashes[file.rfilename] = sha256
+    return hashes
 
 
 def upload_reproduce_folder(
     repo_id: str,
     settings: Settings,
     token: str,
-    checkpoint_path: str | Path,
-    trial: Trial | FrozenTrial,
-    include_system_information: bool,
-):
-    api = huggingface_hub.HfApi()
-    info = api.model_info(repo_id=repo_id, files_metadata=True, token=token)
-
-    if not info.siblings:
-        raise RuntimeError("Could not fetch uploaded model hashes.")
-
-    # For weights, we only care about safetensors.
-    weight_extensions = (".safetensors",)
-
-    uploaded_model_hashes = {}
-
-    for file in info.siblings:
-        if file.rfilename.endswith(weight_extensions):
-            sha256 = getattr(file, "lfs", {}).get("sha256")
-            if not sha256:
-                raise RuntimeError("Could not fetch uploaded model hashes.")
-            uploaded_model_hashes[file.rfilename] = sha256
-
-    with tempfile.TemporaryDirectory() as tmpdir:
-        tmp_path = Path(tmpdir)
-        create_reproduce_folder(
-            tmp_path,
-            settings,
-            checkpoint_path=checkpoint_path,
-            trial=trial,
-            uploaded_model_hashes=uploaded_model_hashes,
-            include_system_information=include_system_information,
-        )
-
-        reproduce_dir = tmp_path / "reproduce"
-        for file_path in reproduce_dir.iterdir():
+    **options: Any,
+) -> None:
+    """Build and upload the point-v1 reproduction directory."""
+    info = huggingface_hub.HfApi().model_info(
+        repo_id=repo_id, files_metadata=True, token=token
+    )
+    options["uploaded_model_hashes"] = _uploaded_weight_hashes(info)
+    with tempfile.TemporaryDirectory() as temporary:
+        root = Path(temporary)
+        create_reproduce_folder(root, settings, **options)
+        for file_path in (root / "reproduce").iterdir():
             if file_path.is_file():
                 huggingface_hub.upload_file(
                     path_or_fileobj=str(file_path),

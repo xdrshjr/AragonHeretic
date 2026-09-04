@@ -14,7 +14,7 @@ from transformers import (
 )
 
 from heretic.ara import ModuleKey, TargetModule
-from heretic.config import AbliterationMethod, Settings
+from heretic.config import ARARuntimeGuard, AbliterationMethod, Settings
 from heretic.model import (
     Model,
     _manifest_fingerprint,
@@ -66,13 +66,27 @@ class ModelFacadeTests(unittest.TestCase):
         self.assertEqual(attention_names.count("linear"), 48)
         self.assertEqual(mlp_count, 64)
 
-    def test_qwen_runtime_rejects_wrong_projection_shape(self) -> None:
+    def test_configured_runtime_guard_rejects_wrong_projection_shape(self) -> None:
         model = Model.__new__(Model)
         model.settings = cast(
             Settings,
             SimpleNamespace(
                 abliteration_method=AbliterationMethod.ARA,
-                model="Qwen/Qwen3.8-27B",
+                model="/models/local-copy",
+                ara_runtime_guard=ARARuntimeGuard.model_validate(
+                    {
+                        "expected_target_total": 1,
+                        "required_target_devices": ["cpu"],
+                        "targets": [
+                            {
+                                "name_pattern": "self_attn.o_proj",
+                                "count": 1,
+                                "out_features": 2,
+                                "in_features": 2,
+                            }
+                        ],
+                    }
+                ),
             ),
         )
         model.ara_targets = (
@@ -84,8 +98,24 @@ class ModelFacadeTests(unittest.TestCase):
                 1,
             ),
         )
-        with self.assertRaisesRegex(RuntimeError, "invalid_shapes"):
+        with self.assertRaisesRegex(RuntimeError, "shape"):
             model._validate_ara_runtime()
+
+    def test_continuation_cache_identity_binds_tokenizer(self) -> None:
+        class Tokenizer:
+            name_or_path = "tokenizer"
+
+            def __call__(self, text, **kwargs):
+                return {"input_ids": [ord(char) for char in text]}
+
+            def __len__(self):
+                return 256
+
+        model = Model.__new__(Model)
+        model.tokenizer = cast(PreTrainedTokenizerBase, Tokenizer())
+        tokens, identity = model.continuation_cache_identity((" yes ",))
+        self.assertEqual(tokens, ((121, 101, 115),))
+        self.assertIn("tokenizer", identity)
 
     def test_fused_expert_container_is_not_assumed_iterable(self) -> None:
         layer = FakeQwenLayer(False)

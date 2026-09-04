@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025-2026  Philipp Emanuel Weidmann <pew@worldwidemann.com> + contributors
 
-import math
-import re
 from enum import Enum
 from typing import Any, Dict, Literal
 
@@ -21,6 +19,19 @@ from pydantic_settings import (
     PydanticBaseSettingsSource,
     SettingsConfigDict,
     TomlConfigSettingsSource,
+)
+
+from .ara_config import (
+    ARASeedTrial,
+    ARARuntimeGuard,
+    ARASearchSpace,
+    AcceptanceGate,
+    DatasetSpecification,
+    RUN_CONTROL_FIELDS,
+    acceptance_scorer_prompts as _acceptance_scorer_prompts,
+    configured_dataset_specs as _configured_dataset_specs,
+    dataset_specs_overlap,
+    validate_seed_trials,
 )
 
 # Settings with privacy implications must use ``exclude=True``.
@@ -45,113 +56,6 @@ class RowNormalization(str, Enum):
 class ExportStrategy(str, Enum):
     MERGE = "merge"
     ADAPTER = "adapter"
-
-
-class DatasetSpecification(BaseModel):
-    dataset: str = Field(
-        description="Hugging Face dataset ID, or path to dataset on disk."
-    )
-
-    commit: str | None = Field(
-        default=None,
-        description="Hugging Face commit hash of the dataset.",
-    )
-
-    split: str | None = Field(
-        default=None,
-        description="Portion of the dataset to use. Required for datasets, optional for plain text files.",
-    )
-
-    column: str | None = Field(
-        default=None,
-        description="Column in the dataset that contains the prompts. Required for datasets, ignored for plain text files.",
-    )
-
-    prefix: str = Field(
-        default="",
-        description="Text to prepend to each prompt.",
-    )
-
-    suffix: str = Field(
-        default="",
-        description="Text to append to each prompt.",
-    )
-
-    system_prompt: str | None = Field(
-        default=None,
-        description="System prompt to use with the prompts (overrides global system prompt if set).",
-    )
-
-    residual_plot_label: str | None = Field(
-        default=None,
-        description="Label to use for the dataset in plots of residual vectors.",
-        exclude=True,
-    )
-
-    residual_plot_color: str | None = Field(
-        default=None,
-        description="Matplotlib color to use for the dataset in plots of residual vectors.",
-        exclude=True,
-    )
-
-
-def dataset_specs_overlap(
-    left: DatasetSpecification, right: DatasetSpecification
-) -> bool:
-    """Return whether two simple Hugging Face split slices can share rows."""
-    if left.dataset != right.dataset:
-        return False
-    if not left.commit or not right.commit:
-        return True
-    if left.commit != right.commit:
-        return False
-    left_split, right_split = left.split or "", right.split or ""
-    if not left_split or not right_split:
-        return True
-    if left_split.partition("[")[0] != right_split.partition("[")[0]:
-        return False
-    pattern = re.compile(r"^([^[]+)(?:\[(\d*):(\d*)\])?$")
-    matches = [pattern.match(spec.split or "") for spec in (left, right)]
-    if not all(matches):
-        return True
-    parsed = []
-    for match in matches:
-        assert match is not None
-        parsed.append(
-            (
-                match.group(1),
-                int(match.group(2) or 0),
-                int(match.group(3)) if match.group(3) else math.inf,
-            )
-        )
-    return parsed[0][0] == parsed[1][0] and max(parsed[0][1], parsed[1][1]) < min(
-        parsed[0][2], parsed[1][2]
-    )
-
-
-class AcceptanceGate(BaseModel):
-    """Deterministic validation and post-export acceptance criteria."""
-
-    keyword_score: str = Field(description="Keyword scorer display name.")
-    keyword_max: float = Field(ge=0, le=1)
-    keyword_drop_min: float = Field(ge=0, le=1)
-    kl_score: str = Field(description="KL scorer display name.")
-    kl_max: float = Field(ge=0, le=1)
-    expected_samples: PositiveInt = 100
-    selection: Literal["lexicographic"] = "lexicographic"
-    keyword_audit_prompts: DatasetSpecification
-    kl_audit_prompts: DatasetSpecification
-    report_path: str = Field(default="acceptance.json", exclude=True)
-
-    @model_validator(mode="after")
-    def validate_score_names(self) -> "AcceptanceGate":
-        if not self.keyword_score.strip() or not self.kl_score.strip():
-            raise ValueError("acceptance score names must not be empty")
-        if self.keyword_score == self.kl_score:
-            raise ValueError("acceptance score names must be unique")
-        if not self.keyword_audit_prompts.commit or not self.kl_audit_prompts.commit:
-            raise ValueError("acceptance audit datasets must pin a commit")
-        return self
 
 
 class ScorerConfig(BaseModel):
@@ -202,73 +106,6 @@ class ScorerConfig(BaseModel):
             raise ValueError("whitespace is not allowed")
 
         return value
-
-
-def _acceptance_scorer_prompts(
-    scorers: list[ScorerConfig], extras: dict[str, Any] | None, gate: AcceptanceGate
-) -> list[DatasetSpecification]:
-    """Resolve the explicitly configured validation datasets for gate scorers."""
-    tables = (extras or {}).get("scorer", {})
-    requirements = (
-        (
-            gate.keyword_score,
-            "heretic.scorers.keyword_rate.KeywordRate",
-            "KeywordRate",
-            "Keywords",
-        ),
-        (
-            gate.kl_score,
-            "heretic.scorers.kl_divergence.KLDivergence",
-            "KLDivergence",
-            "KL divergence",
-        ),
-    )
-    resolved = []
-    for score_name, plugin, class_name, display_name in requirements:
-        matches = [
-            item
-            for item in scorers
-            if item.plugin == plugin
-            and score_name
-            == (
-                f"{display_name} - {item.instance_name}"
-                if item.instance_name
-                else display_name
-            )
-        ]
-        if len(matches) != 1 or not isinstance(tables, dict):
-            raise ValueError(
-                f"acceptance target scorer is not configured: {score_name}"
-            )
-        item = matches[0]
-        base = tables.get(class_name, {})
-        instance = tables.get(f"{class_name}_{item.instance_name}", {})
-        if not isinstance(base, dict) or not isinstance(instance, dict):
-            raise ValueError("acceptance scorer settings must be tables")
-        raw = instance.get("prompts", base.get("prompts"))
-        if not isinstance(raw, dict):
-            raise ValueError(
-                f"acceptance scorer must explicitly configure prompts: {score_name}"
-            )
-        resolved.append(DatasetSpecification.model_validate(raw))
-    return resolved
-
-
-def _configured_dataset_specs(
-    extras: dict[str, Any] | None,
-) -> list[DatasetSpecification]:
-    candidates = []
-    tables = (extras or {}).get("scorer", {})
-    if not isinstance(tables, dict):
-        raise ValueError("scorer settings must be tables")
-    stack = list(tables.values())
-    while stack:
-        value = stack.pop()
-        if isinstance(value, dict) and "dataset" in value:
-            candidates.append(DatasetSpecification.model_validate(value))
-        elif isinstance(value, dict):
-            stack.extend(value.values())
-    return candidates
 
 
 class BenchmarkSpecification(BaseModel):
@@ -534,6 +371,25 @@ class Settings(BaseSettings):
         description="LoRA rank used for Calibrated Arbitrary-Rank Ablation.",
     )
 
+    ara_objective_version: Literal["point-v1", "trajectory-v2"] = Field(
+        default="point-v1",
+        description="Versioned CARA capture, objective, and study protocol.",
+    )
+
+    ara_trajectory_tokens: int = Field(
+        default=8,
+        ge=2,
+        le=32,
+        description="Base continuation tokens captured by trajectory-v2.",
+    )
+
+    ara_trajectory_decay: float = Field(
+        default=0.85,
+        gt=0,
+        le=1,
+        description="Per-step geometric weight before prompt normalization.",
+    )
+
     ara_calibration_size: int = Field(
         default=64,
         ge=2,
@@ -559,6 +415,39 @@ class Settings(BaseSettings):
     ara_lbfgs_history_size: PositiveInt = Field(
         default=10,
         description="L-BFGS history size for each CARA target module.",
+    )
+
+    ara_max_good_delta_rms: float = Field(
+        default=0.60,
+        gt=0,
+        description="Maximum weighted good-trajectory deployment delta ratio.",
+    )
+
+    ara_max_singular_value: float = Field(
+        default=8.0,
+        gt=0,
+        description="Maximum singular value of the deployed effective update.",
+    )
+
+    ara_search_space: ARASearchSpace = Field(
+        default_factory=ARASearchSpace,
+        description="Fixed eight-dimensional trajectory-v2 search ranges.",
+    )
+
+    ara_seed_trials: list[ARASeedTrial] = Field(
+        default_factory=list,
+        description="Ordered, fully specified trajectory-v2 anchors.",
+    )
+
+    ara_runtime_guard: ARARuntimeGuard | None = Field(
+        default=None,
+        description="Optional explicit ARA module/device/resource contract.",
+    )
+
+    recover_orphaned_trials: bool = Field(
+        default=False,
+        description="Recover orphan trials only under an external exclusive lock.",
+        exclude=True,
     )
 
     acceptance_gate: AcceptanceGate | None = Field(
@@ -776,6 +665,83 @@ class Settings(BaseSettings):
             raise ValueError(f"reserved generation keys: {conflicts}")
         return value
 
+    def _validate_acceptance_settings(self) -> None:
+        gate = self.acceptance_gate
+        if gate is None:
+            return
+        if self.abliteration_method != AbliterationMethod.ARA:
+            raise ValueError("acceptance_gate is only supported for ARA")
+        if self.generation_kwargs.get("do_sample", False) is not False:
+            raise ValueError("acceptance_gate requires generation do_sample=false")
+        for key, expected in gate.required_chat_template_kwargs.items():
+            if self.chat_template_kwargs.get(key) != expected:
+                value = (
+                    str(expected).lower()
+                    if isinstance(expected, bool)
+                    else repr(expected)
+                )
+                raise ValueError(
+                    f"acceptance requires chat_template_kwargs.{key}={value}"
+                )
+        identities = [(item.plugin, item.instance_name) for item in self.scorers]
+        if len(identities) != len(set(identities)):
+            raise ValueError("acceptance gate requires unique scorer instances")
+        candidates = [
+            self.good_prompts,
+            self.bad_prompts,
+            *_acceptance_scorer_prompts(self.scorers, self.model_extra, gate),
+            *_configured_dataset_specs(self.model_extra),
+        ]
+        if any(not item.commit for item in candidates):
+            raise ValueError("acceptance datasets must pin a commit")
+        audits = (gate.keyword_audit_prompts, gate.kl_audit_prompts)
+        if any(
+            dataset_specs_overlap(audit, item)
+            for audit in audits
+            for item in candidates
+        ):
+            raise ValueError("acceptance audit rows overlap calibration or validation")
+
+    def _validate_trajectory_settings(self) -> None:
+        if self.ara_objective_version != "trajectory-v2":
+            return
+        if self.abliteration_method != AbliterationMethod.ARA:
+            raise ValueError("trajectory-v2 is only supported for ARA")
+        if self.acceptance_gate is None or self.ara_runtime_guard is None:
+            raise ValueError(
+                "trajectory-v2 requires acceptance_gate and ara_runtime_guard"
+            )
+        if (
+            self.n_trials != 120
+            or self.n_startup_trials != 24
+            or len(self.ara_seed_trials) != 8
+        ):
+            raise ValueError(
+                "trajectory-v2 requires 8 anchors, 24 startup trials, and 120 total trials"
+            )
+        if (self.ara_calibration_size, self.ara_capture_batch_size) != (96, 1):
+            raise ValueError(
+                "trajectory-v2 requires calibration=96 and capture batch=1"
+            )
+        validate_seed_trials(self.ara_seed_trials, self.ara_search_space)
+        gate = self.acceptance_gate
+        health = (
+            gate.required_trials,
+            gate.min_complete_trials,
+            gate.max_runtime_failure_rate,
+        )
+        if health != (120, 110, 0.05):
+            raise ValueError("trajectory-v2 acceptance health gate is fixed")
+        contract = {item.plugin: item.optimization for item in self.scorers}
+        expected = {
+            "heretic.scorers.refusal_log_odds.RefusalLogOdds": "minimize",
+            "heretic.scorers.keyword_rate.KeywordRate": "none",
+            "heretic.scorers.kl_divergence.KLDivergence": "minimize",
+        }
+        named_instances = any(item.instance_name is not None for item in self.scorers)
+        if len(self.scorers) != 3 or named_instances or contract != expected:
+            raise ValueError("trajectory-v2 scorer objectives are fixed")
+
     @model_validator(mode="after")
     def validate_method_settings(self) -> "Settings":
         if (
@@ -783,43 +749,8 @@ class Settings(BaseSettings):
             and self.row_normalization != RowNormalization.NONE
         ):
             raise ValueError('row_normalization must be "none" for ARA')
-        if self.acceptance_gate is not None:
-            if self.abliteration_method != AbliterationMethod.ARA:
-                raise ValueError("acceptance_gate is only supported for ARA")
-            if self.generation_kwargs.get("do_sample", False) is not False:
-                raise ValueError("acceptance_gate requires generation do_sample=false")
-            if (
-                self.model == "Qwen/Qwen3.8-27B"
-                and self.chat_template_kwargs.get("enable_thinking") is not False
-            ):
-                raise ValueError("Qwen acceptance requires enable_thinking=false")
-            identities = [
-                (config.plugin, config.instance_name) for config in self.scorers
-            ]
-            if len(identities) != len(set(identities)):
-                raise ValueError("acceptance gate requires unique scorer instances")
-            candidates = [
-                self.good_prompts,
-                self.bad_prompts,
-                *_acceptance_scorer_prompts(
-                    self.scorers, self.model_extra, self.acceptance_gate
-                ),
-                *_configured_dataset_specs(self.model_extra),
-            ]
-            if any(not item.commit for item in candidates):
-                raise ValueError("acceptance datasets must pin a commit")
-            audits = (
-                self.acceptance_gate.keyword_audit_prompts,
-                self.acceptance_gate.kl_audit_prompts,
-            )
-            if any(
-                dataset_specs_overlap(audit, item)
-                for audit in audits
-                for item in candidates
-            ):
-                raise ValueError(
-                    "acceptance audit rows overlap calibration or validation"
-                )
+        self._validate_acceptance_settings()
+        self._validate_trajectory_settings()
         return self
 
     # Extra keys hold plugin configuration such as `[scorer.KeywordRate]`.
@@ -847,28 +778,6 @@ class Settings(BaseSettings):
             file_secret_settings,
             TomlConfigSettingsSource(settings_cls, toml_file="config.toml"),
         )
-
-
-RUN_CONTROL_FIELDS = frozenset(
-    {
-        "checkpoint_action",
-        "collect_reproducibles",
-        "evaluate_model",
-        "export_strategy",
-        "ignore_mismatches",
-        "model_action",
-        "n_additional_trials",
-        "n_trials",
-        "print_debug_information",
-        "reproduce",
-        "save_directory",
-        "study_checkpoint_dir",
-        "trial_index",
-        "upload_repo_id",
-        "upload_repo_private",
-        "upload_reproducibility_information",
-    }
-)
 
 
 def merge_study_settings(stored: Settings, current: Settings) -> Settings:

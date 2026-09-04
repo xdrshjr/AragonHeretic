@@ -10,14 +10,23 @@ from unittest.mock import Mock, patch
 
 from optuna.trial import create_trial
 
-from heretic.config import AcceptanceGate, DatasetSpecification, Settings
-from heretic.trial_methods import AcceptanceReport
+from heretic.config import (
+    AcceptanceGate,
+    DatasetSpecification,
+    ExportStrategy,
+    QuantizationMethod,
+    Settings,
+)
+from heretic.trial_methods import AcceptanceReport, parameters_from_trial
 from heretic.workflow import (
     AcceptanceRuntime,
     AcceptedExport,
     export_accepted_adapter,
+    make_reproduction_trial,
+    obtain_export_strategy,
     replay_candidate,
     run_acceptance_gate,
+    select_for_acceptance,
     verify_reloaded_adapter,
 )
 
@@ -76,6 +85,75 @@ def ara_trial():
 
 
 class AcceptanceWorkflowTests(unittest.TestCase):
+    def test_configured_export_strategy_does_not_construct_prompt(self) -> None:
+        settings = SimpleNamespace(
+            export_strategy=ExportStrategy.ADAPTER,
+            quantization=QuantizationMethod.NONE,
+        )
+        with patch(
+            "heretic.workflow.questionary.select",
+            side_effect=AssertionError("prompt constructed"),
+        ):
+            self.assertEqual(
+                obtain_export_strategy(cast(Settings, settings), Mock()),
+                ExportStrategy.ADAPTER,
+            )
+
+    def test_v2_reproduction_trial_preserves_full_envelope(self) -> None:
+        payload = {
+            "layer_start_fraction": 0.2,
+            "layer_span_fraction": 0.4,
+            "start_layer_index": 1,
+            "end_layer_index": 3,
+            "attn_strength": 0.5,
+            "mlp_strength": 0.25,
+            "push_weight": 1.0,
+            "margin": 4.0,
+            "attn_deployment_gain": 1.0,
+            "mlp_deployment_gain": 1.0,
+        }
+        envelope = {
+            "method": "ara",
+            "objective_version": "trajectory-v2",
+            "search_space_version": "trajectory-v2-eight-dimensional-v1",
+            "payload": payload,
+        }
+        trial = make_reproduction_trial(
+            {"schema": "cara-reproduce-v2", "scores": []}, envelope
+        )
+        self.assertEqual(trial.user_attrs["ara_parameters"], envelope)
+        self.assertEqual(parameters_from_trial(trial).start_layer_index, 1)
+
+    def test_local_model_path_uses_generic_candidate_selection(self) -> None:
+        candidate = ara_trial()
+        configured_gate = gate().model_copy(
+            update={"required_trials": 1, "min_complete_trials": 1}
+        )
+        with patch(
+            "heretic.workflow.select_accepted_trial",
+            return_value=candidate,
+        ) as select:
+            selected = select_for_acceptance(
+                [candidate], configured_gate, "study", "D:/models/Qwen-local"
+            )
+        self.assertIs(selected, candidate)
+        select.assert_called_once()
+
+    def test_missing_candidate_is_not_silently_ignored(self) -> None:
+        configured_gate = gate().model_copy(
+            update={"required_trials": 1, "min_complete_trials": 1}
+        )
+        with (
+            patch(
+                "heretic.workflow.select_accepted_trial",
+                side_effect=RuntimeError("no candidate"),
+            ),
+            self.assertRaisesRegex(RuntimeError, "no candidate"),
+        ):
+            select_for_acceptance(
+                [ara_trial()], configured_gate, "study", "local/model"
+            )
+
     def test_replay_always_cleans_up_after_scorer_failure(self) -> None:
         evaluator = Mock()
         evaluator.get_scores.side_effect = RuntimeError("scorer failed")

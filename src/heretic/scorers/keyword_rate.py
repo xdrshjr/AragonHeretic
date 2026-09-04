@@ -4,6 +4,7 @@
 from pydantic import BaseModel, Field
 
 from heretic.config import DatasetSpecification
+from heretic.protocol_data import fingerprint_dataset
 from heretic.scorer import Context, Score, Scorer
 from heretic.utils import print
 
@@ -88,11 +89,19 @@ class KeywordRate(Scorer):
             f"Loading KeywordRate evaluation prompts from [bold]{self.settings.prompts.dataset}[/]..."
         )
         self.prompts = ctx.load_prompts(self.settings.prompts)
+        self.dataset_fingerprint = fingerprint_dataset(
+            self.settings.prompts,
+            self.prompts,
+        )
         print(f"* [bold]{len(self.prompts)}[/] prompts loaded")
 
     def get_score(self, ctx: Context) -> Score:
         match_count = 0
         responses = ctx.get_responses(self.prompts)
+        if self.heretic_settings.ara_objective_version == "trajectory-v2" and any(
+            not response.strip() for response in responses
+        ):
+            raise ValueError("trajectory-v2 responses must all be non-empty")
         for prompt, response in zip(self.prompts, responses):
             is_match = self._is_match(response)
             if is_match:
@@ -115,6 +124,8 @@ class KeywordRate(Scorer):
             value=float(match_count / len(self.prompts)),
             rich_display=f"{match_count}/{len(self.prompts)}",
             md_display=f"{match_count}/{len(self.prompts)}",
+            sample_count=len(self.prompts),
+            dataset_fingerprint=self.dataset_fingerprint,
         )
 
     def _is_match(self, response: str) -> bool:

@@ -14,6 +14,7 @@ from optuna.samplers import TPESampler
 from optuna.trial import FixedTrial, TrialState, create_trial
 
 from heretic.ara import ARAComponentParameters, ARAParameters
+from heretic.artifact_schema import ACCEPTANCE_SCHEMA, validate_acceptance_v2
 from heretic.config import (
     AbliterationMethod,
     AcceptanceGate,
@@ -33,6 +34,7 @@ from heretic.trial_methods import (
     sample_method_parameters,
     select_accepted_trial,
 )
+from heretic.ara_search import ARATrajectoryParameters
 from heretic.workflow import select_for_acceptance
 
 
@@ -123,6 +125,24 @@ class TrialMethodTests(unittest.TestCase):
             parse_parameter_envelope(parameter_envelope(original)), original
         )
 
+    def test_trajectory_parameter_envelope_round_trip(self) -> None:
+        original = ARATrajectoryParameters(
+            0.2,
+            0.5,
+            12,
+            44,
+            0.7,
+            0.01,
+            2.0,
+            4.0,
+            1.5,
+            1.0,
+        )
+        self.assertEqual(
+            parse_parameter_envelope(parameter_envelope(original)),
+            original,
+        )
+
     def test_gate_filters_and_uses_lexicographic_order(self) -> None:
         study = optuna.create_study(directions=["minimize", "minimize"])
         for item in (
@@ -168,6 +188,15 @@ class TrialMethodTests(unittest.TestCase):
             select_for_acceptance(trials, gate(), "study", "Qwen/Qwen3.8-27B"),
             trials[0],
         )
+
+    def test_health_gate_applies_to_local_model_paths(self) -> None:
+        with self.assertRaisesRegex(AcceptanceGateError, "120 required"):
+            select_for_acceptance(
+                [trial() for _ in range(119)],
+                gate(),
+                "study",
+                "/models/Qwen3.8-27B",
+            )
 
     def test_ara_search_space_has_fixed_dimensions(self) -> None:
         raw = {
@@ -225,6 +254,25 @@ class TrialMethodTests(unittest.TestCase):
         self.assertNotEqual(
             build_study_fingerprint(first), build_study_fingerprint(second)
         )
+
+    def test_failed_v2_acceptance_requires_machine_failure_evidence(self) -> None:
+        payload = {
+            "schema": ACCEPTANCE_SCHEMA,
+            "status": "failed",
+            "failure_stage": "validation-replay",
+            "study_fingerprint": "study",
+            "selected_trial_number": 3,
+            "audit_consumed": False,
+        }
+        validate_acceptance_v2(payload)
+        for field in ("failure_stage", "audit_consumed"):
+            invalid = dict(payload)
+            invalid.pop(field)
+            with self.subTest(field=field), self.assertRaises(ValueError):
+                validate_acceptance_v2(invalid)
+        invalid = {**payload, "selected_trial_number": "3"}
+        with self.assertRaisesRegex(ValueError, "selected trial"):
+            validate_acceptance_v2(invalid)
 
 
 if __name__ == "__main__":

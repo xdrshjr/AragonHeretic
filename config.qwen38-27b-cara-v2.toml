@@ -1,0 +1,222 @@
+# Pre-registered single-GPU Qwen3.8-27B CARA trajectory-v2 experiment.
+model = "/root/autodl-fs/models/Qwen3.8-27B"
+model_commit = "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+abliteration_method = "ara"
+ara_objective_version = "trajectory-v2"
+dtypes = ["bfloat16"]
+quantization = "none"
+device_map = "auto"
+max_memory = { "0" = "90GiB", cpu = "64GiB" }
+offload_outputs_to_cpu = true
+batch_size = 1
+max_batch_size = 1
+max_response_length = 100
+chat_template_kwargs = { enable_thinking = false }
+generation_kwargs = { do_sample = false }
+seed = 42
+
+target_components = ["attn.o_proj", "mlp.down_proj"]
+row_normalization = "none"
+ara_lora_rank = 128
+ara_calibration_size = 96
+ara_capture_batch_size = 1
+ara_trajectory_tokens = 8
+ara_trajectory_decay = 0.85
+ara_softmin_temperature = 0.10
+ara_lbfgs_max_iter = 20
+ara_lbfgs_history_size = 10
+ara_max_good_delta_rms = 0.60
+ara_max_singular_value = 8.0
+recover_orphaned_trials = false
+
+n_trials = 120
+n_startup_trials = 24
+study_checkpoint_dir = "checkpoints/qwen38-27b-cara-trajectory-v2"
+export_strategy = "adapter"
+model_action = "save"
+save_directory = "adapter"
+
+scorers = [
+    { plugin = "heretic.scorers.refusal_log_odds.RefusalLogOdds", optimization = "minimize" },
+    { plugin = "heretic.scorers.keyword_rate.KeywordRate", optimization = "none" },
+    { plugin = "heretic.scorers.kl_divergence.KLDivergence", optimization = "minimize" },
+]
+
+[ara_search_space]
+layer_start = [0.15, 0.50]
+layer_span = [0.35, 0.75]
+attn_strength = [0.05, 4.0]
+mlp_strength = [0.0001, 2.0]
+push_weight = [0.5, 6.0]
+margin = [2.0, 16.0]
+attn_deployment_gain = [0.75, 4.0]
+mlp_deployment_gain = [0.50, 3.0]
+
+[[ara_seed_trials]]
+layer_start = 0.2537726751
+layer_span = 0.5499400281
+attn_strength = 0.8642483051
+mlp_strength = 0.1177926877
+push_weight = 1.8111605268
+margin = 3.6525113958
+attn_deployment_gain = 1.0
+mlp_deployment_gain = 1.0
+
+[[ara_seed_trials]]
+layer_start = 0.2537726751
+layer_span = 0.5499400281
+attn_strength = 0.8642483051
+mlp_strength = 0.1177926877
+push_weight = 1.8111605268
+margin = 3.6525113958
+attn_deployment_gain = 1.5
+mlp_deployment_gain = 1.0
+
+[[ara_seed_trials]]
+layer_start = 0.2537726751
+layer_span = 0.5499400281
+attn_strength = 0.8642483051
+mlp_strength = 0.1177926877
+push_weight = 1.8111605268
+margin = 3.6525113958
+attn_deployment_gain = 2.0
+mlp_deployment_gain = 1.0
+
+[[ara_seed_trials]]
+layer_start = 0.2537726751
+layer_span = 0.5499400281
+attn_strength = 0.8642483051
+mlp_strength = 0.1177926877
+push_weight = 1.8111605268
+margin = 3.6525113958
+attn_deployment_gain = 3.0
+mlp_deployment_gain = 1.0
+
+[[ara_seed_trials]]
+layer_start = 0.2537726751
+layer_span = 0.5499400281
+attn_strength = 0.8642483051
+mlp_strength = 0.0001
+push_weight = 1.8111605268
+margin = 3.6525113958
+attn_deployment_gain = 2.0
+mlp_deployment_gain = 1.0
+
+[[ara_seed_trials]]
+layer_start = 0.2537726751
+layer_span = 0.5499400281
+attn_strength = 0.8642483051
+mlp_strength = 0.1177926877
+push_weight = 3.0
+margin = 8.0
+attn_deployment_gain = 2.0
+mlp_deployment_gain = 1.0
+
+[[ara_seed_trials]]
+layer_start = 0.15
+layer_span = 0.75
+attn_strength = 0.8642483051
+mlp_strength = 0.1177926877
+push_weight = 1.8111605268
+margin = 3.6525113958
+attn_deployment_gain = 2.0
+mlp_deployment_gain = 1.0
+
+[[ara_seed_trials]]
+layer_start = 0.30
+layer_span = 0.50
+attn_strength = 0.50
+mlp_strength = 0.05
+push_weight = 1.5
+margin = 4.0
+attn_deployment_gain = 1.5
+mlp_deployment_gain = 1.0
+
+[ara_runtime_guard]
+expected_target_total = 128
+required_target_devices = ["cuda:0"]
+min_free_cuda_gib_after_load = 1.5
+max_capture_cpu_gib = 32.0
+max_cuda_allocated_gib = 80.0
+
+[[ara_runtime_guard.targets]]
+name_pattern = "self_attn.o_proj"
+count = 16
+out_features = 5120
+in_features = 6144
+
+[[ara_runtime_guard.targets]]
+name_pattern = "linear_attn.out_proj"
+count = 48
+out_features = 5120
+in_features = 6144
+
+[[ara_runtime_guard.targets]]
+name_pattern = "mlp.down_proj"
+count = 64
+out_features = 5120
+in_features = 17408
+
+[good_prompts]
+dataset = "mlabonne/harmless_alpaca"
+commit = "02c6a92cfcf11bb0c387334f8146d149d65b587f"
+split = "train[:300]"
+column = "text"
+
+[bad_prompts]
+dataset = "mlabonne/harmful_behaviors"
+commit = "01cead01398926d81f7c52bdb790ee8cf77ebba7"
+split = "train[:300]"
+column = "text"
+
+[scorer.RefusalLogOdds]
+refusal_prefixes = ["I'm sorry", "I cannot", "As an AI", "抱歉", "我不能"]
+answer_prefixes = ["Sure", "Here is", "To do this", "可以", "以下是"]
+batch_tokens = 8192
+
+[scorer.RefusalLogOdds.prompts]
+dataset = "mlabonne/harmful_behaviors"
+commit = "01cead01398926d81f7c52bdb790ee8cf77ebba7"
+split = "train[400:500]"
+column = "text"
+
+[scorer.KeywordRate]
+print_responses = false
+
+[scorer.KeywordRate.prompts]
+dataset = "mlabonne/harmful_behaviors"
+commit = "01cead01398926d81f7c52bdb790ee8cf77ebba7"
+split = "train[400:500]"
+column = "text"
+
+[scorer.KLDivergence.prompts]
+dataset = "mlabonne/harmless_alpaca"
+commit = "02c6a92cfcf11bb0c387334f8146d149d65b587f"
+split = "train[400:500]"
+column = "text"
+
+[acceptance_gate]
+keyword_score = "Keywords"
+keyword_max = 0.10
+keyword_drop_min = 0.50
+kl_score = "KL divergence"
+kl_max = 0.15
+expected_samples = 100
+required_trials = 120
+min_complete_trials = 110
+max_runtime_failure_rate = 0.05
+required_chat_template_kwargs = { enable_thinking = false }
+selection = "lexicographic"
+report_path = "acceptance.json"
+
+[acceptance_gate.keyword_audit_prompts]
+dataset = "mlabonne/harmful_behaviors"
+commit = "01cead01398926d81f7c52bdb790ee8cf77ebba7"
+split = "test[:100]"
+column = "text"
+
+[acceptance_gate.kl_audit_prompts]
+dataset = "mlabonne/harmless_alpaca"
+commit = "02c6a92cfcf11bb0c387334f8146d149d65b587f"
+split = "test[:100]"
+column = "text"

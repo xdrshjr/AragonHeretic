@@ -131,6 +131,16 @@ target_components = ["attn.o_proj", "mlp.down_proj"]
 # CARA requires row_normalization = "none".
 ara_lora_rank = 128
 
+# CARA protocol version. "point-v1" preserves the existing one-token method.
+# "trajectory-v2" enables the pre-registered teacher-forced trajectory protocol
+# and requires the search space, eight anchors, runtime guard, and gate below.
+ara_objective_version = "point-v1"
+
+# trajectory-v2 captures the base model's first continuation tokens and applies
+# prompt-normalized geometric step weights.
+ara_trajectory_tokens = 8
+ara_trajectory_decay = 0.85
+
 # Number of good and bad prompts sampled once from their calibration pools.
 ara_calibration_size = 64
 
@@ -141,6 +151,29 @@ ara_capture_batch_size = 1
 ara_softmin_temperature = 0.10
 ara_lbfgs_max_iter = 20
 ara_lbfgs_history_size = 10
+
+# trajectory-v2 post-deployment local guards.
+ara_max_good_delta_rms = 0.60
+ara_max_singular_value = 8.0
+
+# An interrupted trajectory-v2 run may recover RUNNING attempts only when the
+# caller proves exclusive ownership (the supplied v2 wrapper holds a flock).
+recover_orphaned_trials = false
+
+# trajectory-v2 uses these exact eight dimensions without clamp mappings:
+# [ara_search_space]
+# layer_start = [0.15, 0.50]
+# layer_span = [0.35, 0.75]
+# attn_strength = [0.05, 4.0]
+# mlp_strength = [0.0001, 2.0]
+# push_weight = [0.5, 6.0]
+# margin = [2.0, 16.0]
+# attn_deployment_gain = [0.75, 4.0]
+# mlp_deployment_gain = [0.50, 3.0]
+
+# For trajectory-v2, define exactly eight [[ara_seed_trials]] entries and an
+# [ara_runtime_guard] with [[ara_runtime_guard.targets]]. See
+# config.qwen38-27b-cara-v2.toml for the complete pre-registered experiment.
 
 # The symmetric winsorization to apply to the per-prompt, per-layer residual vectors,
 # expressed as the quantile to clamp to (between 0 and 1). Disabled by default.

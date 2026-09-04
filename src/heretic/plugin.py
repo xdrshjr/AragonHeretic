@@ -18,6 +18,7 @@ from heretic.utils import Prompt, load_prompts
 from .config import DatasetSpecification
 from .config import Settings as HereticSettings
 from .model import Model
+from .protocol_data import materialize_prompt_bundle, prompt_spec_cache_key
 
 T = TypeVar("T")
 
@@ -54,6 +55,54 @@ def is_builtin_plugin(name: str) -> bool:
     return name.startswith("heretic.scorers.")
 
 
+def _plugin_class(module: ModuleType, class_name: str, name: str) -> type[Any]:
+    value = getattr(module, class_name, None)
+    if not inspect.isclass(value):
+        raise ValueError(
+            f"Plugin '{name}' does not export a class named '{class_name}'"
+        )
+    return value
+
+
+def _load_file_plugin(name: str) -> type[Any]:
+    file_path, class_name = name.rsplit(":", 1)
+    if not file_path.endswith(".py") or not class_name:
+        raise ValueError("File-based plugin must use 'path/to/plugin.py:ClassName'")
+    plugin_path = Path(file_path)
+    if not plugin_path.is_absolute():
+        plugin_path = Path.cwd() / plugin_path
+    plugin_path = plugin_path.resolve()
+    if not plugin_path.is_file():
+        raise ImportError(f"Plugin file '{plugin_path}' does not exist")
+    module_name = f"heretic_plugin_{plugin_path}"
+    module = sys.modules.get(module_name)
+    if module is None:
+        spec = importlib.util.spec_from_file_location(module_name, plugin_path)
+        if spec is None or spec.loader is None:
+            raise ImportError(f"Could not load plugin '{name}' (invalid module spec)")
+        module = importlib.util.module_from_spec(spec)
+        sys.modules[module_name] = module
+        try:
+            spec.loader.exec_module(module)
+        except Exception:
+            sys.modules.pop(module_name, None)
+            raise
+    return _plugin_class(module, class_name, name)
+
+
+def _load_import_plugin(name: str) -> type[Any]:
+    if "." not in name:
+        raise ValueError(
+            "Import-based plugin must use 'fully.qualified.module.ClassName'"
+        )
+    module_name, class_name = name.rsplit(".", 1)
+    try:
+        module = importlib.import_module(module_name)
+    except ImportError as error:
+        raise ImportError(f"Error loading plugin '{name}': {error}") from error
+    return _plugin_class(module, class_name, name)
+
+
 def load_plugin(
     name: str,
     base_class: type[T],
@@ -69,78 +118,11 @@ def load_plugin(
     - `fully.qualified.module.MyPluginClass`: import the module and load the class.
     """
 
-    def validate_class(module: ModuleType, class_name: str) -> type[Any]:
-        """
-        Checks that the module actually exports the class as claimed and returns the class.
-        """
-        obj = getattr(module, class_name, None)
-        if not inspect.isclass(obj):
-            raise ValueError(
-                f"Plugin '{name}' does not export a class named '{class_name}'"
-            )
-        return obj
-
-    # Common user trap with filepath imports.
     if name.endswith(".py"):
         raise ValueError(
             "You must append the plugin class name to the filepath like this: path/to/plugin.py:ClassName"
         )
-
-    # File path with explicit class name, e.g. "C:\\path\\plugin.py:MyPlugin".
-    if ":" in name:
-        file_path, class_name = name.rsplit(":", 1)
-        if not file_path.endswith(".py") or not class_name:
-            raise ValueError(
-                "File-based plugin must use the form 'path/to/plugin.py:ClassName'"
-            )
-
-        plugin_path = Path(file_path)
-        if not plugin_path.is_absolute():
-            plugin_path = Path.cwd() / plugin_path
-        plugin_path = plugin_path.resolve()
-
-        if not plugin_path.is_file():
-            raise ImportError(f"Plugin file '{plugin_path}' does not exist")
-
-        # We're writing directly to the sys.modules dict,
-        # so the typical restrictions on module names
-        # (no dots, slashes, etc.) don't apply.
-        module_name = f"heretic_plugin_{plugin_path}"
-
-        # Reuse already-loaded modules to avoid re-executing the plugin on repeated loads.
-        module = sys.modules.get(module_name)
-        if module is None:
-            spec = importlib.util.spec_from_file_location(module_name, plugin_path)
-            if spec is None or spec.loader is None:
-                raise ImportError(
-                    f"Could not load plugin '{name}' (invalid module spec)"
-                )
-
-            module = importlib.util.module_from_spec(spec)
-
-            # Cache before executing to match normal import semantics and allow
-            # circular imports. If execution fails, remove the entry.
-            sys.modules[module_name] = module
-            try:
-                spec.loader.exec_module(module)
-            except Exception:
-                sys.modules.pop(module_name, None)
-                raise
-
-        plugin_cls = validate_class(module, class_name)
-    # Fully-qualified import path, e.g "heretic.scorers.keyword_rate.KeywordRate".
-    else:
-        if "." not in name:
-            raise ValueError(
-                "Import-based plugin must use the form 'fully.qualified.module.ClassName'"
-            )
-        module_name, class_name = name.rsplit(".", 1)
-        try:
-            module = importlib.import_module(module_name)
-        except ImportError as e:
-            raise ImportError(f"Error loading plugin '{name}': {e}") from e
-        plugin_cls = validate_class(module, class_name)
-
+    plugin_cls = _load_file_plugin(name) if ":" in name else _load_import_plugin(name)
     if not issubclass(plugin_cls, base_class):
         raise TypeError(f"Plugin '{name}' must subclass {base_class.__name__}")
 
@@ -157,10 +139,17 @@ class Context:
     Direct access to the underlying Model is intentionally not exposed.
     """
 
-    def __init__(self, settings: HereticSettings, model: Model) -> None:
+    def __init__(
+        self,
+        settings: HereticSettings,
+        model: Model,
+        prompt_cache: dict[str, list[Prompt]] | None = None,
+    ) -> None:
         self._model = model
         self._settings = settings
         self._responses_cache: dict[tuple[tuple[str, str], ...], list[str]] = {}
+        self._continuation_cache: dict[tuple[Any, ...], Tensor] = {}
+        self._prompts_cache = dict(prompt_cache or {})
 
     def _cache_key(self, prompts: list[Prompt]) -> tuple[tuple[str, str], ...]:
         return tuple((p.system, p.user) for p in prompts)
@@ -180,8 +169,49 @@ class Context:
     def get_residuals(self, prompts: list[Prompt]) -> Tensor:
         return self._model.get_residuals_batched(prompts)
 
+    def validate_prefix_groups(
+        self,
+        refusal_prefixes: list[str],
+        answer_prefixes: list[str],
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Validate prefix text and token identity with the active tokenizer."""
+        return self._model.validate_prefix_groups(
+            refusal_prefixes,
+            answer_prefixes,
+        )
+
+    def get_continuation_logprobs(
+        self,
+        prompts: list[Prompt],
+        continuations: tuple[str, ...],
+        batch_tokens: int,
+    ) -> Tensor:
+        """Return continuation scores cached only for this score pass."""
+        prompt_key = self._cache_key(prompts)
+        token_key, tokenizer_identity = self._model.continuation_cache_identity(
+            continuations
+        )
+        key = (prompt_key, token_key, batch_tokens, tokenizer_identity)
+        if key not in self._continuation_cache:
+            self._continuation_cache[key] = self._model.get_continuation_logprobs(
+                prompts,
+                continuations,
+                batch_tokens,
+            )
+        return self._continuation_cache[key]
+
     def load_prompts(self, specification: DatasetSpecification) -> list[Prompt]:
-        return load_prompts(self._settings, specification)
+        key = prompt_spec_cache_key(specification)
+        if key not in self._prompts_cache:
+            prompts = load_prompts(self._settings, specification)
+            if self._settings.ara_objective_version == "trajectory-v2":
+                prompts = list(
+                    materialize_prompt_bundle(
+                        "scorer", specification, lambda _item: prompts
+                    ).prompts
+                )
+            self._prompts_cache[key] = prompts
+        return self._prompts_cache[key]
 
 
 class Plugin:

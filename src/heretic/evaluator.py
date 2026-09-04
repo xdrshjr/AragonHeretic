@@ -12,6 +12,7 @@ from .model import Model
 from .plugin import get_plugin_namespace, is_builtin_plugin, load_plugin
 from .scorer import Context, Score, Scorer
 from .utils import deep_merge_dicts, parse_study_direction, print
+from .utils import Prompt
 
 
 @dataclass
@@ -31,10 +32,16 @@ class Evaluator:
     settings: Settings
     model: Model
 
-    def __init__(self, settings: Settings, model: Model):
+    def __init__(
+        self,
+        settings: Settings,
+        model: Model,
+        prompt_cache: dict[str, list[Prompt]] | None = None,
+    ):
         self.settings = settings
         self.model = model
         self._scorer_entries: list[ScorerEntry] = []
+        self._prompt_cache = dict(prompt_cache or {})
 
         print()
         print("Loading and initializing scorers...")
@@ -44,66 +51,51 @@ class Evaluator:
         self.baseline_scores = self.get_baseline_scores()
         self._print_baseline()
 
+    def _create_scorer_entry(
+        self,
+        config: ScorerConfig,
+        scorer_keys: set[str],
+    ) -> ScorerEntry:
+        scorer_cls = load_plugin(name=config.plugin, base_class=Scorer)
+        scorer_cls.validate_contract()
+        suffix = f"- {config.instance_name}" if config.instance_name else ""
+        print(f"* Loaded: [bold]{scorer_cls.__name__} {suffix}[/bold]")
+        instance_name = config.instance_name or None
+        raw = self._get_scorer_settings_raw(
+            scorer_cls=scorer_cls, instance_name=instance_name
+        )
+        scorer_settings: BaseModel | None = scorer_cls.validate_settings(raw)
+        scorer = scorer_cls(heretic_settings=self.settings, settings=scorer_settings)
+        key = (
+            scorer_cls.__name__
+            if not instance_name
+            else f"{scorer_cls.__name__}_{instance_name}"
+        )
+        if key in scorer_keys:
+            raise ValueError(
+                f"Duplicate scorer instance name: {key}. "
+                "Give each instance a unique `instance_name`."
+            )
+        scorer_keys.add(key)
+        name = (
+            f"{scorer.score_name} - {instance_name}"
+            if instance_name
+            else scorer.score_name
+        )
+        return ScorerEntry(scorer=scorer, config=config, name=name)
+
     def _load_and_init_scorers(self) -> None:
-        """
-        Load and instantiate all configured scorer plugins,
-        then runs their initialization hooks.
-        """
-        scorer_configs = self.settings.scorers
-        if not scorer_configs:
+        """Load configured scorer plugins and run their initialization hooks."""
+        if not self.settings.scorers:
             raise ValueError("No scorers configured. Set 'scorers' in config.toml")
-
         scorer_keys: set[str] = set()
-
-        # Resolve plugin classes from names and validate.
-        for config in scorer_configs:
-            scorer_cls = load_plugin(name=config.plugin, base_class=Scorer)
-            scorer_cls.validate_contract()
-
-            print(
-                f"* Loaded: [bold]{scorer_cls.__name__} {'- ' + config.instance_name if config.instance_name else ''}[/bold]"
-            )
-
-            # Instantiate scorers.
-            instance_name = config.instance_name or None
-
-            raw_settings = self._get_scorer_settings_raw(
-                scorer_cls=scorer_cls, instance_name=instance_name
-            )
-            scorer_settings: BaseModel | None = scorer_cls.validate_settings(
-                raw_settings
-            )
-
-            scorer = scorer_cls(
-                heretic_settings=self.settings,
-                settings=scorer_settings,
-            )
-
-            # External labeling key: ensures multiple instances can coexist.
-            # Uses underscore to match the TOML namespace format (`scorer.<Class>_<instance>`).
-            scorer_key = (
-                scorer_cls.__name__
-                if not instance_name
-                else f"{scorer_cls.__name__}_{instance_name}"
-            )
-            if scorer_key in scorer_keys:
-                raise ValueError(
-                    f"Duplicate scorer instance name: {scorer_key}. "
-                    "Give each instance a unique `instance_name`."
-                )
-            scorer_keys.add(scorer_key)
-
-            scorer_instance_name = (
-                f"{scorer.score_name} - {instance_name}"
-                if instance_name
-                else scorer.score_name
-            )
-            self._scorer_entries.append(
-                ScorerEntry(scorer=scorer, config=config, name=scorer_instance_name)
-            )
-
-        # Run scorer init hooks.
-        ctx = Context(settings=self.settings, model=self.model)
+        for config in self.settings.scorers:
+            self._scorer_entries.append(self._create_scorer_entry(config, scorer_keys))
+        ctx = Context(
+            settings=self.settings,
+            model=self.model,
+            prompt_cache=self._prompt_cache,
+        )
 
         for entry in self._scorer_entries:
             entry.scorer.init(ctx)
@@ -209,18 +201,31 @@ class Evaluator:
         `scores` (from `get_scores()`) and `self.baseline_scores` are both ordered
         by `_scorer_entries`, so they align positionally.
         """
+        if len(scores) != len(self.baseline_scores):
+            raise ValueError("Score and baseline counts differ")
         records: list[dict[str, Any]] = []
         for (name, score), (baseline_name, baseline) in zip(
             scores, self.baseline_scores
         ):
-            assert name == baseline_name, (
-                f"Score/baseline order mismatch: {name!r} != {baseline_name!r}"
-            )
+            if name != baseline_name:
+                raise ValueError(
+                    f"Score/baseline order mismatch: {name!r} != {baseline_name!r}"
+                )
+            for field in ("sample_count", "dataset_fingerprint"):
+                if getattr(score, field) != getattr(baseline, field):
+                    raise ValueError(f"Score/baseline {field} mismatch for {name}")
+            score_payload = dict(score.__dict__)
+            baseline_payload = dict(baseline.__dict__)
+            for payload in (score_payload, baseline_payload):
+                if payload.get("sample_count") is None:
+                    payload.pop("sample_count", None)
+                if payload.get("dataset_fingerprint") is None:
+                    payload.pop("dataset_fingerprint", None)
             records.append(
                 {
                     "name": name,
-                    "score": dict(score.__dict__),
-                    "baseline": dict(baseline.__dict__),
+                    "score": score_payload,
+                    "baseline": baseline_payload,
                 }
             )
         return records

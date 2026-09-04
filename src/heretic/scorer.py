@@ -24,6 +24,8 @@ class Score:
     value: float
     rich_display: str
     md_display: str
+    sample_count: int | None = None
+    dataset_fingerprint: str | None = None
 
 
 class Scorer(Plugin, ABC):

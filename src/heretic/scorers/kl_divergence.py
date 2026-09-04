@@ -1,11 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025-2026  Philipp Emanuel Weidmann <pew@worldwidemann.com> + contributors
 
+import math
+
 import torch.nn.functional as F
 from pydantic import BaseModel, Field
 
 from heretic.config import DatasetSpecification
+from heretic.ara_trajectory import TrajectoryNonFiniteError
 from heretic.plugin import Context
+from heretic.protocol_data import fingerprint_dataset
 from heretic.scorer import Score, Scorer
 from heretic.utils import print
 
@@ -45,6 +49,10 @@ class KLDivergence(Scorer):
             f"Loading KLDivergence evaluation prompts from [bold]{self.settings.prompts.dataset}[/]..."
         )
         self.prompts = ctx.load_prompts(self.settings.prompts)
+        self.dataset_fingerprint = fingerprint_dataset(
+            self.settings.prompts,
+            self.prompts,
+        )
         print(f"* [bold]{len(self.prompts)}[/] prompts loaded")
 
         print("* Obtaining baseline first-token probability distributions...")
@@ -61,10 +69,16 @@ class KLDivergence(Scorer):
             reduction="batchmean",
             log_target=True,
         ).item()
+        if not math.isfinite(kl):
+            raise TrajectoryNonFiniteError(
+                "kl-score", "KL divergence score is non-finite"
+            )
         return Score(
             value=kl,
             rich_display=f"{kl:.4f}",
             md_display=f"{kl:.4f}",
+            sample_count=len(self.prompts),
+            dataset_fingerprint=self.dataset_fingerprint,
         )
 
     def get_baseline_score(self, ctx: Context) -> Score:
@@ -72,4 +86,6 @@ class KLDivergence(Scorer):
             value=0,
             rich_display="0 (by definition)",
             md_display="0 *(by definition)*",
+            sample_count=len(self.prompts),
+            dataset_fingerprint=self.dataset_fingerprint,
         )

@@ -99,6 +99,8 @@ class CARAConfigTests(unittest.TestCase):
         for values in (
             {"ara_capture_batch_size": 0},
             {"ara_softmin_temperature": 0},
+            {"ara_search_space": {"layer_start": [0.1, 1.0]}},
+            {"ara_search_space": {"layer_span": [0.0, 0.5]}},
             {"chat_template_kwargs": {"tokenize": False}},
         ):
             with self.subTest(values=values), self.assertRaises(ValidationError):
@@ -165,6 +167,25 @@ class CARAConfigTests(unittest.TestCase):
             make_settings({**values, "abliteration_method": "directional"})
         with self.assertRaisesRegex(ValidationError, "unique scorer"):
             make_settings({**values, "scorers": [values["scorers"][0]] * 2})
+
+    def test_trajectory_v2_configuration_is_fully_preregistered(self) -> None:
+        path = Path(__file__).parents[1] / "config.qwen38-27b-cara-v2.toml"
+        values = tomllib.loads(path.read_text(encoding="utf-8"))
+        settings = make_settings(values)
+        self.assertEqual(settings.ara_objective_version, "trajectory-v2")
+        self.assertEqual(len(settings.ara_seed_trials), 8)
+        self.assertEqual((settings.n_startup_trials, settings.n_trials), (24, 120))
+        self.assertEqual(settings.ara_runtime_guard.expected_target_total, 128)
+        with self.assertRaisesRegex(ValidationError, "8 anchors"):
+            make_settings({**values, "ara_seed_trials": values["ara_seed_trials"][:-1]})
+        named = [dict(item) for item in values["scorers"]]
+        named[0]["instance_name"] = "alternate"
+        with self.assertRaisesRegex(ValidationError, "objectives are fixed"):
+            make_settings({**values, "scorers": named})
+        extra = [*values["scorers"], dict(values["scorers"][1])]
+        extra[-1]["instance_name"] = "extra"
+        with self.assertRaisesRegex(ValidationError, "objectives are fixed"):
+            make_settings({**values, "scorers": extra})
 
     def test_acceptance_gate_requires_deterministic_pinned_disjoint_data(self) -> None:
         path = Path(__file__).parents[1] / "config.qwen38-27b-cara.toml"

@@ -1,8 +1,6 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 # Copyright (C) 2025-2026  Philipp Emanuel Weidmann <pew@worldwidemann.com> + contributors
 
-import hashlib
-import json
 from contextlib import suppress
 from dataclasses import dataclass
 from typing import Any, Type, cast
@@ -29,10 +27,25 @@ from transformers.generation import (
 )
 
 from . import ara
+from .ara_runtime import (
+    capture_model_trajectory,
+    continuation_cache_identity,
+    create_model_manifest,
+    manifest_fingerprint,
+    render_prompt_texts,
+    score_model_continuations,
+    validate_model_prefix_groups,
+    validate_runtime_guard,
+    verify_model_fingerprint,
+    verify_reloaded_base,
+)
 from .config import AbliterationMethod, QuantizationMethod, RowNormalization, Settings
 from .system import empty_cache
 from .targeting import discover_layer_modules
 from .utils import Prompt, batchify, format_exception, print
+
+# Compatibility alias for point-v1 fixtures and downstream imports.
+_manifest_fingerprint = manifest_fingerprint
 
 
 def get_model_class(
@@ -59,28 +72,6 @@ def merge_generation_kwargs(
     return merged
 
 
-def _manifest_fingerprint(manifest: dict[str, Any]) -> str:
-    return hashlib.sha256(
-        json.dumps(manifest, sort_keys=True, separators=(",", ":")).encode()
-    ).hexdigest()
-
-
-def _base_target_name(name: str) -> str:
-    return name.removeprefix("base_model.model.")
-
-
-_QWEN_TARGET_COUNTS = {
-    "self_attn.o_proj": 16,
-    "linear_attn.out_proj": 48,
-    "mlp.down_proj": 64,
-}
-_QWEN_TARGET_SHAPES = {
-    "self_attn.o_proj": (5120, 6144),
-    "linear_attn.out_proj": (5120, 6144),
-    "mlp.down_proj": (5120, 17408),
-}
-
-
 @dataclass
 class AbliterationParameters:
     max_weight: float
@@ -91,6 +82,8 @@ class AbliterationParameters:
 
 class Model:
     model: PreTrainedModel | PeftModel
+    model_fingerprint: str
+    model_manifest: dict[str, Any]
     tokenizer: PreTrainedTokenizerBase
     # Set for multimodal models, None for text-only ones.
     processor: ProcessorMixin | None
@@ -98,209 +91,141 @@ class Model:
     dtype: torch.dtype
     ara_targets: tuple[ara.TargetModule, ...]
     adapter_initial_state: ara.AdapterInitialState | None
+    ara_runtime_report: Any
 
     def __init__(self, settings: Settings):
+        """Load the base model, attach LoRA, and validate target inventory."""
         self.settings = settings
         self.needs_reload = False
-
         self.revision_kwargs = {}
         if settings.model_commit is not None:
             self.revision_kwargs["revision"] = settings.model_commit
-
         print(f"* Chat template kwargs: [bold]{settings.chat_template_kwargs}[/]")
         print(f"* Generation kwargs: [bold]{settings.generation_kwargs}[/]")
-
         print()
         print(f"Loading model [bold]{settings.model}[/]...")
+        self._load_tokenizer()
+        self.model = None  # ty:ignore[invalid-assignment]
+        self.max_memory = (
+            {
+                int(key) if key.isdigit() else key: value
+                for key, value in settings.max_memory.items()
+            }
+            if settings.max_memory
+            else None
+        )
+        self.trusted_models = set()
+        self._load_supported_dtype()
+        self.ara_targets = ()
+        self.adapter_initial_state = None
+        self._apply_lora()
+        self._report_model_structure()
+        self._validate_ara_runtime()
 
+    def _load_tokenizer(self) -> None:
+        settings = self.settings
         self.tokenizer = cast(
             PreTrainedTokenizerBase,
             AutoTokenizer.from_pretrained(settings.model, **self.revision_kwargs),
         )
-
         self.processor = None
-        if (
-            get_model_class(settings.model, revision=settings.model_commit)
-            == AutoModelForImageTextToText
-        ):
+        model_class = get_model_class(settings.model, revision=settings.model_commit)
+        if model_class == AutoModelForImageTextToText:
             self.processor = AutoProcessor.from_pretrained(
-                settings.model,
-                **self.revision_kwargs,
+                settings.model, **self.revision_kwargs
             )
-
         if self.tokenizer.pad_token is None:
             self.tokenizer.pad_token = self.tokenizer.eos_token
-
-        # CRITICAL: Always use left-padding for decoder-only models during generation.
-        #           Right-padding causes empty outputs because the model sees PAD tokens
-        #           after the prompt and thinks the sequence is complete.
         self.tokenizer.padding_side = "left"
 
-        self.model = None  # ty:ignore[invalid-assignment]
-        self.max_memory = (
-            {int(k) if k.isdigit() else k: v for k, v in settings.max_memory.items()}
-            if settings.max_memory
-            else None
-        )
+    def _try_dtype(self, dtype: str) -> bool:
+        settings = self.settings
+        quantization = self._get_quantization_config(dtype)
+        extra = {"quantization_config": quantization} if quantization else {}
+        try:
+            model_class = get_model_class(
+                settings.model, revision=settings.model_commit
+            )
+            self.model = model_class.from_pretrained(
+                settings.model,
+                dtype=dtype,
+                device_map=settings.device_map,
+                max_memory=self.max_memory,
+                trust_remote_code=True
+                if settings.model in self.trusted_models
+                else None,
+                **self.revision_kwargs,
+                **extra,
+            )
+            self.dtype = self.model.dtype
+            self.trusted_models.add(settings.model)
+            self.generate(
+                [Prompt(system=settings.system_prompt, user="What is 1+1?")],
+                max_new_tokens=1,
+            )
+            return True
+        except Exception as error:
+            self.model = None  # ty:ignore[invalid-assignment]
+            empty_cache()
+            formatted = format_exception(error)
+            separator = ":\n" if "\n" in formatted else " ("
+            suffix = "" if "\n" in formatted else ")"
+            print(f"* [red]Failed{separator}{formatted}{suffix}[/]")
+            return False
 
-        self.trusted_models = set()
-
-        for dtype in settings.dtypes:
+    def _load_supported_dtype(self) -> None:
+        for dtype in self.settings.dtypes:
             print(f"* Trying dtype [bold]{dtype}[/]...")
-
-            try:
-                quantization_config = self._get_quantization_config(dtype)
-
-                extra_kwargs = {}
-                if quantization_config is not None:
-                    extra_kwargs["quantization_config"] = quantization_config
-
-                self.model = get_model_class(
-                    settings.model, revision=settings.model_commit
-                ).from_pretrained(
-                    settings.model,
-                    dtype=dtype,
-                    device_map=settings.device_map,
-                    max_memory=self.max_memory,
-                    trust_remote_code=True
-                    if settings.model in self.trusted_models
-                    else None,
-                    **self.revision_kwargs,
-                    **extra_kwargs,
-                )
-
-                self.dtype = self.model.dtype
-
-                # If we reach this point and the model requires trust_remote_code,
-                # the user must have agreed when prompted to execute remote code,
-                # because from_pretrained raises an exception otherwise.
-                self.trusted_models.add(settings.model)
-
-                # A test run can reveal dtype-related problems such as the infamous
-                # "RuntimeError: probability tensor contains either `inf`, `nan` or element < 0"
-                # (https://github.com/meta-llama/llama/issues/380).
-                self.generate(
-                    [
-                        Prompt(
-                            system=settings.system_prompt,
-                            user="What is 1+1?",
-                        )
-                    ],
-                    max_new_tokens=1,
-                )
-            except Exception as error:
-                self.model = None  # ty:ignore[invalid-assignment]
-                empty_cache()
-
-                formatted = format_exception(error)
-                if "\n" in formatted:
-                    print(f"* [red]Failed:\n{formatted}[/]")
-                else:
-                    print(f"* [red]Failed ({formatted})[/]")
-
+            if not self._try_dtype(dtype):
                 continue
-
-            if settings.quantization == QuantizationMethod.BNB_4BIT:
+            if self.settings.quantization == QuantizationMethod.BNB_4BIT:
                 print("* Quantized to 4-bit precision")
+            return
+        raise RuntimeError("Failed to load model with all configured dtypes.")
 
-            break
-
-        if self.model is None:
-            raise Exception("Failed to load model with all configured dtypes.")
-
-        self.ara_targets = ()
-        self.adapter_initial_state = None
-        self._apply_lora()
-
-        print(f"* Transformer model with [bold]{len(self.get_layers())}[/] layers")
-
-        all_components = {}
-        for layer_index in range(len(self.get_layers())):
+    def _report_model_structure(self) -> None:
+        layers = self.get_layers()
+        print(f"* Transformer model with [bold]{len(layers)}[/] layers")
+        components: dict[str, int] = {}
+        for layer_index in range(len(layers)):
             for component, modules in self.get_layer_modules(layer_index).items():
-                if component not in all_components:
-                    all_components[component] = 0
-                all_components[component] += len(modules)
-
+                components[component] = components.get(component, 0) + len(modules)
         print("* Abliterable components:")
-        for component, count in all_components.items():
+        for component, count in components.items():
             print(f"  * [bold]{component}[/]: [bold]{count}[/] modules total")
-        self._validate_ara_runtime()
 
     def _validate_ara_runtime(self) -> None:
-        if not (
-            self.settings.abliteration_method == AbliterationMethod.ARA
-            and self.settings.model == "Qwen/Qwen3.8-27B"
-        ):
+        guard = self.settings.ara_runtime_guard
+        if self.settings.abliteration_method != AbliterationMethod.ARA or guard is None:
             return
-        counts = dict.fromkeys(_QWEN_TARGET_COUNTS, 0)
-        unmatched = []
-        for target in self.ara_targets:
-            name = target.full_name
-            key = next((item for item in counts if item in name), "")
-            if key:
-                counts[key] += 1
-            else:
-                unmatched.append(name)
-        invalid_shapes = [
-            (target.full_name, (target.out_features, target.in_features))
-            for target in self.ara_targets
-            if any(
-                name in target.full_name
-                and (target.out_features, target.in_features) != shape
-                for name, shape in _QWEN_TARGET_SHAPES.items()
-            )
-        ]
-        if (
-            counts != _QWEN_TARGET_COUNTS
-            or len(self.ara_targets) != 128
-            or unmatched
-            or invalid_shapes
-        ):
-            raise RuntimeError(
-                f"Qwen CARA module inventory mismatch: counts={counts}, "
-                f"total={len(self.ara_targets)}, unmatched={unmatched}, "
-                f"invalid_shapes={invalid_shapes}"
-            )
-        devices = {
-            str(next(target.module.parameters()).device) for target in self.ara_targets
-        }
-        if not {"cuda:0", "cuda:1"}.issubset(devices):
-            raise RuntimeError(
-                f"Qwen CARA targets are not distributed across two GPUs: {devices}"
-            )
-        for index in (0, 1):
-            free_bytes, _ = torch.cuda.mem_get_info(index)
-            if free_bytes < 1.5 * 1024**3:
-                raise RuntimeError(f"cuda:{index} has less than 1.5 GiB free")
+        report = validate_runtime_guard(self.ara_targets, guard)
+        self.ara_runtime_report = report
 
-    def _apply_lora(self):
-        assert isinstance(self.model, PreTrainedModel)
-
-        target_modules_set: set[str] = set()
-
-        module_id_to_full_name = {
+    def _lora_target_names(self) -> list[str]:
+        names: set[str] = set()
+        by_identity = {
             id(module): module_name
             for module_name, module in self.model.named_modules()
         }
-
         for layer_index in range(len(self.get_layers())):
             for modules in self.get_layer_modules(layer_index).values():
                 for module in modules:
-                    full_name = module_id_to_full_name.get(id(module))
+                    full_name = by_identity.get(id(module))
                     if full_name is not None:
-                        target_modules_set.add(full_name)
+                        names.add(full_name)
+        return sorted(names)
 
-        target_modules = sorted(target_modules_set)
-
+    def _lora_rank(self) -> int:
         if self.settings.abliteration_method == AbliterationMethod.ARA:
-            lora_rank = self.settings.ara_lora_rank
-        elif self.settings.row_normalization != RowNormalization.FULL:
-            # Rank 1 is sufficient for directional ablation without renormalization.
-            lora_rank = 1
-        else:
-            # Row magnitude preservation introduces nonlinear effects.
-            lora_rank = self.settings.full_normalization_lora_rank
+            return self.settings.ara_lora_rank
+        if self.settings.row_normalization != RowNormalization.FULL:
+            return 1
+        return self.settings.full_normalization_lora_rank
 
+    def _apply_lora(self):
+        assert isinstance(self.model, PreTrainedModel)
+        target_modules = self._lora_target_names()
+        lora_rank = self._lora_rank()
         self.peft_config = LoraConfig(
             r=lora_rank,
             target_modules=target_modules,
@@ -404,46 +329,30 @@ class Model:
             self.needs_reload = True
             return merged_model
 
-    def reset_model(self):
-        """
-        Resets the model to a clean state for the next trial or evaluation.
-
-        Behavior:
-        - Fast path: If the same model is loaded and doesn't need full reload,
-          resets LoRA adapter weights to zero (identity transformation).
-        - Slow path: If switching models or after merge_and_unload(),
-          performs full model reload with quantization config.
-        """
-
-        # If a prior model load was interrupted/cancelled mid-process, self.model will be None.
+    def _reset_adapter(self) -> bool:
         current_model = None
         if self.model is not None:
             current_model = getattr(self.model.config, "name_or_path", None)
+        if current_model != self.settings.model or self.needs_reload:
+            return False
+        if self.settings.abliteration_method == AbliterationMethod.ARA:
+            assert self.adapter_initial_state is not None
+            ara.restore_adapter_state(self.ara_targets, self.adapter_initial_state)
+            return True
+        for name, module in self.model.named_modules():
+            if "lora_B" in name and hasattr(module, "weight"):
+                torch.nn.init.zeros_(module.weight)
+        return True
 
-        if current_model == self.settings.model and not self.needs_reload:
-            if self.settings.abliteration_method == AbliterationMethod.ARA:
-                assert self.adapter_initial_state is not None
-                ara.restore_adapter_state(self.ara_targets, self.adapter_initial_state)
-                return
-            # Reset LoRA adapters to zero (identity transformation).
-            for name, module in self.model.named_modules():
-                if "lora_B" in name and hasattr(module, "weight"):
-                    torch.nn.init.zeros_(module.weight)
-            return
-
-        # Purge existing model object from memory to make space.
+    def _reload_model(self) -> None:
         self.model = None  # ty:ignore[invalid-assignment]
         empty_cache()
-
         quantization_config = self._get_quantization_config(
             str(self.dtype).split(".")[-1]
         )
-
-        # Build kwargs, only include quantization_config if it's not None.
-        extra_kwargs = {}
-        if quantization_config is not None:
-            extra_kwargs["quantization_config"] = quantization_config
-
+        extra = (
+            {"quantization_config": quantization_config} if quantization_config else {}
+        )
         self.model = get_model_class(
             self.settings.model, revision=self.settings.model_commit
         ).from_pretrained(
@@ -455,12 +364,15 @@ class Model:
             if self.settings.model in self.trusted_models
             else None,
             **self.revision_kwargs,
-            **extra_kwargs,
+            **extra,
         )
-
         self._apply_lora()
-
         self.needs_reload = False
+
+    def reset_model(self) -> None:
+        """Restore an identity adapter or reload a model destroyed by merging."""
+        if not self._reset_adapter():
+            self._reload_model()
 
     def load_adapter_for_evaluation(self, path: str) -> None:
         """Load an exported adapter under a separate name and activate it."""
@@ -535,60 +447,18 @@ class Model:
             self.ara_targets, prompts, generate_one_token, config
         )
 
+    def capture_ara_trajectory_io(self, prompts: list[Prompt]) -> Any:
+        """Capture trajectory-v2 module I/O through the shared model facade."""
+        return capture_model_trajectory(self, prompts)
+
     def _model_manifest(self) -> dict[str, Any]:
-        config = self.model.config
-        targets = [
-            {
-                "name": _base_target_name(target.full_name),
-                "shape": [target.out_features, target.in_features],
-            }
-            for target in self.get_target_modules()
-        ]
-        template = str(self.tokenizer.chat_template or "")
-        return {
-            "model": self.settings.model,
-            "requested_revision": self.settings.model_commit,
-            "commit": getattr(config, "_commit_hash", None),
-            "model_type": getattr(config, "model_type", None),
-            "layers": len(self.get_layers()),
-            "targets": targets,
-            "chat_template_sha256": hashlib.sha256(template.encode()).hexdigest(),
-        }
+        return create_model_manifest(self)
 
     def _verify_reloaded_base(self, base_model: PreTrainedModel) -> None:
-        modules = dict(base_model.named_modules())
-        targets = []
-        for expected in self.model_manifest["targets"]:
-            module = modules.get(expected["name"])
-            weight = getattr(module, "weight", None)
-            if weight is None or len(weight.shape) != 2:
-                raise RuntimeError(f"merged base has no target {expected['name']}")
-            targets.append({"name": expected["name"], "shape": list(weight.shape)})
-        try:
-            layers = base_model.model.language_model.layers  # ty:ignore[unresolved-attribute]
-        except AttributeError:
-            layers = base_model.model.layers  # ty:ignore[unresolved-attribute]
-        config = base_model.config
-        manifest = {
-            **self.model_manifest,
-            "commit": getattr(config, "_commit_hash", None),
-            "model_type": getattr(config, "model_type", None),
-            "layers": len(layers),
-            "targets": targets,
-        }
-        if _manifest_fingerprint(manifest) != self.model_fingerprint:
-            raise RuntimeError(
-                "merged base model fingerprint does not match loaded model"
-            )
+        verify_reloaded_base(self, base_model)
 
     def _verify_model_fingerprint(self) -> None:
-        manifest = self._model_manifest()
-        fingerprint = _manifest_fingerprint(manifest)
-        previous = getattr(self, "model_fingerprint", None)
-        if previous is not None and previous != fingerprint:
-            raise RuntimeError("model fingerprint changed during reload")
-        self.model_manifest = manifest
-        self.model_fingerprint = fingerprint
+        verify_model_fingerprint(self)
 
     def get_abliterable_components(self) -> list[str]:
         components: set[str] = set()
@@ -671,6 +541,13 @@ class Model:
 
         return responses
 
+    def _winsorize_residuals(self, residuals: Tensor) -> Tensor:
+        quantile = self.settings.winsorization_quantile
+        if not 0 <= quantile < 1:
+            return residuals
+        thresholds = torch.quantile(torch.abs(residuals), quantile, dim=2, keepdim=True)
+        return torch.clamp(residuals, -thresholds, thresholds)
+
     def get_residuals(self, prompts: list[Prompt]) -> Tensor:
         # We only generate one token, and we return the residual vectors
         # at that token position, for each prompt and layer.
@@ -705,18 +582,7 @@ class Model:
         # problems during calculations involving residual vectors.
         residuals = residuals.to(torch.float32)
 
-        if 0 <= self.settings.winsorization_quantile < 1:
-            # Apply symmetric winsorization to each layer of the per-prompt residuals.
-            abs_residuals = torch.abs(residuals)
-            # Get the (prompt, layer, 1) quantiles of the (prompt, layer, component) residuals.
-            thresholds = torch.quantile(
-                abs_residuals,
-                self.settings.winsorization_quantile,
-                dim=2,
-                keepdim=True,
-            )
-            residuals = torch.clamp(residuals, -thresholds, thresholds)
-
+        residuals = self._winsorize_residuals(residuals)
         if self.settings.offload_outputs_to_cpu:
             residuals = residuals.cpu()
             empty_cache()
@@ -791,6 +657,43 @@ class Model:
             logits.append(self.get_logits(batch))
 
         return torch.cat(logits, dim=0)
+
+    def render_prompt_texts(self, prompts: list[Prompt]) -> list[str]:
+        """Render prompts with the model's configured chat template."""
+        return render_prompt_texts(self, prompts)
+
+    def continuation_cache_identity(
+        self,
+        continuations: tuple[str, ...],
+    ) -> tuple[tuple[tuple[int, ...], ...], str]:
+        """Return tokenized prefixes and a stable tokenizer identity."""
+        return continuation_cache_identity(self, continuations)
+
+    def validate_prefix_groups(
+        self,
+        refusal_prefixes: list[str],
+        answer_prefixes: list[str],
+    ) -> tuple[tuple[str, ...], tuple[str, ...]]:
+        """Validate scorer prefixes against the loaded tokenizer."""
+        return validate_model_prefix_groups(
+            self,
+            refusal_prefixes,
+            answer_prefixes,
+        )
+
+    def get_continuation_logprobs(
+        self,
+        prompts: list[Prompt],
+        continuations: tuple[str, ...],
+        batch_tokens: int,
+    ) -> Tensor:
+        """Score response prefixes through the shared rendering/model facade."""
+        return score_model_continuations(
+            self,
+            prompts,
+            continuations,
+            batch_tokens,
+        )
 
     def stream_chat_response(self, chat: list[dict[str, str]]) -> str:
         chat_prompt = cast(str, self._render_chat_template(chat))

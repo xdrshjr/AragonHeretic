@@ -240,6 +240,29 @@ Silh = Mean silhouette coefficient of residuals for good/bad clusters
 ```
 
 
+### Experimental CARA trajectory-v2 protocol
+
+`config.qwen38-27b-cara-v2.toml` defines the pre-registered, single-worker
+trajectory-v2 experiment for Qwen3.8-27B. The protocol captures the base
+model's first eight continuation positions, optimizes step-aligned local CARA
+updates, and searches a fixed eight-dimensional space using eight anchors,
+24 random startup attempts, and 88 constrained TPE attempts.
+
+Run it on the designated single-GPU environment with:
+
+```console
+bash scripts/run_qwen38_27b_cara_v2.sh
+```
+
+The final audit is not loaded until a validation candidate has been locked and
+written to a staging adapter. A fresh process consumes that audit once. Success
+requires all validation, replay, audit, hash, and adapter post-checks; any gate
+failure exits nonzero and does not create the formal adapter directory.
+
+This is an experimental interpretability and model-behavior intervention. A
+lower refusal-keyword rate is not evidence that answers are correct, safe, or
+capability-preserving, and it must not be presented as a general safety result.
+
 ## How Heretic works
 
 Heretic implements a parametrized variant of directional ablation. For each

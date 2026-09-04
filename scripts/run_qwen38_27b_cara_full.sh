@@ -167,6 +167,35 @@ if [[ ${HERETIC_EXIT} -ne 0 ]]; then
     exit "${HERETIC_EXIT}"
 fi
 
+set +e
+"${PYTHON_BIN}" - "${RUN_DIR}/adapter" "${RUN_DIR}/acceptance.json" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+adapter = Path(sys.argv[1])
+report_path = Path(sys.argv[2])
+if not adapter.is_dir():
+    raise SystemExit("accepted adapter directory is missing")
+report = json.loads(report_path.read_text(encoding="utf-8"))
+if report.get("status") != "passed":
+    raise SystemExit("acceptance status is not passed")
+if report.get("selected_trial_number") is None:
+    raise SystemExit("accepted trial number is missing")
+if not (adapter / "adapter_config.json").is_file():
+    raise SystemExit("adapter_config.json is missing")
+weights = list(adapter.glob("*.safetensors"))
+if not weights or any(path.stat().st_size == 0 for path in weights):
+    raise SystemExit("non-empty adapter safetensors are missing")
+PY
+POSTCHECK_EXIT=$?
+set -e
+if [[ ${POSTCHECK_EXIT} -ne 0 ]]; then
+    printf '%s\n' 90 > "${RUN_DIR}/exit-code.txt"
+    echo "Full ARA artifact post-check failed." >&2
+    exit 90
+fi
+
 echo "Full ARA run completed successfully."
 echo "Adapter: ${RUN_DIR}/adapter"
 echo "Acceptance report: ${RUN_DIR}/acceptance.json"

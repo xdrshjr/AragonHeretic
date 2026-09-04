@@ -15,8 +15,6 @@ from dataclasses import asdict, dataclass
 from importlib.metadata import PackageNotFoundError, version
 from pathlib import Path
 from typing import Any, cast
-from urllib.parse import urljoin
-from urllib.request import urlopen
 
 import psutil
 import questionary
@@ -33,6 +31,7 @@ from .ara import (
     TargetModule,
     get_lora_factors,
 )
+from .ara_runtime import validate_runtime_guard
 from .config import ExportStrategy, QuantizationMethod, Settings
 from .evaluator import Evaluator
 from .model import Model, get_model_class
@@ -48,7 +47,6 @@ from .trial_methods import (
     parameters_from_trial,
     parse_parameter_envelope,
     select_accepted_trial,
-    validate_acceptance_binding,
     validate_gate_records,
     write_acceptance_report,
 )
@@ -85,37 +83,48 @@ def configure_runtime_determinism() -> None:
     torch.backends.cudnn.deterministic = True
 
 
+def run_additional_trials(
+    settings: Settings,
+    study: Any,
+    objective: Any,
+) -> None:
+    """Prompt for and execute additional point-v1 optimization trials."""
+    while True:
+        value = ask_if_unset(
+            settings.n_additional_trials,
+            questionary.text("How many additional trials do you want to run?"),
+        )
+        if value in (None, ""):
+            return
+        try:
+            count = int(value)
+        except ValueError:
+            print("[red]Please enter a number.[/]")
+            continue
+        if count > 0:
+            break
+        print("[red]Please enter a number greater than 0.[/]")
+    settings.n_trials = len(study.trials) + count
+    study.set_user_attr("settings", settings.model_dump_json())
+    study.set_user_attr("finished", False)
+    try:
+        study.optimize(objective, n_trials=count)
+    except KeyboardInterrupt:
+        pass
+    if len(study.trials) == settings.n_trials:
+        study.set_user_attr("finished", True)
+
+
 def load_reproduction_acceptance(
     source: str, reproduction: Mapping[str, Any], required: bool
 ) -> dict[str, Any] | None:
     """Load and verify the acceptance report bound to reproduce.json."""
-    binding = reproduction.get("acceptance")
-    if not isinstance(binding, Mapping) or binding.get("status") != "passed":
-        if required:
-            raise AcceptanceGateError(
-                "gated reproduction has no passed acceptance binding"
-            )
-        return None
-    name = str(binding.get("path", ""))
-    if not name or Path(name).name != name:
-        raise AcceptanceGateError("acceptance binding path must be a file name")
-    if source.lower().startswith(("http://", "https://")):
-        source = source.replace("/blob/", "/raw/").replace(
-            "/src/branch/", "/raw/branch/"
-        )
-        report_bytes = urlopen(urljoin(source, f"../{name}")).read()
-    else:
-        report_bytes = (Path(source).resolve().parent.parent / name).read_bytes()
-    if hashlib.sha256(report_bytes).hexdigest() != binding.get("sha256"):
-        raise AcceptanceGateError(
-            "acceptance report hash does not match reproduce.json"
-        )
-    report = json.loads(report_bytes)
-    hashes = reproduction.get("hashes")
-    if not isinstance(report, dict) or not isinstance(hashes, Mapping):
-        raise AcceptanceGateError("acceptance binding is malformed")
-    validate_acceptance_binding(report, reproduction, cast(Mapping[str, str], hashes))
-    return report
+    from .artifact_schema import load_bound_acceptance
+
+    try:
+        return load_bound_acceptance(source, reproduction, required)
+    except ValueError as error:
+        raise AcceptanceGateError(str(error)) from error
 
 
 def validate_reproduction_model(model: Model, report: Mapping[str, Any] | None) -> None:
@@ -129,6 +138,22 @@ def validate_reproduction_model(model: Model, report: Mapping[str, Any] | None) 
         )
 
 
+def validate_reproduction_artifacts(
+    reproduction: Mapping[str, Any] | None,
+    artifacts: Any,
+    study_fingerprint: str,
+) -> None:
+    """Bind a regenerated trajectory and study identity before v2 apply."""
+    if reproduction is None or reproduction.get("schema") != "cara-reproduce-v2":
+        return
+    if reproduction.get("study_fingerprint") != study_fingerprint:
+        raise AcceptanceGateError("reproduced study fingerprint differs")
+    if getattr(artifacts, "trajectory_fingerprint", None) != reproduction.get(
+        "trajectory_manifest_sha256"
+    ):
+        raise AcceptanceGateError("reproduced trajectory fingerprint differs")
+
+
 def make_reproduction_trial(
     reproduction: Mapping[str, Any], normalized: Mapping[str, Any]
 ) -> FrozenTrial:
@@ -137,13 +162,21 @@ def make_reproduction_trial(
     attrs = {
         "index": 0,
         "method": envelope["method"],
-        "scores": reproduction["scores"],
+        "scores": reproduction.get("scores", []),
         "model_fingerprint": reproduction.get("model_fingerprint"),
         "study_fingerprint": reproduction.get("study_fingerprint"),
         "calibration_fingerprint": reproduction.get("calibration_fingerprint"),
     }
     if envelope["method"] == "ara":
-        attrs["ara_parameters"] = envelope["payload"]
+        if envelope.get("objective_version") == "trajectory-v2":
+            attrs["ara_parameters"] = envelope
+            attrs["objective_version"] = "trajectory-v2"
+            attrs["search_space_version"] = envelope["search_space_version"]
+            attrs["trajectory_fingerprint"] = reproduction.get(
+                "trajectory_manifest_sha256"
+            )
+        else:
+            attrs["ara_parameters"] = envelope["payload"]
     else:
         attrs["direction_index"] = envelope["payload"]["direction_index"]
         attrs["parameters"] = envelope["payload"]["abliteration_parameters"]
@@ -206,13 +239,12 @@ def _print_quantized_export_warning(settings: Settings, model: Model) -> None:
 
 def obtain_export_strategy(settings: Settings, model: Model) -> ExportStrategy | None:
     """Resolve the requested export strategy, including quantized-model guidance."""
-    if (
-        settings.quantization == QuantizationMethod.BNB_4BIT
-        and settings.export_strategy is None
-    ):
+    if settings.export_strategy is not None:
+        return settings.export_strategy
+    if settings.quantization == QuantizationMethod.BNB_4BIT:
         _print_quantized_export_warning(settings, model)
     return ask_if_unset(
-        settings.export_strategy,
+        None,
         questionary.select(
             "How do you want to export the model?",
             choices=[
@@ -337,9 +369,11 @@ def audit_settings(settings: Settings) -> Settings:
         namespace = class_name + (
             f"_{scorer.instance_name}" if scorer.instance_name else ""
         )
-        display = {"KeywordRate": "Keywords", "KLDivergence": "KL divergence"}.get(
-            class_name
-        )
+        display = {
+            "KeywordRate": "Keywords",
+            "KLDivergence": "KL divergence",
+            "RefusalLogOdds": "Refusal log-odds",
+        }.get(class_name)
         if scorer.instance_name and display:
             display += f" - {scorer.instance_name}"
         if display == gate.keyword_score:
@@ -349,6 +383,10 @@ def audit_settings(settings: Settings) -> Settings:
         elif display == gate.kl_score:
             tables.setdefault(namespace, {})["prompts"] = (
                 gate.kl_audit_prompts.model_dump()
+            )
+        elif class_name == "RefusalLogOdds":
+            tables.setdefault(namespace, {})["prompts"] = (
+                gate.keyword_audit_prompts.model_dump()
             )
     return audit
 
@@ -398,24 +436,25 @@ def run_acceptance_gate(
 
 
 def select_for_acceptance(
-    trials: list[FrozenTrial], gate: Any, fingerprint: str, model_name: str
+    trials: list[FrozenTrial],
+    gate: Any,
+    fingerprint: str,
+    model_name: str | None = None,
 ) -> FrozenTrial:
-    """Apply Qwen study-health thresholds before deterministic gate selection."""
-    if model_name == "Qwen/Qwen3.8-27B":
-        if len(trials) < 120:
-            raise AcceptanceGateError(
-                f"only {len(trials)} Qwen trials ran; 120 required"
-            )
-        complete = sum(item.state.name == "COMPLETE" for item in trials)
-        failures = sum(_is_qwen_runtime_failure(item) for item in trials)
-        if complete < 110:
-            raise AcceptanceGateError(
-                f"only {complete} Qwen trials completed; 110 required"
-            )
-        if failures / max(len(trials), 1) > 0.05:
-            raise AcceptanceGateError(
-                "more than 5% of Qwen trials had OOM, non-finite, or device failures"
-            )
+    """Apply configured study-health thresholds independent of model path."""
+    del model_name
+    if len(trials) < gate.required_trials:
+        raise AcceptanceGateError(
+            f"only {len(trials)} trials ran; {gate.required_trials} required"
+        )
+    complete = sum(item.state.name == "COMPLETE" for item in trials)
+    failures = sum(_is_runtime_failure(item) for item in trials)
+    if complete < gate.min_complete_trials:
+        raise AcceptanceGateError(
+            f"only {complete} trials completed; {gate.min_complete_trials} required"
+        )
+    if failures / gate.required_trials > gate.max_runtime_failure_rate:
+        raise AcceptanceGateError("runtime failure rate exceeds the configured gate")
     return select_accepted_trial(trials, gate, fingerprint)
 
 
@@ -423,13 +462,22 @@ def ensure_acceptance_study_unlocked(settings: Settings, checkpoint: str) -> Non
     """Prevent additional trials or audit reuse after candidate identity is locked."""
 
     selection = Path(checkpoint).with_suffix(".selection.jsonl")
-    if settings.acceptance_gate is not None and selection.exists():
+    ledger = Path(checkpoint).parent / "audit-evidence" / "audit-ledger.json"
+    consumed = False
+    if ledger.is_file():
+        consumed = bool(
+            json.loads(ledger.read_text(encoding="utf-8")).get("audit_consumed")
+        )
+    if settings.acceptance_gate is not None and selection.exists() and consumed:
         raise AcceptanceGateError(
             f"acceptance candidate is already locked in {selection.name}"
         )
 
 
-def _is_qwen_runtime_failure(trial: FrozenTrial) -> bool:
+def _is_runtime_failure(trial: FrozenTrial) -> bool:
+    structured = trial.user_attrs.get("failure_record")
+    if isinstance(structured, dict):
+        return structured.get("is_runtime_failure") is True
     record = trial.user_attrs.get("failure")
     if not isinstance(record, dict):
         return False
@@ -458,13 +506,21 @@ def _reload_worker(
     adapter_path: str,
     smoke_prompts: tuple[str, ...],
     results: Any,
+    audit_identity: Mapping[str, str | None] | None = None,
 ) -> None:
     try:
+        from .ara_runtime import adapter_state_identity, capture_named_adapter_state
+
         settings = Settings.model_validate(settings_values)
         configure_runtime_determinism()
         model = Model(settings)
-        evaluator = Evaluator(audit_settings(settings), model)
         model.load_adapter_for_evaluation(adapter_path)
+        adapter_identity = adapter_state_identity(
+            capture_named_adapter_state(model.model, "candidate")
+        )
+        expected_adapter = (audit_identity or {}).get("adapter")
+        if expected_adapter is not None and adapter_identity != expected_adapter:
+            raise RuntimeError("reloaded adapter state identity differs")
         prompts = [Prompt(settings.system_prompt, text) for text in smoke_prompts]
         responses = model.get_responses_batched(prompts)
         logits = model.get_logits_batched(prompts)
@@ -472,8 +528,19 @@ def _reload_worker(
             raise RuntimeError("adapter reload smoke produced an empty response")
         if not torch.isfinite(logits).all():
             raise RuntimeError("adapter reload smoke produced non-finite logits")
-        _validate_audit_outputs(settings, model)
+        ledger_path = (audit_identity or {}).get("ledger")
+        if ledger_path is not None:
+            from .acceptance_export import transition_audit_ledger
+
+            transition_audit_ledger(ledger_path, "consumed")
+        with model.model.disable_adapter():  # ty:ignore[call-non-callable]
+            evaluator = Evaluator(audit_settings(settings), model)
         records = evaluator.get_paired_score_records(evaluator.get_scores())
+        final_identity = adapter_state_identity(
+            capture_named_adapter_state(model.model, "candidate")
+        )
+        if final_identity != adapter_identity:
+            raise RuntimeError("audit changed the loaded adapter state identity")
         assert settings.acceptance_gate is not None
         validate_gate_records(records, settings.acceptance_gate)
         results.put(
@@ -484,7 +551,11 @@ def _reload_worker(
 
 
 def verify_reloaded_adapter(
-    settings: Settings, adapter_path: Path, expected_model: str
+    settings: Settings,
+    adapter_path: Path,
+    expected_model: str,
+    ledger_path: Path | None = None,
+    expected_adapter: str | None = None,
 ) -> list[dict[str, Any]]:
     """Reload the staged adapter in a fresh spawned process and run audit/smoke."""
     context = multiprocessing.get_context("spawn")
@@ -496,6 +567,10 @@ def verify_reloaded_adapter(
             str(adapter_path),
             _RELOAD_SMOKE_PROMPTS,
             results,
+            {
+                "ledger": str(ledger_path) if ledger_path is not None else None,
+                "adapter": expected_adapter,
+            },
         ),
     )
     process.start()
@@ -575,13 +650,12 @@ def _runtime_diagnostics(
         "cpu_rss_gib": psutil.Process().memory_info().rss / 1024**3,
         **cuda_peaks,
     }
-    if model.settings.model == "Qwen/Qwen3.8-27B" and (
-        resources["cpu_rss_gib"] > 80
-        or any(
-            value > 22 for key, value in resources.items() if key.startswith("cuda:")
+    if model.settings.ara_runtime_guard is not None:
+        report = validate_runtime_guard(
+            model.ara_targets,
+            model.settings.ara_runtime_guard,
         )
-    ):
-        raise AcceptanceGateError("Qwen CARA resource ceiling exceeded")
+        module_counts = dict(report.target_counts)
     return module_counts, resources, _environment_diagnostics(model)
 
 
@@ -714,8 +788,8 @@ def export_accepted_adapter(destination: Path, evidence: AcceptedExport) -> None
         reproduction_settings,
         evidence.checkpoint_path,
         evidence.trial,
-        hashes,
-        True,
+        uploaded_model_hashes=hashes,
+        include_system_information=True,
     )
     staging.rename(destination)
     configured_report = Path(gate.report_path)
