@@ -1,0 +1,2711 @@
+Starting full Qwen3.8-27B ARA run: /root/autodl-fs/heretic-runs/qwen3.8-27b-cara-full-20260904T050456Z
+Configuration: /root/autodl-fs/heretic-runs/qwen3.8-27b-cara-full-20260904T050456Z/config.toml
+Checkpoints: /root/autodl-fs/heretic-runs/qwen3.8-27b-cara-full-20260904T050456Z/checkpoints
+Final adapter: /root/autodl-fs/heretic-runs/qwen3.8-27b-cara-full-20260904T050456Z/adapter
+█░█░█▀▀░█▀▄░█▀▀░▀█▀░█░█▀▀  v2.0.0.dev0
+█▀█░█▀▀░█▀▄░█▀▀░░█░░█░█░░  https://heretic-project.org
+▀░▀░▀▀▀░▀░▀░▀▀▀░░▀░░▀░▀▀▀  https://github.com/p-e-w/heretic
+
+Detected 1 CUDA device(s) (94.97 GB total VRAM)
+CUDA Version: 13.0
+Driver Version: 595.58.03
+* CUDA 0: NVIDIA RTX PRO 6000 Blackwell Server Edition (94.97 GB)
+* Chat template kwargs: {'enable_thinking': False}
+* Generation kwargs: {'do_sample': False}
+
+Loading model /root/autodl-fs/models/Qwen3.8-27B...
+[ERROR] `min_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /root/autodl-fs/conda-envs/heretic-dsv4/lib/python3.12/site-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+[ERROR] `max_frames` is part of Qwen3VLVideoProcessorInitKwargs, but not documented. Make sure to add it to the docstring of the function in /root/autodl-fs/conda-envs/heretic-dsv4/lib/python3.12/site-packages/transformers/models/qwen3_vl/video_processing_qwen3_vl.py.
+* Trying dtype bfloat16...
+Loading weights:   0%|          | 0/1184 [00:00<?, ?it/s]Loading weights:   0%|          | 1/1184 [00:11<3:36:58, 11.00s/it]Loading weights:   0%|          | 2/1184 [00:21<3:25:40, 10.44s/it]Loading weights:   1%|          | 9/1184 [00:21<30:32,  1.56s/it]  Loading weights:   1%|          | 12/1184 [00:21<20:55,  1.07s/it]Loading weights:   1%|          | 14/1184 [00:23<19:06,  1.02it/s]Loading weights:   1%|▏         | 15/1184 [00:23<17:38,  1.10it/s]Loading weights:   2%|▏         | 23/1184 [00:24<07:01,  2.76it/s]Loading weights:   2%|▏         | 25/1184 [00:24<06:12,  3.11it/s]Loading weights:   2%|▏         | 26/1184 [00:24<05:43,  3.38it/s]Loading weights:   2%|▏         | 27/1184 [00:24<06:07,  3.15it/s]Loading weights:   2%|▏         | 28/1184 [00:25<06:50,  2.82it/s]Loading weights:   2%|▏         | 29/1184 [00:25<07:16,  2.65it/s]Loading weights:   3%|▎         | 34/1184 [00:26<04:06,  4.66it/s]Loading weights:   3%|▎         | 39/1184 [00:26<02:43,  7.02it/s]Loading weights:   3%|▎         | 41/1184 [00:27<03:05,  6.15it/s]Loading weights:   4%|▎         | 42/1184 [00:27<03:56,  4.83it/s]Loading weights:   4%|▎         | 43/1184 [00:28<04:40,  4.06it/s]Loading weights:   4%|▍         | 46/1184 [00:29<05:21,  3.54it/s]Loading weights:   4%|▍         | 48/1184 [00:29<05:01,  3.77it/s]Loading weights:   4%|▍         | 52/1184 [00:29<03:22,  5.60it/s]Loading weights:   5%|▍         | 54/1184 [00:30<03:09,  5.96it/s]Loading weights:   5%|▍         | 59/1184 [00:30<01:53,  9.90it/s]Loading weights:   5%|▌         | 62/1184 [00:30<01:59,  9.41it/s]Loading weights:   5%|▌         | 64/1184 [00:30<02:13,  8.41it/s]Loading weights:   6%|▌         | 66/1184 [00:31<02:41,  6.94it/s]Loading weights:   6%|▌         | 68/1184 [00:32<03:58,  4.67it/s]Loading weights:   6%|▌         | 73/1184 [00:32<02:48,  6.58it/s]Loading weights:   7%|▋         | 77/1184 [00:32<02:06,  8.76it/s]Loading weights:   7%|▋         | 79/1184 [00:32<02:00,  9.13it/s]Loading weights:   7%|▋         | 81/1184 [00:34<04:14,  4.33it/s]Loading weights:   7%|▋         | 82/1184 [00:34<05:12,  3.53it/s]Loading weights:   7%|▋         | 88/1184 [00:35<02:57,  6.19it/s]Loading weights:   8%|▊         | 90/1184 [00:35<03:12,  5.70it/s]Loading weights:   8%|▊         | 93/1184 [00:36<02:48,  6.49it/s]Loading weights:   8%|▊         | 94/1184 [00:36<03:51,  4.72it/s]Loading weights:   8%|▊         | 95/1184 [00:38<07:14,  2.51it/s]Loading weights:   8%|▊         | 99/1184 [00:38<05:11,  3.48it/s]Loading weights:   8%|▊         | 100/1184 [00:39<06:16,  2.88it/s]Loading weights:   9%|▊         | 101/1184 [00:39<06:44,  2.68it/s]Loading weights:   9%|▉         | 105/1184 [00:40<03:57,  4.54it/s]Loading weights:   9%|▉         | 107/1184 [00:40<03:38,  4.92it/s]Loading weights:  10%|▉         | 115/1184 [00:40<02:07,  8.37it/s]Loading weights:  10%|▉         | 116/1184 [00:41<02:13,  8.01it/s]Loading weights:  10%|▉         | 118/1184 [00:41<01:59,  8.91it/s]Loading weights:  10%|█         | 120/1184 [00:42<03:29,  5.07it/s]Loading weights:  10%|█         | 121/1184 [00:42<04:00,  4.41it/s]Loading weights:  11%|█         | 128/1184 [00:43<02:17,  7.67it/s]Loading weights:  11%|█         | 132/1184 [00:44<02:58,  5.89it/s]Loading weights:  11%|█▏        | 134/1184 [00:44<03:29,  5.01it/s]Loading weights:  11%|█▏        | 135/1184 [00:45<04:36,  3.79it/s]Loading weights:  12%|█▏        | 141/1184 [00:45<02:55,  5.93it/s]Loading weights:  12%|█▏        | 142/1184 [00:46<03:55,  4.42it/s]Loading weights:  12%|█▏        | 146/1184 [00:46<02:43,  6.34it/s]Loading weights:  12%|█▎        | 148/1184 [00:50<08:09,  2.12it/s]Loading weights:  13%|█▎        | 151/1184 [00:50<06:54,  2.49it/s]Loading weights:  13%|█▎        | 153/1184 [00:51<06:54,  2.49it/s]Loading weights:  13%|█▎        | 154/1184 [00:52<07:29,  2.29it/s]Loading weights:  13%|█▎        | 158/1184 [00:52<04:41,  3.65it/s]Loading weights:  14%|█▎        | 160/1184 [00:53<04:37,  3.69it/s]Loading weights:  14%|█▍        | 168/1184 [00:53<02:27,  6.90it/s]Loading weights:  14%|█▍        | 169/1184 [00:54<03:11,  5.31it/s]Loading weights:  15%|█▍        | 172/1184 [00:54<03:13,  5.22it/s]Loading weights:  15%|█▍        | 173/1184 [00:55<03:52,  4.35it/s]Loading weights:  15%|█▍        | 174/1184 [00:55<04:45,  3.54it/s]Loading weights:  15%|█▌        | 181/1184 [00:56<02:44,  6.10it/s]Loading weights:  16%|█▌        | 185/1184 [00:56<02:06,  7.91it/s]Loading weights:  16%|█▌        | 187/1184 [00:57<03:43,  4.46it/s]Loading weights:  16%|█▌        | 188/1184 [00:58<04:05,  4.06it/s]Loading weights:  16%|█▋        | 195/1184 [00:58<02:43,  6.06it/s]Loading weights:  17%|█▋        | 199/1184 [00:59<02:06,  7.78it/s]Loading weights:  17%|█▋        | 201/1184 [01:00<03:23,  4.82it/s]Loading weights:  17%|█▋        | 202/1184 [01:00<03:57,  4.13it/s]Loading weights:  17%|█▋        | 205/1184 [01:02<04:50,  3.37it/s]Loading weights:  17%|█▋        | 207/1184 [01:02<04:45,  3.42it/s]Loading weights:  18%|█▊        | 211/1184 [01:03<04:06,  3.94it/s]Loading weights:  18%|█▊        | 219/1184 [01:03<02:21,  6.84it/s]Loading weights:  19%|█▉        | 222/1184 [01:04<02:07,  7.56it/s]Loading weights:  19%|█▉        | 225/1184 [01:04<02:29,  6.42it/s]Loading weights:  19%|█▉        | 226/1184 [01:06<04:51,  3.28it/s]Loading weights:  20%|█▉        | 233/1184 [01:06<02:40,  5.91it/s]Loading weights:  20%|█▉        | 235/1184 [01:07<02:45,  5.73it/s]Loading weights:  20%|██        | 238/1184 [01:07<02:14,  7.01it/s]Loading weights:  20%|██        | 240/1184 [01:08<03:18,  4.74it/s]Loading weights:  20%|██        | 241/1184 [01:08<04:10,  3.77it/s]Loading weights:  21%|██        | 248/1184 [01:09<02:57,  5.27it/s]Loading weights:  21%|██▏       | 252/1184 [01:09<02:14,  6.95it/s]Loading weights:  21%|██▏       | 254/1184 [01:11<04:09,  3.72it/s]Loading weights:  22%|██▏       | 258/1184 [01:12<03:33,  4.33it/s]Loading weights:  22%|██▏       | 259/1184 [01:12<04:01,  3.83it/s]Loading weights:  22%|██▏       | 260/1184 [01:13<04:33,  3.38it/s]Loading weights:  22%|██▏       | 263/1184 [01:13<03:05,  4.96it/s]Loading weights:  22%|██▏       | 265/1184 [01:13<02:31,  6.08it/s]Loading weights:  23%|██▎       | 267/1184 [01:13<02:54,  5.24it/s]Loading weights:  23%|██▎       | 272/1184 [01:14<01:39,  9.15it/s]Loading weights:  23%|██▎       | 274/1184 [01:14<02:29,  6.09it/s]Loading weights:  23%|██▎       | 276/1184 [01:14<02:13,  6.81it/s]Loading weights:  23%|██▎       | 278/1184 [01:15<02:35,  5.83it/s]Loading weights:  24%|██▎       | 280/1184 [01:16<03:32,  4.25it/s]Loading weights:  24%|██▍       | 288/1184 [01:16<02:06,  7.08it/s]Loading weights:  24%|██▍       | 289/1184 [01:17<02:08,  6.96it/s]Loading weights:  25%|██▍       | 292/1184 [01:17<02:04,  7.17it/s]Loading weights:  25%|██▍       | 293/1184 [01:17<02:44,  5.42it/s]Loading weights:  25%|██▍       | 294/1184 [01:18<03:23,  4.37it/s]Loading weights:  25%|██▌       | 301/1184 [01:18<01:53,  7.79it/s]Loading weights:  26%|██▌       | 303/1184 [01:19<01:43,  8.51it/s]Loading weights:  26%|██▌       | 305/1184 [01:19<01:35,  9.19it/s]Loading weights:  26%|██▌       | 307/1184 [01:20<02:53,  5.06it/s]Loading weights:  26%|██▌       | 308/1184 [01:20<03:55,  3.71it/s]Loading weights:  26%|██▋       | 311/1184 [01:21<03:05,  4.71it/s]Loading weights:  26%|██▋       | 312/1184 [01:22<05:41,  2.55it/s]Loading weights:  27%|██▋       | 317/1184 [01:22<02:58,  4.85it/s]Loading weights:  27%|██▋       | 319/1184 [01:23<02:45,  5.23it/s]Loading weights:  27%|██▋       | 325/1184 [01:23<01:31,  9.43it/s]Loading weights:  28%|██▊       | 328/1184 [01:23<01:40,  8.49it/s]Loading weights:  28%|██▊       | 330/1184 [01:23<01:39,  8.62it/s]Loading weights:  28%|██▊       | 332/1184 [01:25<03:10,  4.47it/s]Loading weights:  28%|██▊       | 334/1184 [01:25<03:14,  4.36it/s]Loading weights:  29%|██▊       | 338/1184 [01:25<02:21,  5.98it/s]Loading weights:  29%|██▉       | 342/1184 [01:25<01:42,  8.22it/s]Loading weights:  29%|██▉       | 344/1184 [01:26<01:38,  8.56it/s]Loading weights:  29%|██▉       | 346/1184 [01:27<02:48,  4.96it/s]Loading weights:  29%|██▉       | 347/1184 [01:27<03:22,  4.14it/s]Loading weights:  30%|██▉       | 354/1184 [01:28<02:13,  6.24it/s]Loading weights:  30%|███       | 359/1184 [01:28<01:48,  7.64it/s]Loading weights:  30%|███       | 360/1184 [01:29<02:06,  6.49it/s]Loading weights:  30%|███       | 361/1184 [01:29<02:36,  5.28it/s]Loading weights:  31%|███       | 364/1184 [01:30<02:35,  5.27it/s]Loading weights:  31%|███       | 365/1184 [01:30<03:06,  4.40it/s]Loading weights:  31%|███       | 366/1184 [01:31<03:52,  3.51it/s]Loading weights:  31%|███       | 369/1184 [01:31<02:27,  5.54it/s]Loading weights:  31%|███▏      | 371/1184 [01:31<02:03,  6.56it/s]Loading weights:  32%|███▏      | 373/1184 [01:31<02:12,  6.12it/s]Loading weights:  32%|███▏      | 380/1184 [01:32<01:24,  9.46it/s]Loading weights:  32%|███▏      | 382/1184 [01:32<01:20,  9.93it/s]Loading weights:  32%|███▏      | 384/1184 [01:33<02:10,  6.13it/s]Loading weights:  33%|███▎      | 385/1184 [01:34<03:51,  3.46it/s]Loading weights:  33%|███▎      | 394/1184 [01:34<01:43,  7.60it/s]Loading weights:  33%|███▎      | 396/1184 [01:35<01:51,  7.09it/s]Loading weights:  34%|███▎      | 398/1184 [01:35<02:05,  6.29it/s]Loading weights:  34%|███▎      | 399/1184 [01:35<02:31,  5.18it/s]Loading weights:  34%|███▍      | 400/1184 [01:36<03:08,  4.15it/s]Loading weights:  34%|███▍      | 404/1184 [01:36<02:21,  5.51it/s]Loading weights:  35%|███▍      | 409/1184 [01:37<01:28,  8.71it/s]Loading weights:  35%|███▍      | 411/1184 [01:38<02:32,  5.07it/s]Loading weights:  35%|███▍      | 413/1184 [01:39<03:36,  3.57it/s]Loading weights:  35%|███▌      | 417/1184 [01:39<02:37,  4.88it/s]Loading weights:  35%|███▌      | 418/1184 [01:40<03:06,  4.10it/s]Loading weights:  35%|███▌      | 419/1184 [01:40<03:56,  3.24it/s]Loading weights:  36%|███▌      | 423/1184 [01:40<02:18,  5.49it/s]Loading weights:  36%|███▌      | 425/1184 [01:41<02:29,  5.09it/s]Loading weights:  36%|███▋      | 431/1184 [01:41<01:22,  9.15it/s]Loading weights:  37%|███▋      | 433/1184 [01:41<01:32,  8.10it/s]Loading weights:  37%|███▋      | 435/1184 [01:42<01:34,  7.90it/s]Loading weights:  37%|███▋      | 437/1184 [01:42<02:07,  5.84it/s]Loading weights:  37%|███▋      | 438/1184 [01:43<02:43,  4.56it/s]Loading weights:  37%|███▋      | 439/1184 [01:44<03:35,  3.46it/s]Loading weights:  38%|███▊      | 444/1184 [01:44<02:12,  5.57it/s]Loading weights:  38%|███▊      | 448/1184 [01:44<01:31,  8.01it/s]Loading weights:  38%|███▊      | 450/1184 [01:44<01:25,  8.56it/s]Loading weights:  38%|███▊      | 452/1184 [01:45<02:39,  4.58it/s]Loading weights:  38%|███▊      | 453/1184 [01:46<03:10,  3.84it/s]Loading weights:  39%|███▉      | 461/1184 [01:46<01:30,  8.01it/s]Loading weights:  39%|███▉      | 463/1184 [01:47<01:39,  7.24it/s]Loading weights:  39%|███▉      | 465/1184 [01:47<02:03,  5.84it/s]Loading weights:  39%|███▉      | 466/1184 [01:48<02:43,  4.38it/s]Loading weights:  39%|███▉      | 467/1184 [01:49<03:36,  3.31it/s]Loading weights:  40%|███▉      | 470/1184 [01:49<03:14,  3.68it/s]Loading weights:  40%|███▉      | 471/1184 [01:50<04:48,  2.47it/s]Loading weights:  40%|████      | 476/1184 [01:50<02:23,  4.92it/s]Loading weights:  40%|████      | 478/1184 [01:51<02:14,  5.23it/s]Loading weights:  41%|████      | 486/1184 [01:51<01:16,  9.10it/s]Loading weights:  41%|████      | 488/1184 [01:51<01:20,  8.64it/s]Loading weights:  41%|████▏     | 490/1184 [01:52<01:58,  5.88it/s]Loading weights:  41%|████▏     | 491/1184 [01:53<02:19,  4.96it/s]Loading weights:  42%|████▏     | 492/1184 [01:53<02:55,  3.95it/s]Loading weights:  42%|████▏     | 497/1184 [01:54<02:16,  5.03it/s]Loading weights:  42%|████▏     | 503/1184 [01:55<01:58,  5.76it/s]Loading weights:  43%|████▎     | 504/1184 [01:55<02:17,  4.95it/s]Loading weights:  43%|████▎     | 506/1184 [01:56<02:26,  4.63it/s]Loading weights:  43%|████▎     | 513/1184 [01:56<01:14,  9.05it/s]Loading weights:  44%|████▎     | 516/1184 [01:56<01:21,  8.22it/s]Loading weights:  44%|████▍     | 518/1184 [01:57<02:03,  5.40it/s]Loading weights:  44%|████▍     | 520/1184 [01:58<02:45,  4.01it/s]Loading weights:  44%|████▍     | 522/1184 [01:59<02:52,  3.85it/s]Loading weights:  44%|████▍     | 524/1184 [01:59<02:57,  3.73it/s]Loading weights:  44%|████▍     | 525/1184 [02:00<03:21,  3.28it/s]Loading weights:  45%|████▍     | 529/1184 [02:00<02:03,  5.29it/s]Loading weights:  45%|████▍     | 531/1184 [02:01<02:03,  5.29it/s]Loading weights:  45%|████▌     | 533/1184 [02:01<01:39,  6.52it/s]Loading weights:  45%|████▌     | 537/1184 [02:01<01:24,  7.70it/s]Loading weights:  46%|████▌     | 540/1184 [02:01<01:07,  9.55it/s]Loading weights:  46%|████▌     | 542/1184 [02:01<01:05,  9.85it/s]Loading weights:  46%|████▌     | 544/1184 [02:02<02:03,  5.19it/s]Loading weights:  46%|████▌     | 545/1184 [02:03<02:32,  4.20it/s]Loading weights:  47%|████▋     | 553/1184 [02:04<01:32,  6.84it/s]Loading weights:  47%|████▋     | 557/1184 [02:05<01:58,  5.31it/s]Loading weights:  47%|████▋     | 559/1184 [02:05<02:02,  5.10it/s]Loading weights:  48%|████▊     | 564/1184 [02:06<01:31,  6.75it/s]Loading weights:  48%|████▊     | 568/1184 [02:06<01:12,  8.47it/s]Loading weights:  48%|████▊     | 570/1184 [02:06<01:41,  6.05it/s]Loading weights:  48%|████▊     | 572/1184 [02:07<01:47,  5.68it/s]Loading weights:  48%|████▊     | 573/1184 [02:08<02:27,  4.14it/s]Loading weights:  49%|████▊     | 576/1184 [02:08<02:11,  4.63it/s]Loading weights:  49%|████▊     | 577/1184 [02:09<02:31,  4.00it/s]Loading weights:  49%|████▉     | 578/1184 [02:09<03:11,  3.16it/s]Loading weights:  49%|████▉     | 582/1184 [02:09<01:57,  5.13it/s]Loading weights:  49%|████▉     | 584/1184 [02:10<01:52,  5.35it/s]Loading weights:  49%|████▉     | 585/1184 [02:10<01:46,  5.64it/s]Loading weights:  50%|████▉     | 591/1184 [02:10<01:03,  9.31it/s]Loading weights:  50%|█████     | 593/1184 [02:11<01:21,  7.22it/s]Loading weights:  50%|█████     | 595/1184 [02:11<01:09,  8.45it/s]Loading weights:  50%|█████     | 597/1184 [02:13<02:59,  3.28it/s]Loading weights:  51%|█████     | 606/1184 [02:13<01:21,  7.11it/s]Loading weights:  51%|█████▏    | 608/1184 [02:13<01:18,  7.37it/s]Loading weights:  52%|█████▏    | 610/1184 [02:15<02:21,  4.06it/s]Loading weights:  52%|█████▏    | 612/1184 [02:15<02:22,  4.02it/s]Loading weights:  52%|█████▏    | 618/1184 [02:15<01:29,  6.32it/s]Loading weights:  52%|█████▏    | 621/1184 [02:16<01:14,  7.56it/s]Loading weights:  53%|█████▎    | 623/1184 [02:16<01:14,  7.54it/s]Loading weights:  53%|█████▎    | 625/1184 [02:17<02:04,  4.50it/s]Loading weights:  53%|█████▎    | 626/1184 [02:18<02:31,  3.69it/s]Loading weights:  53%|█████▎    | 629/1184 [02:19<02:58,  3.11it/s]Loading weights:  53%|█████▎    | 631/1184 [02:19<02:47,  3.31it/s]Loading weights:  54%|█████▎    | 634/1184 [02:20<02:03,  4.45it/s]Loading weights:  54%|█████▍    | 637/1184 [02:20<01:35,  5.72it/s]Loading weights:  54%|█████▍    | 643/1184 [02:20<00:53, 10.16it/s]Loading weights:  55%|█████▍    | 646/1184 [02:20<01:04,  8.37it/s]Loading weights:  55%|█████▍    | 648/1184 [02:21<00:57,  9.26it/s]Loading weights:  55%|█████▍    | 650/1184 [02:22<01:51,  4.81it/s]Loading weights:  55%|█████▌    | 652/1184 [02:22<01:58,  4.50it/s]Loading weights:  56%|█████▌    | 659/1184 [02:23<01:27,  6.03it/s]Loading weights:  56%|█████▌    | 663/1184 [02:24<01:18,  6.61it/s]Loading weights:  56%|█████▌    | 664/1184 [02:24<01:38,  5.27it/s]Loading weights:  56%|█████▌    | 665/1184 [02:25<02:04,  4.18it/s]Loading weights:  57%|█████▋    | 670/1184 [02:25<01:10,  7.26it/s]Loading weights:  57%|█████▋    | 673/1184 [02:25<01:17,  6.58it/s]Loading weights:  57%|█████▋    | 676/1184 [02:25<01:00,  8.45it/s]Loading weights:  57%|█████▋    | 678/1184 [02:27<01:50,  4.58it/s]Loading weights:  57%|█████▋    | 680/1184 [02:27<01:58,  4.26it/s]Loading weights:  58%|█████▊    | 682/1184 [02:28<01:58,  4.22it/s]Loading weights:  58%|█████▊    | 683/1184 [02:28<02:22,  3.52it/s]Loading weights:  58%|█████▊    | 684/1184 [02:29<02:46,  3.00it/s]Loading weights:  58%|█████▊    | 688/1184 [02:29<01:35,  5.20it/s]Loading weights:  58%|█████▊    | 689/1184 [02:29<01:53,  4.35it/s]Loading weights:  59%|█████▉    | 698/1184 [02:30<00:53,  9.11it/s]Loading weights:  59%|█████▉    | 700/1184 [02:30<01:04,  7.53it/s]Loading weights:  59%|█████▉    | 702/1184 [02:32<01:49,  4.40it/s]Loading weights:  59%|█████▉    | 703/1184 [02:32<02:16,  3.51it/s]Loading weights:  60%|█████▉    | 708/1184 [02:33<01:33,  5.10it/s]Loading weights:  60%|██████    | 713/1184 [02:33<01:01,  7.66it/s]Loading weights:  60%|██████    | 715/1184 [02:33<01:04,  7.30it/s]Loading weights:  61%|██████    | 717/1184 [02:35<02:01,  3.85it/s]Loading weights:  61%|██████▏   | 726/1184 [02:35<01:02,  7.36it/s]Loading weights:  61%|██████▏   | 728/1184 [02:35<01:02,  7.30it/s]Loading weights:  62%|██████▏   | 730/1184 [02:36<01:18,  5.81it/s]Loading weights:  62%|██████▏   | 731/1184 [02:37<01:35,  4.74it/s]Loading weights:  62%|██████▏   | 732/1184 [02:37<01:52,  4.02it/s]Loading weights:  62%|██████▏   | 735/1184 [02:38<01:44,  4.30it/s]Loading weights:  62%|██████▏   | 736/1184 [02:38<02:11,  3.41it/s]Loading weights:  62%|██████▏   | 737/1184 [02:39<02:19,  3.20it/s]Loading weights:  63%|██████▎   | 741/1184 [02:39<01:23,  5.31it/s]Loading weights:  63%|██████▎   | 742/1184 [02:39<01:40,  4.38it/s]Loading weights:  63%|██████▎   | 748/1184 [02:40<00:58,  7.41it/s]Loading weights:  64%|██████▎   | 752/1184 [02:40<00:45,  9.48it/s]Loading weights:  64%|██████▎   | 754/1184 [02:40<00:42, 10.11it/s]Loading weights:  64%|██████▍   | 756/1184 [02:41<01:31,  4.70it/s]Loading weights:  64%|██████▍   | 757/1184 [02:42<01:45,  4.06it/s]Loading weights:  64%|██████▍   | 762/1184 [02:42<00:57,  7.40it/s]Loading weights:  65%|██████▍   | 764/1184 [02:42<01:05,  6.41it/s]Loading weights:  65%|██████▍   | 768/1184 [02:42<00:44,  9.30it/s]Loading weights:  65%|██████▌   | 770/1184 [02:44<01:21,  5.05it/s]Loading weights:  65%|██████▌   | 772/1184 [02:44<01:26,  4.77it/s]Loading weights:  66%|██████▌   | 777/1184 [02:44<01:00,  6.70it/s]Loading weights:  66%|██████▌   | 780/1184 [02:45<00:49,  8.10it/s]Loading weights:  66%|██████▌   | 782/1184 [02:45<00:46,  8.57it/s]Loading weights:  66%|██████▌   | 784/1184 [02:46<01:31,  4.36it/s]Loading weights:  66%|██████▋   | 785/1184 [02:47<01:53,  3.52it/s]Loading weights:  67%|██████▋   | 788/1184 [02:47<01:32,  4.27it/s]Loading weights:  67%|██████▋   | 789/1184 [02:48<01:52,  3.51it/s]Loading weights:  67%|██████▋   | 790/1184 [02:48<02:06,  3.12it/s]Loading weights:  67%|██████▋   | 793/1184 [02:48<01:23,  4.66it/s]Loading weights:  67%|██████▋   | 796/1184 [02:49<01:08,  5.64it/s]Loading weights:  68%|██████▊   | 803/1184 [02:49<00:42,  8.99it/s]Loading weights:  68%|██████▊   | 805/1184 [02:49<00:42,  9.01it/s]Loading weights:  68%|██████▊   | 807/1184 [02:50<00:42,  8.88it/s]Loading weights:  68%|██████▊   | 808/1184 [02:51<02:09,  2.91it/s]Loading weights:  69%|██████▉   | 818/1184 [02:52<01:04,  5.67it/s]Loading weights:  69%|██████▉   | 821/1184 [02:52<00:54,  6.62it/s]Loading weights:  70%|██████▉   | 823/1184 [02:53<01:13,  4.92it/s]Loading weights:  70%|██████▉   | 824/1184 [02:54<01:25,  4.22it/s]Loading weights:  70%|███████   | 831/1184 [02:54<00:50,  7.03it/s]Loading weights:  70%|███████   | 832/1184 [02:55<01:07,  5.23it/s]Loading weights:  71%|███████   | 836/1184 [02:55<00:55,  6.22it/s]Loading weights:  71%|███████   | 837/1184 [02:56<01:10,  4.94it/s]Loading weights:  71%|███████   | 838/1184 [02:56<01:21,  4.24it/s]Loading weights:  71%|███████   | 841/1184 [02:57<01:13,  4.67it/s]Loading weights:  71%|███████   | 842/1184 [02:57<01:29,  3.82it/s]Loading weights:  71%|███████   | 843/1184 [02:58<01:47,  3.18it/s]Loading weights:  72%|███████▏  | 847/1184 [02:58<01:02,  5.38it/s]Loading weights:  72%|███████▏  | 849/1184 [02:59<00:59,  5.62it/s]Loading weights:  72%|███████▏  | 850/1184 [02:59<00:59,  5.62it/s]Loading weights:  73%|███████▎  | 866/1184 [02:59<00:13, 22.90it/s]Loading weights:  74%|███████▍  | 875/1184 [02:59<00:09, 31.21it/s]Loading weights:  74%|███████▍  | 881/1184 [02:59<00:10, 28.90it/s]Loading weights:  75%|███████▌  | 893/1184 [02:59<00:07, 36.60it/s]Loading weights:  77%|███████▋  | 914/1184 [02:59<00:04, 63.03it/s]Loading weights:  79%|███████▉  | 935/1184 [03:00<00:02, 89.11it/s]Loading weights:  81%|████████  | 955/1184 [03:00<00:02, 111.40it/s]Loading weights:  82%|████████▏ | 970/1184 [03:00<00:01, 110.99it/s]Loading weights:  83%|████████▎ | 984/1184 [03:00<00:02, 86.02it/s] Loading weights:  84%|████████▍ | 1000/1184 [03:00<00:02, 90.62it/s]Loading weights:  86%|████████▌ | 1020/1184 [03:00<00:01, 109.95it/s]Loading weights:  87%|████████▋ | 1033/1184 [03:00<00:01, 114.17it/s]Loading weights:  89%|████████▊ | 1048/1184 [03:01<00:01, 113.71it/s]Loading weights:  90%|████████▉ | 1061/1184 [03:01<00:01, 103.94it/s]Loading weights:  91%|█████████▏| 1081/1184 [03:01<00:00, 125.41it/s]Loading weights:  92%|█████████▏| 1095/1184 [03:01<00:00, 119.08it/s]Loading weights:  94%|█████████▍| 1111/1184 [03:01<00:00, 117.44it/s]Loading weights:  95%|█████████▌| 1130/1184 [03:01<00:00, 131.35it/s]Loading weights:  97%|█████████▋| 1144/1184 [03:01<00:00, 129.80it/s]Loading weights:  98%|█████████▊| 1158/1184 [03:01<00:00, 124.78it/s]Loading weights:  99%|█████████▉| 1174/1184 [03:02<00:00, 128.24it/s]Loading weights: 100%|██████████| 1184/1184 [03:02<00:00,  6.49it/s] 
+* LoRA adapters initialized (target types: down_proj, o_proj, out_proj)
+* Transformer model with 64 layers
+* Abliterable components:
+  * attn.o_proj: 64 modules total
+  * mlp.down_proj: 64 modules total
+
+Resident system RAM: 4.15 GB
+Allocated GPU VRAM: 52.02 GB
+Reserved GPU VRAM: 52.05 GB
+
+Loading good prompts from mlabonne/harmless_alpaca...
+Using the latest cached version of the dataset since mlabonne/harmless_alpaca couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /root/autodl-fs/hf-cache/datasets/mlabonne___harmless_alpaca/default/0.0.0/02c6a92cfcf11bb0c387334f8146d149d65b587f (last modified on Fri Aug 28 15:59:57 2026).
+* 300 prompts loaded
+
+Loading bad prompts from mlabonne/harmful_behaviors...
+Using the latest cached version of the dataset since mlabonne/harmful_behaviors couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /root/autodl-fs/hf-cache/datasets/mlabonne___harmful_behaviors/default/0.0.0/01cead01398926d81f7c52bdb790ee8cf77ebba7 (last modified on Fri Aug 28 16:03:24 2026).
+* 300 prompts loaded
+* Selected 64+64 CARA calibration prompts
+
+Determining optimal batch size...
+* Trying batch size 1... Ok (12 tokens/s)
+* Trying batch size 2... Ok (23 tokens/s)
+* Trying batch size 4... Ok (45 tokens/s)
+* Trying batch size 8... Ok (88 tokens/s)
+* Trying batch size 16... Ok (175 tokens/s)
+* Chosen batch size: 16
+
+Loading and initializing scorers...
+* Loaded: KeywordRate 
+* Loaded: KLDivergence 
+
+Loading KeywordRate evaluation prompts from mlabonne/harmful_behaviors...
+Using the latest cached version of the dataset since mlabonne/harmful_behaviors couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /root/autodl-fs/hf-cache/datasets/mlabonne___harmful_behaviors/default/0.0.0/01cead01398926d81f7c52bdb790ee8cf77ebba7 (last modified on Fri Aug 28 16:03:24 2026).
+* 100 prompts loaded
+
+Loading KLDivergence evaluation prompts from mlabonne/harmless_alpaca...
+Using the latest cached version of the dataset since mlabonne/harmless_alpaca couldn't be found on the Hugging Face Hub (offline mode is enabled).
+Found the latest cached dataset configuration 'default' at /root/autodl-fs/hf-cache/datasets/mlabonne___harmless_alpaca/default/0.0.0/02c6a92cfcf11bb0c387334f8146d149d65b587f (last modified on Fri Aug 28 15:59:57 2026).
+* 100 prompts loaded
+* Obtaining baseline first-token probability distributions...
+* Baseline Keywords: 100/100
+* Baseline KL divergence: 0 (by definition)
+
+Capturing clean CARA module I/O...
+* Capturing good prompts...
+* Capturing bad prompts...
+
+Running trial 1 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 59
+  * attn.o_proj.strength = 0.1570
+  * attn.o_proj.push_weight = 0.3120
+  * attn.o_proj.margin = 0.3853
+  * mlp.down_proj.strength = 0.2592
+  * mlp.down_proj.push_weight = 0.3120
+  * mlp.down_proj.margin = 0.3853
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 97/100
+    * KL divergence: 0.0156
+
+Elapsed time: 1m 29s
+Estimated remaining time: 2h 56m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 2 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 49
+  * attn.o_proj.strength = 0.0636
+  * attn.o_proj.push_weight = 0.0412
+  * attn.o_proj.margin = 3.6798
+  * mlp.down_proj.strength = 0.3248
+  * mlp.down_proj.push_weight = 0.0412
+  * mlp.down_proj.margin = 3.6798
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0081
+
+Elapsed time: 2m 52s
+Estimated remaining time: 2h 49m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 3 of 120...
+* Parameters:
+  * layer_start = 37
+  * layer_end = 50
+  * attn.o_proj.strength = 0.0035
+  * attn.o_proj.push_weight = 0.6085
+  * attn.o_proj.margin = 1.0710
+  * mlp.down_proj.strength = 0.0100
+  * mlp.down_proj.push_weight = 0.6085
+  * mlp.down_proj.margin = 1.0710
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0041
+
+Elapsed time: 4m 9s
+Estimated remaining time: 2h 42m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 4 of 120...
+* Parameters:
+  * layer_start = 27
+  * layer_end = 42
+  * attn.o_proj.strength = 0.0685
+  * attn.o_proj.push_weight = 0.5843
+  * attn.o_proj.margin = 0.6904
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.5843
+  * mlp.down_proj.margin = 0.6904
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0022
+
+Elapsed time: 5m 22s
+Estimated remaining time: 2h 35m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 5 of 120...
+* Parameters:
+  * layer_start = 27
+  * layer_end = 57
+  * attn.o_proj.strength = 0.0040
+  * attn.o_proj.push_weight = 1.1848
+  * attn.o_proj.margin = 0.2844
+  * mlp.down_proj.strength = 0.2085
+  * mlp.down_proj.push_weight = 1.1848
+  * mlp.down_proj.margin = 0.2844
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0161
+
+Elapsed time: 6m 48s
+Estimated remaining time: 2h 36m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 6 of 120...
+* Parameters:
+  * layer_start = 31
+  * layer_end = 43
+  * attn.o_proj.strength = 0.0016
+  * attn.o_proj.push_weight = 1.9313
+  * attn.o_proj.margin = 2.3515
+  * mlp.down_proj.strength = 0.4693
+  * mlp.down_proj.push_weight = 1.9313
+  * mlp.down_proj.margin = 2.3515
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0071
+
+Elapsed time: 8m 5s
+Estimated remaining time: 2h 33m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 7 of 120...
+* Parameters:
+  * layer_start = 23
+  * layer_end = 33
+  * attn.o_proj.strength = 0.1129
+  * attn.o_proj.push_weight = 0.2441
+  * attn.o_proj.margin = 0.9867
+  * mlp.down_proj.strength = 0.1641
+  * mlp.down_proj.push_weight = 0.2441
+  * mlp.down_proj.margin = 0.9867
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0018
+
+Elapsed time: 9m 21s
+Estimated remaining time: 2h 30m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 8 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 49
+  * attn.o_proj.strength = 0.0060
+  * attn.o_proj.push_weight = 0.6234
+  * attn.o_proj.margin = 1.0572
+  * mlp.down_proj.strength = 0.2975
+  * mlp.down_proj.push_weight = 0.6234
+  * mlp.down_proj.margin = 1.0572
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0121
+
+Elapsed time: 10m 48s
+Estimated remaining time: 2h 31m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 9 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 41
+  * attn.o_proj.strength = 0.8105
+  * attn.o_proj.push_weight = 1.8790
+  * attn.o_proj.margin = 2.9883
+  * mlp.down_proj.strength = 0.3651
+  * mlp.down_proj.push_weight = 1.8790
+  * mlp.down_proj.margin = 2.9883
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 97/100
+    * KL divergence: 0.0138
+
+Elapsed time: 12m 3s
+Estimated remaining time: 2h 28m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 10 of 120...
+* Parameters:
+  * layer_start = 31
+  * layer_end = 64
+  * attn.o_proj.strength = 0.0018
+  * attn.o_proj.push_weight = 0.0905
+  * attn.o_proj.margin = 0.6161
+  * mlp.down_proj.strength = 0.0176
+  * mlp.down_proj.push_weight = 0.0905
+  * mlp.down_proj.margin = 0.6161
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0231
+
+Elapsed time: 13m 26s
+Estimated remaining time: 2h 27m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 11 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 40
+  * attn.o_proj.strength = 0.3063
+  * attn.o_proj.push_weight = 0.5619
+  * attn.o_proj.margin = 1.1257
+  * mlp.down_proj.strength = 0.1141
+  * mlp.down_proj.push_weight = 0.5619
+  * mlp.down_proj.margin = 1.1257
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0037
+
+Elapsed time: 14m 43s
+Estimated remaining time: 2h 25m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 12 of 120...
+* Parameters:
+  * layer_start = 19
+  * layer_end = 49
+  * attn.o_proj.strength = 0.0017
+  * attn.o_proj.push_weight = 1.5445
+  * attn.o_proj.margin = 0.4337
+  * mlp.down_proj.strength = 0.4921
+  * mlp.down_proj.push_weight = 1.5445
+  * mlp.down_proj.margin = 0.4337
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0068
+
+Elapsed time: 16m 9s
+Estimated remaining time: 2h 25m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 13 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 46
+  * attn.o_proj.strength = 0.1320
+  * attn.o_proj.push_weight = 1.5425
+  * attn.o_proj.margin = 0.3070
+  * mlp.down_proj.strength = 0.3374
+  * mlp.down_proj.push_weight = 1.5425
+  * mlp.down_proj.margin = 0.3070
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0049
+
+Elapsed time: 17m 34s
+Estimated remaining time: 2h 24m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 14 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 35
+  * attn.o_proj.strength = 0.3884
+  * attn.o_proj.push_weight = 0.6618
+  * attn.o_proj.margin = 0.2982
+  * mlp.down_proj.strength = 0.2740
+  * mlp.down_proj.push_weight = 0.6618
+  * mlp.down_proj.margin = 0.2982
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0022
+
+Elapsed time: 18m 50s
+Estimated remaining time: 2h 22m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 15 of 120...
+* Parameters:
+  * layer_start = 23
+  * layer_end = 39
+  * attn.o_proj.strength = 0.1545
+  * attn.o_proj.push_weight = 1.7744
+  * attn.o_proj.margin = 0.9259
+  * mlp.down_proj.strength = 0.2825
+  * mlp.down_proj.push_weight = 1.7744
+  * mlp.down_proj.margin = 0.9259
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0032
+
+Elapsed time: 20m 7s
+Estimated remaining time: 2h 20m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 16 of 120...
+* Parameters:
+  * layer_start = 19
+  * layer_end = 46
+  * attn.o_proj.strength = 0.1916
+  * attn.o_proj.push_weight = 1.5419
+  * attn.o_proj.margin = 0.9829
+  * mlp.down_proj.strength = 0.2368
+  * mlp.down_proj.push_weight = 1.5419
+  * mlp.down_proj.margin = 0.9829
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0077
+
+Elapsed time: 21m 26s
+Estimated remaining time: 2h 19m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 17 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 48
+  * attn.o_proj.strength = 0.0012
+  * attn.o_proj.push_weight = 0.0629
+  * attn.o_proj.margin = 1.4597
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.0629
+  * mlp.down_proj.margin = 1.4597
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0023
+
+Elapsed time: 22m 42s
+Estimated remaining time: 2h 17m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 18 of 120...
+* Parameters:
+  * layer_start = 24
+  * layer_end = 46
+  * attn.o_proj.strength = 0.5281
+  * attn.o_proj.push_weight = 0.8208
+  * attn.o_proj.margin = 2.0310
+  * mlp.down_proj.strength = 0.0496
+  * mlp.down_proj.push_weight = 0.8208
+  * mlp.down_proj.margin = 2.0310
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 95/100
+    * KL divergence: 0.0122
+
+Elapsed time: 24m 2s
+Estimated remaining time: 2h 16m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 19 of 120...
+* Parameters:
+  * layer_start = 21
+  * layer_end = 30
+  * attn.o_proj.strength = 0.0074
+  * attn.o_proj.push_weight = 1.8594
+  * attn.o_proj.margin = 2.3497
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.8594
+  * mlp.down_proj.margin = 2.3497
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0011
+
+Elapsed time: 25m 15s
+Estimated remaining time: 2h 14m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 20 of 120...
+* Parameters:
+  * layer_start = 32
+  * layer_end = 64
+  * attn.o_proj.strength = 0.2576
+  * attn.o_proj.push_weight = 1.7851
+  * attn.o_proj.margin = 1.1153
+  * mlp.down_proj.strength = 0.0119
+  * mlp.down_proj.push_weight = 1.7851
+  * mlp.down_proj.margin = 1.1153
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 93/100
+    * KL divergence: 0.0286
+
+Elapsed time: 26m 41s
+Estimated remaining time: 2h 13m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 21 of 120...
+* Parameters:
+  * layer_start = 36
+  * layer_end = 64
+  * attn.o_proj.strength = 0.0090
+  * attn.o_proj.push_weight = 0.4559
+  * attn.o_proj.margin = 0.8170
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.4559
+  * mlp.down_proj.margin = 0.8170
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0033
+
+Elapsed time: 27m 57s
+Estimated remaining time: 2h 11m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 22 of 120...
+* Parameters:
+  * layer_start = 36
+  * layer_end = 64
+  * attn.o_proj.strength = 0.0010
+  * attn.o_proj.push_weight = 0.8348
+  * attn.o_proj.margin = 0.4628
+  * mlp.down_proj.strength = 0.2064
+  * mlp.down_proj.push_weight = 0.8348
+  * mlp.down_proj.margin = 0.4628
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0121
+
+Elapsed time: 29m 18s
+Estimated remaining time: 2h 10m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 23 of 120...
+* Parameters:
+  * layer_start = 19
+  * layer_end = 36
+  * attn.o_proj.strength = 0.6741
+  * attn.o_proj.push_weight = 1.0376
+  * attn.o_proj.margin = 1.7557
+  * mlp.down_proj.strength = 0.0939
+  * mlp.down_proj.push_weight = 1.0376
+  * mlp.down_proj.margin = 1.7557
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0076
+
+Elapsed time: 30m 38s
+Estimated remaining time: 2h 9m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 24 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 60
+  * attn.o_proj.strength = 0.7715
+  * attn.o_proj.push_weight = 0.9945
+  * attn.o_proj.margin = 0.5757
+  * mlp.down_proj.strength = 0.0511
+  * mlp.down_proj.push_weight = 0.9945
+  * mlp.down_proj.margin = 0.5757
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 97/100
+    * KL divergence: 0.0181
+
+Elapsed time: 32m 3s
+Estimated remaining time: 2h 8m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 25 of 120...
+* Parameters:
+  * layer_start = 23
+  * layer_end = 31
+  * attn.o_proj.strength = 0.0674
+  * attn.o_proj.push_weight = 0.1030
+  * attn.o_proj.margin = 0.5413
+  * mlp.down_proj.strength = 0.2016
+  * mlp.down_proj.push_weight = 0.1030
+  * mlp.down_proj.margin = 0.5413
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0017
+
+Elapsed time: 33m 16s
+Estimated remaining time: 2h 6m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 26 of 120...
+* Parameters:
+  * layer_start = 39
+  * layer_end = 53
+  * attn.o_proj.strength = 0.0027
+  * attn.o_proj.push_weight = 1.9713
+  * attn.o_proj.margin = 0.4891
+  * mlp.down_proj.strength = 0.1937
+  * mlp.down_proj.push_weight = 1.9713
+  * mlp.down_proj.margin = 0.4891
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0039
+
+Elapsed time: 34m 34s
+Estimated remaining time: 2h 4m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 27 of 120...
+* Parameters:
+  * layer_start = 33
+  * layer_end = 62
+  * attn.o_proj.strength = 0.0052
+  * attn.o_proj.push_weight = 0.7356
+  * attn.o_proj.margin = 1.4432
+  * mlp.down_proj.strength = 0.3369
+  * mlp.down_proj.push_weight = 0.7356
+  * mlp.down_proj.margin = 1.4432
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 93/100
+    * KL divergence: 0.0276
+
+Elapsed time: 35m 58s
+Estimated remaining time: 2h 3m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 28 of 120...
+* Parameters:
+  * layer_start = 32
+  * layer_end = 54
+  * attn.o_proj.strength = 0.0019
+  * attn.o_proj.push_weight = 0.6416
+  * attn.o_proj.margin = 0.4193
+  * mlp.down_proj.strength = 0.4012
+  * mlp.down_proj.push_weight = 0.6416
+  * mlp.down_proj.margin = 0.4193
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0101
+
+Elapsed time: 37m 17s
+Estimated remaining time: 2h 2m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 29 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 41
+  * attn.o_proj.strength = 0.1078
+  * attn.o_proj.push_weight = 1.0242
+  * attn.o_proj.margin = 0.4685
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.0242
+  * mlp.down_proj.margin = 0.4685
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0024
+
+Elapsed time: 38m 34s
+Estimated remaining time: 2h 1m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 30 of 120...
+* Parameters:
+  * layer_start = 32
+  * layer_end = 44
+  * attn.o_proj.strength = 0.1183
+  * attn.o_proj.push_weight = 1.8735
+  * attn.o_proj.margin = 0.3660
+  * mlp.down_proj.strength = 0.1320
+  * mlp.down_proj.push_weight = 1.8735
+  * mlp.down_proj.margin = 0.3660
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0034
+
+Elapsed time: 39m 51s
+Estimated remaining time: 1h 59m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 31 of 120...
+* Parameters:
+  * layer_start = 24
+  * layer_end = 34
+  * attn.o_proj.strength = 0.5944
+  * attn.o_proj.push_weight = 0.5159
+  * attn.o_proj.margin = 1.5583
+  * mlp.down_proj.strength = 0.4264
+  * mlp.down_proj.push_weight = 0.5159
+  * mlp.down_proj.margin = 1.5583
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0043
+
+Elapsed time: 41m 6s
+Estimated remaining time: 1h 58m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 32 of 120...
+* Parameters:
+  * layer_start = 36
+  * layer_end = 59
+  * attn.o_proj.strength = 0.0388
+  * attn.o_proj.push_weight = 0.1862
+  * attn.o_proj.margin = 3.0081
+  * mlp.down_proj.strength = 0.0451
+  * mlp.down_proj.push_weight = 0.1862
+  * mlp.down_proj.margin = 3.0081
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0195
+
+Elapsed time: 42m 26s
+Estimated remaining time: 1h 56m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 33 of 120...
+* Parameters:
+  * layer_start = 39
+  * layer_end = 64
+  * attn.o_proj.strength = 0.0104
+  * attn.o_proj.push_weight = 1.4519
+  * attn.o_proj.margin = 3.0072
+  * mlp.down_proj.strength = 0.1095
+  * mlp.down_proj.push_weight = 1.4519
+  * mlp.down_proj.margin = 3.0072
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0483
+
+Elapsed time: 43m 46s
+Estimated remaining time: 1h 55m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 34 of 120...
+* Parameters:
+  * layer_start = 38
+  * layer_end = 64
+  * attn.o_proj.strength = 0.0844
+  * attn.o_proj.push_weight = 0.3233
+  * attn.o_proj.margin = 3.0193
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.3233
+  * mlp.down_proj.margin = 3.0193
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0036
+
+Elapsed time: 45m 3s
+Estimated remaining time: 1h 53m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 35 of 120...
+* Parameters:
+  * layer_start = 31
+  * layer_end = 38
+  * attn.o_proj.strength = 0.0020
+  * attn.o_proj.push_weight = 0.0101
+  * attn.o_proj.margin = 0.3905
+  * mlp.down_proj.strength = 0.2981
+  * mlp.down_proj.push_weight = 0.0101
+  * mlp.down_proj.margin = 0.3905
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0023
+
+Elapsed time: 46m 18s
+Estimated remaining time: 1h 52m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 36 of 120...
+* Parameters:
+  * layer_start = 30
+  * layer_end = 57
+  * attn.o_proj.strength = 0.0903
+  * attn.o_proj.push_weight = 1.4244
+  * attn.o_proj.margin = 0.4826
+  * mlp.down_proj.strength = 0.0346
+  * mlp.down_proj.push_weight = 1.4244
+  * mlp.down_proj.margin = 0.4826
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0178
+
+Elapsed time: 47m 39s
+Estimated remaining time: 1h 51m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 37 of 120...
+* Parameters:
+  * layer_start = 22
+  * layer_end = 33
+  * attn.o_proj.strength = 0.0110
+  * attn.o_proj.push_weight = 1.7559
+  * attn.o_proj.margin = 3.0392
+  * mlp.down_proj.strength = 0.0541
+  * mlp.down_proj.push_weight = 1.7559
+  * mlp.down_proj.margin = 3.0392
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0032
+
+Elapsed time: 48m 55s
+Estimated remaining time: 1h 49m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 38 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 53
+  * attn.o_proj.strength = 0.4282
+  * attn.o_proj.push_weight = 0.8328
+  * attn.o_proj.margin = 2.0847
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.8328
+  * mlp.down_proj.margin = 2.0847
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 97/100
+    * KL divergence: 0.0094
+
+Elapsed time: 50m 11s
+Estimated remaining time: 1h 48m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 39 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 45
+  * attn.o_proj.strength = 0.0298
+  * attn.o_proj.push_weight = 1.1884
+  * attn.o_proj.margin = 0.2843
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.1884
+  * mlp.down_proj.margin = 0.2843
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0029
+
+Elapsed time: 51m 28s
+Estimated remaining time: 1h 46m
+Resident system RAM: 5.49 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 40 of 120...
+* Parameters:
+  * layer_start = 27
+  * layer_end = 51
+  * attn.o_proj.strength = 0.7359
+  * attn.o_proj.push_weight = 0.6311
+  * attn.o_proj.margin = 2.4331
+  * mlp.down_proj.strength = 0.0009
+  * mlp.down_proj.push_weight = 0.6311
+  * mlp.down_proj.margin = 2.4331
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 93/100
+    * KL divergence: 0.0132
+
+Elapsed time: 52m 48s
+Estimated remaining time: 1h 45m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 41 of 120...
+* Parameters:
+  * layer_start = 24
+  * layer_end = 33
+  * attn.o_proj.strength = 0.0060
+  * attn.o_proj.push_weight = 1.7186
+  * attn.o_proj.margin = 0.8593
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.7186
+  * mlp.down_proj.margin = 0.8593
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0009
+
+Elapsed time: 54m 0s
+Estimated remaining time: 1h 44m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 42 of 120...
+* Parameters:
+  * layer_start = 23
+  * layer_end = 33
+  * attn.o_proj.strength = 0.0042
+  * attn.o_proj.push_weight = 1.5470
+  * attn.o_proj.margin = 0.4319
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.5470
+  * mlp.down_proj.margin = 0.4319
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0010
+
+Elapsed time: 55m 12s
+Estimated remaining time: 1h 42m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 43 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 52
+  * attn.o_proj.strength = 0.5405
+  * attn.o_proj.push_weight = 0.7058
+  * attn.o_proj.margin = 1.8880
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.7058
+  * mlp.down_proj.margin = 1.8880
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0071
+
+Elapsed time: 56m 28s
+Estimated remaining time: 1h 41m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 44 of 120...
+* Parameters:
+  * layer_start = 19
+  * layer_end = 39
+  * attn.o_proj.strength = 0.0830
+  * attn.o_proj.push_weight = 0.8694
+  * attn.o_proj.margin = 0.5654
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.8694
+  * mlp.down_proj.margin = 0.5654
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0026
+
+Elapsed time: 57m 44s
+Estimated remaining time: 1h 39m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 45 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 38
+  * attn.o_proj.strength = 0.0013
+  * attn.o_proj.push_weight = 1.4578
+  * attn.o_proj.margin = 0.9619
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.4578
+  * mlp.down_proj.margin = 0.9619
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0023
+
+Elapsed time: 58m 59s
+Estimated remaining time: 1h 38m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 46 of 120...
+* Parameters:
+  * layer_start = 24
+  * layer_end = 36
+  * attn.o_proj.strength = 0.0146
+  * attn.o_proj.push_weight = 1.8236
+  * attn.o_proj.margin = 0.8024
+  * mlp.down_proj.strength = 0.1079
+  * mlp.down_proj.push_weight = 1.8236
+  * mlp.down_proj.margin = 0.8024
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0027
+
+Elapsed time: 1h 0m
+Estimated remaining time: 1h 36m
+Resident system RAM: 5.52 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 47 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 37
+  * attn.o_proj.strength = 0.0437
+  * attn.o_proj.push_weight = 1.3561
+  * attn.o_proj.margin = 1.0994
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.3561
+  * mlp.down_proj.margin = 1.0994
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0028
+
+Elapsed time: 1h 1m
+Estimated remaining time: 1h 35m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 48 of 120...
+* Parameters:
+  * layer_start = 20
+  * layer_end = 37
+  * attn.o_proj.strength = 0.0126
+  * attn.o_proj.push_weight = 1.5365
+  * attn.o_proj.margin = 0.9380
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.5365
+  * mlp.down_proj.margin = 0.9380
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0027
+
+Elapsed time: 1h 2m
+Estimated remaining time: 1h 34m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 49 of 120...
+* Parameters:
+  * layer_start = 20
+  * layer_end = 53
+  * attn.o_proj.strength = 0.3882
+  * attn.o_proj.push_weight = 0.6972
+  * attn.o_proj.margin = 2.2363
+  * mlp.down_proj.strength = 0.0890
+  * mlp.down_proj.push_weight = 0.6972
+  * mlp.down_proj.margin = 2.2363
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 91/100
+    * KL divergence: 0.0248
+
+Elapsed time: 1h 4m
+Estimated remaining time: 1h 32m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 50 of 120...
+* Parameters:
+  * layer_start = 22
+  * layer_end = 56
+  * attn.o_proj.strength = 0.7867
+  * attn.o_proj.push_weight = 0.5604
+  * attn.o_proj.margin = 2.5454
+  * mlp.down_proj.strength = 0.1818
+  * mlp.down_proj.push_weight = 0.5604
+  * mlp.down_proj.margin = 2.5454
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 88/100
+    * KL divergence: 0.0354
+
+Elapsed time: 1h 5m
+Estimated remaining time: 1h 31m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 51 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 52
+  * attn.o_proj.strength = 0.1840
+  * attn.o_proj.push_weight = 0.5260
+  * attn.o_proj.margin = 2.4545
+  * mlp.down_proj.strength = 0.1184
+  * mlp.down_proj.push_weight = 0.5260
+  * mlp.down_proj.margin = 2.4545
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 90/100
+    * KL divergence: 0.0175
+
+Elapsed time: 1h 7m
+Estimated remaining time: 1h 30m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 52 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 47
+  * attn.o_proj.strength = 0.0136
+  * attn.o_proj.push_weight = 0.2670
+  * attn.o_proj.margin = 2.0712
+  * mlp.down_proj.strength = 0.0818
+  * mlp.down_proj.push_weight = 0.2670
+  * mlp.down_proj.margin = 2.0712
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0071
+
+Elapsed time: 1h 8m
+Estimated remaining time: 1h 29m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 53 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 48
+  * attn.o_proj.strength = 0.6935
+  * attn.o_proj.push_weight = 0.5734
+  * attn.o_proj.margin = 3.0920
+  * mlp.down_proj.strength = 0.2594
+  * mlp.down_proj.push_weight = 0.5734
+  * mlp.down_proj.margin = 3.0920
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 92/100
+    * KL divergence: 0.0142
+
+Elapsed time: 1h 9m
+Estimated remaining time: 1h 28m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 54 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 50
+  * attn.o_proj.strength = 0.4849
+  * attn.o_proj.push_weight = 0.9025
+  * attn.o_proj.margin = 2.7515
+  * mlp.down_proj.strength = 0.4315
+  * mlp.down_proj.push_weight = 0.9025
+  * mlp.down_proj.margin = 2.7515
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 88/100
+    * KL divergence: 0.0270
+
+Elapsed time: 1h 11m
+Estimated remaining time: 1h 27m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 55 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 39
+  * attn.o_proj.strength = 0.7113
+  * attn.o_proj.push_weight = 1.3108
+  * attn.o_proj.margin = 3.3555
+  * mlp.down_proj.strength = 0.4040
+  * mlp.down_proj.push_weight = 1.3108
+  * mlp.down_proj.margin = 3.3555
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 90/100
+    * KL divergence: 0.0170
+
+Elapsed time: 1h 12m
+Estimated remaining time: 1h 25m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 56 of 120...
+* Parameters:
+  * layer_start = 19
+  * layer_end = 39
+  * attn.o_proj.strength = 0.6849
+  * attn.o_proj.push_weight = 1.4874
+  * attn.o_proj.margin = 3.2565
+  * mlp.down_proj.strength = 0.4321
+  * mlp.down_proj.push_weight = 1.4874
+  * mlp.down_proj.margin = 3.2565
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 87/100
+    * KL divergence: 0.0209
+
+Elapsed time: 1h 13m
+Estimated remaining time: 1h 24m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 57 of 120...
+* Parameters:
+  * layer_start = 18
+  * layer_end = 36
+  * attn.o_proj.strength = 0.3727
+  * attn.o_proj.push_weight = 1.4737
+  * attn.o_proj.margin = 3.6996
+  * mlp.down_proj.strength = 0.4585
+  * mlp.down_proj.push_weight = 1.4737
+  * mlp.down_proj.margin = 3.6996
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 92/100
+    * KL divergence: 0.0150
+
+Elapsed time: 1h 15m
+Estimated remaining time: 1h 23m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 58 of 120...
+* Parameters:
+  * layer_start = 26
+  * layer_end = 51
+  * attn.o_proj.strength = 0.7524
+  * attn.o_proj.push_weight = 1.2751
+  * attn.o_proj.margin = 2.5575
+  * mlp.down_proj.strength = 0.3728
+  * mlp.down_proj.push_weight = 1.2751
+  * mlp.down_proj.margin = 2.5575
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 86/100
+    * KL divergence: 0.0345
+
+Elapsed time: 1h 16m
+Estimated remaining time: 1h 21m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 59 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 43
+  * attn.o_proj.strength = 0.2981
+  * attn.o_proj.push_weight = 1.7267
+  * attn.o_proj.margin = 3.6018
+  * mlp.down_proj.strength = 0.2267
+  * mlp.down_proj.push_weight = 1.7267
+  * mlp.down_proj.margin = 3.6018
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 83/100
+    * KL divergence: 0.0203
+
+Elapsed time: 1h 17m
+Estimated remaining time: 1h 20m
+Resident system RAM: 5.52 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 60 of 120...
+* Parameters:
+  * layer_start = 19
+  * layer_end = 50
+  * attn.o_proj.strength = 0.9604
+  * attn.o_proj.push_weight = 1.7388
+  * attn.o_proj.margin = 3.2118
+  * mlp.down_proj.strength = 0.1746
+  * mlp.down_proj.push_weight = 1.7388
+  * mlp.down_proj.margin = 3.2118
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 73/100
+    * KL divergence: 0.0781
+
+Elapsed time: 1h 19m
+Estimated remaining time: 1h 19m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 61 of 120...
+* Parameters:
+  * layer_start = 18
+  * layer_end = 46
+  * attn.o_proj.strength = 0.2738
+  * attn.o_proj.push_weight = 1.9716
+  * attn.o_proj.margin = 3.8959
+  * mlp.down_proj.strength = 0.0601
+  * mlp.down_proj.push_weight = 1.9716
+  * mlp.down_proj.margin = 3.8959
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 77/100
+    * KL divergence: 0.0387
+
+Elapsed time: 1h 20m
+Estimated remaining time: 1h 18m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 62 of 120...
+* Parameters:
+  * layer_start = 20
+  * layer_end = 50
+  * attn.o_proj.strength = 0.1538
+  * attn.o_proj.push_weight = 1.8832
+  * attn.o_proj.margin = 3.1598
+  * mlp.down_proj.strength = 0.0272
+  * mlp.down_proj.push_weight = 1.8832
+  * mlp.down_proj.margin = 3.1598
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 86/100
+    * KL divergence: 0.0317
+
+Elapsed time: 1h 22m
+Estimated remaining time: 1h 16m
+Resident system RAM: 5.48 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 63 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 52
+  * attn.o_proj.strength = 0.9090
+  * attn.o_proj.push_weight = 1.6084
+  * attn.o_proj.margin = 3.2273
+  * mlp.down_proj.strength = 0.2234
+  * mlp.down_proj.push_weight = 1.6084
+  * mlp.down_proj.margin = 3.2273
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 68/100
+    * KL divergence: 0.0889
+
+Elapsed time: 1h 23m
+Estimated remaining time: 1h 15m
+Resident system RAM: 5.52 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 64 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 40
+  * attn.o_proj.strength = 0.7376
+  * attn.o_proj.push_weight = 1.9600
+  * attn.o_proj.margin = 3.0630
+  * mlp.down_proj.strength = 0.1259
+  * mlp.down_proj.push_weight = 1.9600
+  * mlp.down_proj.margin = 3.0630
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 87/100
+    * KL divergence: 0.0237
+
+Elapsed time: 1h 24m
+Estimated remaining time: 1h 14m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 65 of 120...
+* Parameters:
+  * layer_start = 20
+  * layer_end = 55
+  * attn.o_proj.strength = 0.2883
+  * attn.o_proj.push_weight = 1.4405
+  * attn.o_proj.margin = 3.6880
+  * mlp.down_proj.strength = 0.2576
+  * mlp.down_proj.push_weight = 1.4405
+  * mlp.down_proj.margin = 3.6880
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 68/100
+    * KL divergence: 0.0919
+
+Elapsed time: 1h 26m
+Estimated remaining time: 1h 13m
+Resident system RAM: 5.52 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 66 of 120...
+* Parameters:
+  * layer_start = 20
+  * layer_end = 45
+  * attn.o_proj.strength = 0.0885
+  * attn.o_proj.push_weight = 1.6936
+  * attn.o_proj.margin = 3.8176
+  * mlp.down_proj.strength = 0.2202
+  * mlp.down_proj.push_weight = 1.6936
+  * mlp.down_proj.margin = 3.8176
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 84/100
+    * KL divergence: 0.0201
+
+Elapsed time: 1h 27m
+Estimated remaining time: 1h 11m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 67 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 52
+  * attn.o_proj.strength = 0.8642
+  * attn.o_proj.push_weight = 1.8112
+  * attn.o_proj.margin = 3.6525
+  * mlp.down_proj.strength = 0.1178
+  * mlp.down_proj.push_weight = 1.8112
+  * mlp.down_proj.margin = 3.6525
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 54/100
+    * KL divergence: 0.0900
+
+Elapsed time: 1h 29m
+Estimated remaining time: 1h 10m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 68 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 47
+  * attn.o_proj.strength = 0.5862
+  * attn.o_proj.push_weight = 1.4899
+  * attn.o_proj.margin = 3.0685
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.4899
+  * mlp.down_proj.margin = 3.0685
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 88/100
+    * KL divergence: 0.0282
+
+Elapsed time: 1h 30m
+Estimated remaining time: 1h 9m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 69 of 120...
+* Parameters:
+  * layer_start = 18
+  * layer_end = 52
+  * attn.o_proj.strength = 0.6436
+  * attn.o_proj.push_weight = 1.8825
+  * attn.o_proj.margin = 3.4925
+  * mlp.down_proj.strength = 0.0996
+  * mlp.down_proj.push_weight = 1.8825
+  * mlp.down_proj.margin = 3.4925
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 60/100
+    * KL divergence: 0.0788
+
+Elapsed time: 1h 31m
+Estimated remaining time: 1h 7m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 70 of 120...
+* Parameters:
+  * layer_start = 28
+  * layer_end = 52
+  * attn.o_proj.strength = 0.2469
+  * attn.o_proj.push_weight = 1.9075
+  * attn.o_proj.margin = 3.8885
+  * mlp.down_proj.strength = 0.0369
+  * mlp.down_proj.push_weight = 1.9075
+  * mlp.down_proj.margin = 3.8885
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 65/100
+    * KL divergence: 0.0598
+
+Elapsed time: 1h 33m
+Estimated remaining time: 1h 6m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 71 of 120...
+* Parameters:
+  * layer_start = 31
+  * layer_end = 52
+  * attn.o_proj.strength = 0.2542
+  * attn.o_proj.push_weight = 1.9299
+  * attn.o_proj.margin = 2.7518
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.9299
+  * mlp.down_proj.margin = 2.7518
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 88/100
+    * KL divergence: 0.0210
+
+Elapsed time: 1h 34m
+Estimated remaining time: 1h 5m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 72 of 120...
+* Parameters:
+  * layer_start = 30
+  * layer_end = 59
+  * attn.o_proj.strength = 0.3890
+  * attn.o_proj.push_weight = 1.6933
+  * attn.o_proj.margin = 3.8648
+  * mlp.down_proj.strength = 0.1256
+  * mlp.down_proj.push_weight = 1.6933
+  * mlp.down_proj.margin = 3.8648
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 60/100
+    * KL divergence: 0.0888
+
+Elapsed time: 1h 35m
+Estimated remaining time: 1h 3m
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 73 of 120...
+* Parameters:
+  * layer_start = 27
+  * layer_end = 51
+  * attn.o_proj.strength = 0.0152
+  * attn.o_proj.push_weight = 1.9587
+  * attn.o_proj.margin = 2.7493
+  * mlp.down_proj.strength = 0.0314
+  * mlp.down_proj.push_weight = 1.9587
+  * mlp.down_proj.margin = 2.7493
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 92/100
+    * KL divergence: 0.0298
+
+Elapsed time: 1h 37m
+Estimated remaining time: 1h 2m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 74 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 51
+  * attn.o_proj.strength = 0.6948
+  * attn.o_proj.push_weight = 1.9925
+  * attn.o_proj.margin = 3.7706
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.9925
+  * mlp.down_proj.margin = 3.7706
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 69/100
+    * KL divergence: 0.0528
+
+Elapsed time: 1h 38m
+Estimated remaining time: 1h 1m
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 75 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 37
+  * attn.o_proj.strength = 0.2565
+  * attn.o_proj.push_weight = 0.9358
+  * attn.o_proj.margin = 0.4845
+  * mlp.down_proj.strength = 0.2018
+  * mlp.down_proj.push_weight = 0.9358
+  * mlp.down_proj.margin = 0.4845
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0051
+
+Elapsed time: 1h 39m
+Estimated remaining time: 59m 55s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 76 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 52
+  * attn.o_proj.strength = 0.8491
+  * attn.o_proj.push_weight = 1.8774
+  * attn.o_proj.margin = 2.7228
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.8774
+  * mlp.down_proj.margin = 2.7228
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 77/100
+    * KL divergence: 0.0388
+
+Elapsed time: 1h 41m
+Estimated remaining time: 58m 33s
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 77 of 120...
+* Parameters:
+  * layer_start = 18
+  * layer_end = 46
+  * attn.o_proj.strength = 0.4603
+  * attn.o_proj.push_weight = 0.6349
+  * attn.o_proj.margin = 0.3436
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.6349
+  * mlp.down_proj.margin = 0.3436
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0040
+
+Elapsed time: 1h 42m
+Estimated remaining time: 57m 12s
+Resident system RAM: 5.49 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 78 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 40
+  * attn.o_proj.strength = 0.4575
+  * attn.o_proj.push_weight = 0.1933
+  * attn.o_proj.margin = 3.7411
+  * mlp.down_proj.strength = 0.3450
+  * mlp.down_proj.push_weight = 0.1933
+  * mlp.down_proj.margin = 3.7411
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 97/100
+    * KL divergence: 0.0081
+
+Elapsed time: 1h 43m
+Estimated remaining time: 55m 53s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 79 of 120...
+* Parameters:
+  * layer_start = 20
+  * layer_end = 39
+  * attn.o_proj.strength = 0.3298
+  * attn.o_proj.push_weight = 1.2391
+  * attn.o_proj.margin = 0.2697
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.2391
+  * mlp.down_proj.margin = 0.2697
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0027
+
+Elapsed time: 1h 45m
+Estimated remaining time: 54m 31s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 80 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 41
+  * attn.o_proj.strength = 0.9508
+  * attn.o_proj.push_weight = 1.1064
+  * attn.o_proj.margin = 0.7397
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.1064
+  * mlp.down_proj.margin = 0.7397
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0056
+
+Elapsed time: 1h 46m
+Estimated remaining time: 53m 10s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 81 of 120...
+* Parameters:
+  * layer_start = 19
+  * layer_end = 48
+  * attn.o_proj.strength = 0.0864
+  * attn.o_proj.push_weight = 1.4427
+  * attn.o_proj.margin = 0.6752
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.4427
+  * mlp.down_proj.margin = 0.6752
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0042
+
+Elapsed time: 1h 47m
+Estimated remaining time: 51m 49s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 82 of 120...
+* Parameters:
+  * layer_start = 22
+  * layer_end = 38
+  * attn.o_proj.strength = 0.4670
+  * attn.o_proj.push_weight = 1.7511
+  * attn.o_proj.margin = 3.8597
+  * mlp.down_proj.strength = 0.0004
+  * mlp.down_proj.push_weight = 1.7511
+  * mlp.down_proj.margin = 3.8597
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 78/100
+    * KL divergence: 0.0216
+
+Elapsed time: 1h 48m
+Estimated remaining time: 50m 28s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 83 of 120...
+* Parameters:
+  * layer_start = 21
+  * layer_end = 31
+  * attn.o_proj.strength = 0.5699
+  * attn.o_proj.push_weight = 1.7360
+  * attn.o_proj.margin = 2.2619
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.7360
+  * mlp.down_proj.margin = 2.2619
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0022
+
+Elapsed time: 1h 50m
+Estimated remaining time: 49m 5s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 84 of 120...
+* Parameters:
+  * layer_start = 24
+  * layer_end = 43
+  * attn.o_proj.strength = 0.3144
+  * attn.o_proj.push_weight = 1.5610
+  * attn.o_proj.margin = 3.9174
+  * mlp.down_proj.strength = 0.0337
+  * mlp.down_proj.push_weight = 1.5610
+  * mlp.down_proj.margin = 3.9174
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 87/100
+    * KL divergence: 0.0172
+
+Elapsed time: 1h 51m
+Estimated remaining time: 47m 45s
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 85 of 120...
+* Parameters:
+  * layer_start = 26
+  * layer_end = 36
+  * attn.o_proj.strength = 0.5930
+  * attn.o_proj.push_weight = 1.5937
+  * attn.o_proj.margin = 3.9685
+  * mlp.down_proj.strength = 0.1349
+  * mlp.down_proj.push_weight = 1.5937
+  * mlp.down_proj.margin = 3.9685
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 88/100
+    * KL divergence: 0.0163
+
+Elapsed time: 1h 52m
+Estimated remaining time: 46m 24s
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 86 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 26
+  * attn.o_proj.strength = 0.2665
+  * attn.o_proj.push_weight = 1.6285
+  * attn.o_proj.margin = 3.8806
+  * mlp.down_proj.strength = 0.1215
+  * mlp.down_proj.push_weight = 1.6285
+  * mlp.down_proj.margin = 3.8806
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0055
+
+Elapsed time: 1h 53m
+Estimated remaining time: 45m 2s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 87 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 38
+  * attn.o_proj.strength = 0.4243
+  * attn.o_proj.push_weight = 1.3705
+  * attn.o_proj.margin = 2.6088
+  * mlp.down_proj.strength = 0.1643
+  * mlp.down_proj.push_weight = 1.3705
+  * mlp.down_proj.margin = 2.6088
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 96/100
+    * KL divergence: 0.0080
+
+Elapsed time: 1h 55m
+Estimated remaining time: 43m 41s
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 88 of 120...
+* Parameters:
+  * layer_start = 30
+  * layer_end = 37
+  * attn.o_proj.strength = 0.1546
+  * attn.o_proj.push_weight = 1.3518
+  * attn.o_proj.margin = 3.5728
+  * mlp.down_proj.strength = 0.1402
+  * mlp.down_proj.push_weight = 1.3518
+  * mlp.down_proj.margin = 3.5728
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 95/100
+    * KL divergence: 0.0075
+
+Elapsed time: 1h 56m
+Estimated remaining time: 42m 19s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 89 of 120...
+* Parameters:
+  * layer_start = 18
+  * layer_end = 35
+  * attn.o_proj.strength = 0.1906
+  * attn.o_proj.push_weight = 1.8797
+  * attn.o_proj.margin = 3.9133
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.8797
+  * mlp.down_proj.margin = 3.9133
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0105
+
+Elapsed time: 1h 57m
+Estimated remaining time: 40m 59s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 90 of 120...
+* Parameters:
+  * layer_start = 30
+  * layer_end = 38
+  * attn.o_proj.strength = 0.2815
+  * attn.o_proj.push_weight = 0.6432
+  * attn.o_proj.margin = 3.8372
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.6432
+  * mlp.down_proj.margin = 3.8372
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0044
+
+Elapsed time: 1h 58m
+Estimated remaining time: 39m 37s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 91 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 42
+  * attn.o_proj.strength = 0.0245
+  * attn.o_proj.push_weight = 1.0906
+  * attn.o_proj.margin = 2.0650
+  * mlp.down_proj.strength = 0.2054
+  * mlp.down_proj.push_weight = 1.0906
+  * mlp.down_proj.margin = 2.0650
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0051
+
+Elapsed time: 2h 0m
+Estimated remaining time: 38m 17s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 92 of 120...
+* Parameters:
+  * layer_start = 26
+  * layer_end = 37
+  * attn.o_proj.strength = 0.0045
+  * attn.o_proj.push_weight = 1.9566
+  * attn.o_proj.margin = 1.0584
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.9566
+  * mlp.down_proj.margin = 1.0584
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0027
+
+Elapsed time: 2h 1m
+Estimated remaining time: 36m 56s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 93 of 120...
+* Parameters:
+  * layer_start = 36
+  * layer_end = 44
+  * attn.o_proj.strength = 0.0393
+  * attn.o_proj.push_weight = 1.2245
+  * attn.o_proj.margin = 2.9597
+  * mlp.down_proj.strength = 0.0354
+  * mlp.down_proj.push_weight = 1.2245
+  * mlp.down_proj.margin = 2.9597
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0033
+
+Elapsed time: 2h 2m
+Estimated remaining time: 35m 36s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 94 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 49
+  * attn.o_proj.strength = 0.5415
+  * attn.o_proj.push_weight = 1.9568
+  * attn.o_proj.margin = 2.1456
+  * mlp.down_proj.strength = 0.0201
+  * mlp.down_proj.push_weight = 1.9568
+  * mlp.down_proj.margin = 2.1456
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 91/100
+    * KL divergence: 0.0322
+
+Elapsed time: 2h 4m
+Estimated remaining time: 34m 18s
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 95 of 120...
+* Parameters:
+  * layer_start = 26
+  * layer_end = 37
+  * attn.o_proj.strength = 0.3789
+  * attn.o_proj.push_weight = 1.7639
+  * attn.o_proj.margin = 3.9513
+  * mlp.down_proj.strength = 0.0722
+  * mlp.down_proj.push_weight = 1.7639
+  * mlp.down_proj.margin = 3.9513
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 86/100
+    * KL divergence: 0.0159
+
+Elapsed time: 2h 5m
+Estimated remaining time: 32m 58s
+Resident system RAM: 5.52 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 96 of 120...
+* Parameters:
+  * layer_start = 39
+  * layer_end = 62
+  * attn.o_proj.strength = 0.0324
+  * attn.o_proj.push_weight = 1.2519
+  * attn.o_proj.margin = 0.6731
+  * mlp.down_proj.strength = 0.4414
+  * mlp.down_proj.push_weight = 1.2519
+  * mlp.down_proj.margin = 0.6731
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0114
+
+Elapsed time: 2h 6m
+Estimated remaining time: 31m 39s
+Resident system RAM: 5.52 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 97 of 120...
+* Parameters:
+  * layer_start = 16
+  * layer_end = 39
+  * attn.o_proj.strength = 0.0013
+  * attn.o_proj.push_weight = 0.5876
+  * attn.o_proj.margin = 0.3599
+  * mlp.down_proj.strength = 0.1802
+  * mlp.down_proj.push_weight = 0.5876
+  * mlp.down_proj.margin = 0.3599
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0033
+
+Elapsed time: 2h 7m
+Estimated remaining time: 30m 20s
+Resident system RAM: 5.52 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 98 of 120...
+* Parameters:
+  * layer_start = 40
+  * layer_end = 55
+  * attn.o_proj.strength = 0.0245
+  * attn.o_proj.push_weight = 0.8734
+  * attn.o_proj.margin = 0.3445
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 0.8734
+  * mlp.down_proj.margin = 0.3445
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0014
+
+Elapsed time: 2h 9m
+Estimated remaining time: 29m 0s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 99 of 120...
+* Parameters:
+  * layer_start = 24
+  * layer_end = 59
+  * attn.o_proj.strength = 0.9869
+  * attn.o_proj.push_weight = 1.9995
+  * attn.o_proj.margin = 3.3267
+  * mlp.down_proj.strength = 0.0868
+  * mlp.down_proj.push_weight = 1.9995
+  * mlp.down_proj.margin = 3.3267
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 65/100
+    * KL divergence: 0.1152
+
+Elapsed time: 2h 10m
+Estimated remaining time: 27m 42s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 100 of 120...
+* Parameters:
+  * layer_start = 40
+  * layer_end = 56
+  * attn.o_proj.strength = 0.0859
+  * attn.o_proj.push_weight = 0.5355
+  * attn.o_proj.margin = 0.8806
+  * mlp.down_proj.strength = 0.1710
+  * mlp.down_proj.push_weight = 0.5355
+  * mlp.down_proj.margin = 0.8806
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0131
+
+Elapsed time: 2h 11m
+Estimated remaining time: 26m 22s
+Resident system RAM: 5.47 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 101 of 120...
+* Parameters:
+  * layer_start = 26
+  * layer_end = 38
+  * attn.o_proj.strength = 0.1394
+  * attn.o_proj.push_weight = 1.9332
+  * attn.o_proj.margin = 3.6124
+  * mlp.down_proj.strength = 0.0220
+  * mlp.down_proj.push_weight = 1.9332
+  * mlp.down_proj.margin = 3.6124
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 88/100
+    * KL divergence: 0.0102
+
+Elapsed time: 2h 13m
+Estimated remaining time: 25m 3s
+Resident system RAM: 5.47 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 102 of 120...
+* Parameters:
+  * layer_start = 27
+  * layer_end = 40
+  * attn.o_proj.strength = 0.0842
+  * attn.o_proj.push_weight = 1.9997
+  * attn.o_proj.margin = 3.1721
+  * mlp.down_proj.strength = 0.0857
+  * mlp.down_proj.push_weight = 1.9997
+  * mlp.down_proj.margin = 3.1721
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 91/100
+    * KL divergence: 0.0083
+
+Elapsed time: 2h 14m
+Estimated remaining time: 23m 43s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 103 of 120...
+* Parameters:
+  * layer_start = 40
+  * layer_end = 53
+  * attn.o_proj.strength = 0.0117
+  * attn.o_proj.push_weight = 1.1120
+  * attn.o_proj.margin = 3.1725
+  * mlp.down_proj.strength = 0.4344
+  * mlp.down_proj.push_weight = 1.1120
+  * mlp.down_proj.margin = 3.1725
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0303
+
+Elapsed time: 2h 15m
+Estimated remaining time: 22m 24s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 104 of 120...
+* Parameters:
+  * layer_start = 33
+  * layer_end = 44
+  * attn.o_proj.strength = 0.0496
+  * attn.o_proj.push_weight = 1.9940
+  * attn.o_proj.margin = 3.0320
+  * mlp.down_proj.strength = 0.1399
+  * mlp.down_proj.push_weight = 1.9940
+  * mlp.down_proj.margin = 3.0320
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 96/100
+    * KL divergence: 0.0100
+
+Elapsed time: 2h 16m
+Estimated remaining time: 21m 4s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 105 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 44
+  * attn.o_proj.strength = 0.9025
+  * attn.o_proj.push_weight = 0.0211
+  * attn.o_proj.margin = 0.4723
+  * mlp.down_proj.strength = 0.3748
+  * mlp.down_proj.push_weight = 0.0211
+  * mlp.down_proj.margin = 0.4723
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0093
+
+Elapsed time: 2h 18m
+Estimated remaining time: 19m 46s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 106 of 120...
+* Parameters:
+  * layer_start = 41
+  * layer_end = 64
+  * attn.o_proj.strength = 0.7313
+  * attn.o_proj.push_weight = 1.3344
+  * attn.o_proj.margin = 1.7721
+  * mlp.down_proj.strength = 0.2617
+  * mlp.down_proj.push_weight = 1.3344
+  * mlp.down_proj.margin = 1.7721
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 98/100
+    * KL divergence: 0.0393
+
+Elapsed time: 2h 19m
+Estimated remaining time: 18m 27s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 107 of 120...
+* Parameters:
+  * layer_start = 24
+  * layer_end = 37
+  * attn.o_proj.strength = 0.9198
+  * attn.o_proj.push_weight = 1.9459
+  * attn.o_proj.margin = 3.8228
+  * mlp.down_proj.strength = 0.0071
+  * mlp.down_proj.push_weight = 1.9459
+  * mlp.down_proj.margin = 3.8228
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 84/100
+    * KL divergence: 0.0237
+
+Elapsed time: 2h 20m
+Estimated remaining time: 17m 7s
+Resident system RAM: 5.47 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 108 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 41
+  * attn.o_proj.strength = 0.0031
+  * attn.o_proj.push_weight = 1.8115
+  * attn.o_proj.margin = 0.2867
+  * mlp.down_proj.strength = 0.2068
+  * mlp.down_proj.push_weight = 1.8115
+  * mlp.down_proj.margin = 0.2867
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 99/100
+    * KL divergence: 0.0035
+
+Elapsed time: 2h 22m
+Estimated remaining time: 15m 49s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 109 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 24
+  * attn.o_proj.strength = 0.0508
+  * attn.o_proj.push_weight = 1.5221
+  * attn.o_proj.margin = 0.2515
+  * mlp.down_proj.strength = 0.4116
+  * mlp.down_proj.push_weight = 1.5221
+  * mlp.down_proj.margin = 0.2515
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0015
+
+Elapsed time: 2h 23m
+Estimated remaining time: 14m 29s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 110 of 120...
+* Parameters:
+  * layer_start = 38
+  * layer_end = 64
+  * attn.o_proj.strength = 0.0705
+  * attn.o_proj.push_weight = 0.2062
+  * attn.o_proj.margin = 1.9684
+  * mlp.down_proj.strength = 0.4599
+  * mlp.down_proj.push_weight = 0.2062
+  * mlp.down_proj.margin = 1.9684
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0138
+
+Elapsed time: 2h 24m
+Estimated remaining time: 13m 10s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 111 of 120...
+* Parameters:
+  * layer_start = 36
+  * layer_end = 45
+  * attn.o_proj.strength = 0.1994
+  * attn.o_proj.push_weight = 1.4932
+  * attn.o_proj.margin = 0.3914
+  * mlp.down_proj.strength = 0.4793
+  * mlp.down_proj.push_weight = 1.4932
+  * mlp.down_proj.margin = 0.3914
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 100/100
+    * KL divergence: 0.0025
+
+Elapsed time: 2h 26m
+Estimated remaining time: 11m 51s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 112 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 42
+  * attn.o_proj.strength = 0.1432
+  * attn.o_proj.push_weight = 1.9324
+  * attn.o_proj.margin = 2.3325
+  * mlp.down_proj.strength = 0.1554
+  * mlp.down_proj.push_weight = 1.9324
+  * mlp.down_proj.margin = 2.3325
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 97/100
+    * KL divergence: 0.0081
+
+Elapsed time: 2h 27m
+Estimated remaining time: 10m 32s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 113 of 120...
+* Parameters:
+  * layer_start = 26
+  * layer_end = 37
+  * attn.o_proj.strength = 0.0707
+  * attn.o_proj.push_weight = 1.8299
+  * attn.o_proj.margin = 3.0098
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.8299
+  * mlp.down_proj.margin = 3.0098
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 95/100
+    * KL divergence: 0.0062
+
+Elapsed time: 2h 28m
+Estimated remaining time: 9m 13s
+Resident system RAM: 5.51 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 114 of 120...
+* Parameters:
+  * layer_start = 28
+  * layer_end = 51
+  * attn.o_proj.strength = 0.2267
+  * attn.o_proj.push_weight = 1.9221
+  * attn.o_proj.margin = 3.7146
+  * mlp.down_proj.strength = 0.0915
+  * mlp.down_proj.push_weight = 1.9221
+  * mlp.down_proj.margin = 3.7146
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 86/100
+    * KL divergence: 0.0400
+
+Elapsed time: 2h 30m
+Estimated remaining time: 7m 54s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 115 of 120...
+* Parameters:
+  * layer_start = 17
+  * layer_end = 52
+  * attn.o_proj.strength = 0.0914
+  * attn.o_proj.push_weight = 1.9696
+  * attn.o_proj.margin = 2.2334
+  * mlp.down_proj.strength = 0.2086
+  * mlp.down_proj.push_weight = 1.9696
+  * mlp.down_proj.margin = 2.2334
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 90/100
+    * KL divergence: 0.0291
+
+Elapsed time: 2h 31m
+Estimated remaining time: 6m 35s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 116 of 120...
+* Parameters:
+  * layer_start = 29
+  * layer_end = 61
+  * attn.o_proj.strength = 0.1205
+  * attn.o_proj.push_weight = 1.4917
+  * attn.o_proj.margin = 3.7572
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.4917
+  * mlp.down_proj.margin = 3.7572
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 63/100
+    * KL divergence: 0.0367
+
+Elapsed time: 2h 32m
+Estimated remaining time: 5m 16s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 117 of 120...
+* Parameters:
+  * layer_start = 34
+  * layer_end = 64
+  * attn.o_proj.strength = 0.0752
+  * attn.o_proj.push_weight = 1.3347
+  * attn.o_proj.margin = 2.9665
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.3347
+  * mlp.down_proj.margin = 2.9665
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 97/100
+    * KL divergence: 0.0190
+
+Elapsed time: 2h 34m
+Estimated remaining time: 3m 57s
+Resident system RAM: 5.47 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 118 of 120...
+* Parameters:
+  * layer_start = 23
+  * layer_end = 53
+  * attn.o_proj.strength = 0.0159
+  * attn.o_proj.push_weight = 1.1645
+  * attn.o_proj.margin = 2.5879
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.1645
+  * mlp.down_proj.margin = 2.5879
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 95/100
+    * KL divergence: 0.0111
+
+Elapsed time: 2h 35m
+Estimated remaining time: 2m 38s
+Resident system RAM: 5.47 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 119 of 120...
+* Parameters:
+  * layer_start = 25
+  * layer_end = 56
+  * attn.o_proj.strength = 0.0935
+  * attn.o_proj.push_weight = 1.2595
+  * attn.o_proj.margin = 3.6643
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.2595
+  * mlp.down_proj.margin = 3.6643
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 67/100
+    * KL divergence: 0.0188
+
+Elapsed time: 2h 36m
+Estimated remaining time: 1m 19s
+Resident system RAM: 5.46 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+
+Running trial 120 of 120...
+* Parameters:
+  * layer_start = 26
+  * layer_end = 59
+  * attn.o_proj.strength = 0.1623
+  * attn.o_proj.push_weight = 1.3175
+  * attn.o_proj.margin = 3.7701
+  * mlp.down_proj.strength = 0.0000
+  * mlp.down_proj.push_weight = 1.3175
+  * mlp.down_proj.margin = 3.7701
+* Abliterating...
+* Evaluating...
+  * Metrics:
+    * Keywords: 56/100
+    * KL divergence: 0.0319
+
+Elapsed time: 2h 38m
+Resident system RAM: 5.47 GB
+Allocated GPU VRAM: 52.05 GB
+Reserved GPU VRAM: 52.08 GB
+Acceptance gate failed: no trial passed the acceptance gate: trial 0: trial exceeds an absolute gate threshold; trial 1: trial exceeds an 
+absolute gate threshold; trial 2: trial exceeds an absolute gate threshold; trial 3: trial exceeds an absolute gate threshold; trial 4: 
+trial exceeds an absolute gate threshold

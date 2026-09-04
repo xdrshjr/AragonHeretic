@@ -1,0 +1,21 @@
+{
+  "status": "failed",
+  "reason": "no trial passed the acceptance gate: trial 0: trial exceeds an absolute gate threshold; trial 1: trial exceeds an absolute gate threshold; trial 2: trial exceeds an absolute gate threshold; trial 3: trial exceeds an absolute gate threshold; trial 4: trial exceeds an absolute gate threshold",
+  "model_fingerprint": "3b56a567f2a80399d7b4bb94c953e182d608bf98ff4c52be956250987c7217b0",
+  "study_fingerprint": "03753d493ce714b81dd690988b294d9cacc31fff2e0792e6e7b5ace66a6343e1",
+  "calibration_fingerprint": "13a0b144b2200be09e6be73605a0d280fe32ec3370c0e9ebfaed57e97f4e203f",
+  "selected_trial_number": null,
+  "parameters": null,
+  "validation_scores": null,
+  "audit_scores": null,
+  "reload_scores": null,
+  "validation_replay_scores": null,
+  "parameter_comparison": null,
+  "score_drift": null,
+  "module_counts": null,
+  "resource_peaks": null,
+  "environment_versions": null,
+  "failure_trials": null,
+  "artifact_hashes": null,
+  "schema_version": "cara-acceptance-v1"
+}
