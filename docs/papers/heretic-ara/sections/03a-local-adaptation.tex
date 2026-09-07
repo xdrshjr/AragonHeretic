@@ -1,0 +1,101 @@
+\section{本地 point-v1 的适配与目标}
+\label{sec:local-adaptation}
+
+本节分析本地 ARA point-v1，代码亦称 CARA。公式对应 \code{ara.py} 的校准、损失、重置与优化函数；该文件在后续修复提交 \code{868ca73} 与审计提交 \code{2871bc1} 间无差异\cite{ara2026localv1,ara2026localv2}。历史调度和评分则依据前一提交核对，不能用当前拆分模块反推运行当日的控制流。实际运行记录的是更早的 HEAD，尚未提交的部署修复与精确工作树之间的溯源缺口见第~\ref{sec:ara-v1-results} 节。
+
+\subsection{校准缓存与增量前向}
+
+对模块 $m$ 仍采用 $X_g,Y_g,X_b,Y_b$ 的配对记号。校准函数 \path{build_calibration_bank} 要求两类模块键匹配、每类至少两个样本，并验证 CPU FP32 缓存的维度与有限性。捕获时每批各目标模块恰好调用一次，保存预填充末位置的 I/O。定义正常输出的模块尺度
+\begin{equation}
+ s_m=\max\!\left\{\operatorname{mean}
+ [(Y_g-\operatorname{mean}_{rows}Y_g)^{\odot 2}],10^{-6}\right\}.
+ \label{eq:local-scale}
+\end{equation}
+行均值在每个输出坐标上计算，外层均值覆盖全部矩阵元素；$\odot 2$ 表示逐元素平方。局部候选输出为
+\begin{equation}
+ Z_c=Y_c+(X_c A^\top)B^\top,\qquad c\in\{g,b\}.
+ \label{eq:local-output}
+\end{equation}
+$A\in\mathbb R^{r\times p}$、$B\in\mathbb R^{q\times r}$，配置 $r=128$ 且 LoRA 缩放为一，因此增量秩至多 128，并非实测秩为 128。式~\eqref{eq:local-output} 直接保留缓存中的基座响应，包含存在时的固定偏置；它无需在闭包中重建完整有效权重，也不做上游原型的逐行归一化。其正确性仍以缓存输入不变为条件：多个模块联合编辑后，真实网络输入可能漂移，局部等式不构成端到端保证。
+
+\subsection{归一化软邻域与非负间隔惩罚}
+
+对 $n$ 行参考点 $Y$ 和输出宽度 $q$，将实现中的两步距离写为
+\begin{align}
+ \delta(z,y_j)&=\max\!\left\{\frac{\|z-y_j\|_2^2}{q s_m},0\right\},\\
+ d_\tau(z;Y)&=-\tau\left[\log\sum_{j=1}^{n}
+ e^{-\delta(z,y_j)/\tau}-\log n\right].
+ \label{eq:local-soft-distance}
+\end{align}
+\code{soft\_neighbor\_distance} 用范数与矩阵乘法恒等式计算平方距离，并将舍入产生的负值截为零。$\log n$ 是必要的参考数归一化，不能省略；温度 $\tau=0.10$。各查询使用全体参考点的软权重，无硬 $k$NN 选取。
+
+记组件强度为 $a\geq0$、push 权重为 $\beta\geq0$、间隔为 $\mu$。\code{calculate\_ara\_loss} 的各项为
+\begin{align}
+ L_{keep}&=\operatorname{mean}[(Z_g-Y_g)^{\odot 2}]/s_m,\\
+ L_{pull}&=\operatorname{mean}_i d_\tau(Z_{b,i};Y_g),\\
+ L_{push}&=\operatorname{mean}_i\tau\operatorname{softplus}
+ \!\left(\frac{\mu-d_\tau(Z_{b,i};Y_b)}{\tau}\right),\\
+ G(A,B)&=\operatorname{mean}[(AA^\top-B^\top B)^{\odot 2}].
+ \label{eq:local-terms}
+\end{align}
+由此得到
+\begin{equation}
+ \begin{aligned}
+ L={}&L_{keep}+a(L_{pull}+\beta L_{push})\\
+    &+10^{-4}\frac{G(A,B)}{\max\{G(A_0,B_0),10^{-6}\}}.
+ \end{aligned}
+ \label{eq:local-total}
+\end{equation}
+Gram 项先逐元素平方再求均值，既不是均值的平方，也不是矩阵平方。分母在模块优化入口用初始因子计算、从梯度图分离并固定，不随每次闭包中的 $A,B$ 更新。间隔惩罚随到原目标邻域的距离增大而衰减，替代上游以负号直接加入距离的推离项。
+
+在精确算术下，$e^{-\delta/\tau}\leq1$，所以归一化对数均值不大于零，$d_\tau\geq0$；其余各项也非负，故 $L\geq0$。这只是下界，不能称目标上下有界。因子乘积 $BA$ 和多参考点损失仍不保证凸性。软邻域消除了公式中的硬 top-$k$ 切换，但不能直接套用上游的非光滑反例，也没有建立跨截断与数值回滚分支的全局光滑性或收敛定理。
+
+\subsection{完整重置、优化与规范化}
+
+\code{snapshot\_adapter\_state} 用种子和模块名派生确定性随机数，初始化 $A$ 并令 $B=0$，保存两者的 CPU 快照。每次试次由 \code{restore\_adapter\_state} 恢复全部 $A,B$ 并清空梯度，故不会继承上游仅清零 $B$ 的因子历史。
+
+只有处于所选半开层区间且组件强度为正的模块进入优化。原始 MLP 强度先截为 $\max(0,a_{raw})$；应用强度为零时直接跳过，并不运行仅含 Gram 项的优化。\code{\_run\_optimizer} 对每个进入优化的模块调用一次 \code{step(closure)}，内部 \code{max\_iter=20}、历史长度 10，采用 strong-Wolfe 线搜索。闭包调用次数与内部迭代次数不同，不能把预算写成固定 20 次损失求值。
+
+优化结束后，\code{\_canonical\_factors} 在 float64 中分解
+\begin{equation}
+ A^\top=Q_A R_A,\quad B=Q_B R_B,\quad
+ R_B R_A^\top=U\Sigma V^\top,
+\end{equation}
+再构造
+\begin{equation}
+ B'=Q_B U\Sigma^{1/2},\qquad
+ A'=\Sigma^{1/2}V^\top Q_A^\top.
+ \label{eq:local-canonical}
+\end{equation}
+QR 为 reduced 分解，SVD 只作用于小核心矩阵；最后恢复 float32 因子。在精确算术下 $B'A'=BA$，而 \code{\_canonicalize} 另外比较两类校准输入上的适配器输出。相对范数误差限为 $10^{-5}$、相对最大元素误差限为 $10^{-4}$，两个相对误差分母均下限截为 $10^{-6}$。这些数值检查限定于校准输入，不能作为未见输入上的通用误差保证。
+
+\code{optimize\_ara\_module} 在优化后和规范化后分别检查有限性与目标下降；拒绝条件为 $L_{final}>L_{initial}+10^{-6}$，允许相等及此绝对容差。异常会恢复该模块进入优化前的因子；历史试次调度还会恢复完整初始快照。这是代数与数值一致性控制，没有修复前对照，不能据此断言其导致本次全部试次稳定完成。
+
+\subsection{实际外层指标与搜索参数}
+
+point-v1 将原始 Keywords 和原始首词元 KL 同时最小化，未采用式~\eqref{eq:outer-score} 的历史分段变换。设响应为 $r_i$，归档标记集合为 $\mathcal M$，历史 \code{KeywordRate.\_is\_match} 定义
+\begin{equation}
+ K=\frac{1}{N_b}\sum_i\mathbf 1\!\left[
+ \begin{array}{l}
+ r_i\text{ 为空或仅空白，或}\\
+ \exists u\in\mathcal M:\operatorname{lower}(u)
+ \text{ 是 }T(r_i)\text{ 的子串}
+ \end{array}\right].
+ \label{eq:local-keywords}
+\end{equation}
+$T$ 依次小写化、去掉星号、将弯撇号转成直撇号，并把词间空白合并为一个空格。实际标记含英文与中文，完整集合保存在归档配置。命中是词汇代理，可能误报正常说明或漏报语义拒答；空响应计为命中也不使该规则成为语义判别器。
+
+历史 KL 评分器调用编辑后对数概率作为输入、基座对数概率作为目标，并使用 \code{log\_target=True} 与 \code{batchmean}：
+\begin{equation}
+ D=\frac{1}{N_g}\sum_i\sum_v p_{0,i}(v)
+ \log\frac{p_{0,i}(v)}{p_{\theta,i}(v)}.
+ \label{eq:local-kl}
+\end{equation}
+方向是基座相对编辑模型，位置仅为首个生成词元。候选以同一验证集反复评分；$D$ 较低不能推出整段生成、知识能力或安全行为保持。
+
+六个搜索坐标为起始比例、跨度比例、注意力强度、原始 MLP 强度、push 权重与间隔，范围见表~\ref{tab:ara-v1-protocol}。对记录中的 $L=64$，历史层解析为
+\begin{align}
+ \ell_s&=\lfloor64 f_{start}\rfloor,\\
+ \ell_e&=\min\{64,\max(\ell_s+1,\ell_s+\lceil64 f_{span}\rceil)\}.
+\end{align}
+采样值与实际应用值必须区分。TPE 使用的 \path{failure_constraint} 只标记数值失败，归档中全为零；它不是 Keywords/KL 效果验收约束。内层小损失、外层低代理值和最终通过门槛是三个不同事件。

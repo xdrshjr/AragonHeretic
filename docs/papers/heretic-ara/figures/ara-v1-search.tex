@@ -1,0 +1,67 @@
+\begin{figure*}[t]
+\centering
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+ width=\linewidth,height=57mm,
+ xlabel={首词元 KL（验证集）},ylabel={Keywords},
+ xmin=0,xmax=0.16,ymin=0,ymax=1.05,
+ xtick={0,0.05,0.10,0.15},ytick={0,0.1,0.5,1},
+ scaled ticks=false,tick label style={font=\scriptsize},
+ label style={font=\small},grid=major,grid style={black!8},
+ legend style={font=\scriptsize,draw=none,at={(0.5,1.02)},
+ anchor=south,legend columns=2},
+ scatter/classes={0={mark=*,draw=black!45,fill=black!25},
+ 1={mark=diamond*,draw=red!70!black,fill=red!60}},
+]
+\addplot[scatter,only marks,scatter src=explicit symbolic,mark size=1.5pt,forget plot]
+ table[x=kl_divergence,y=keywords,meta=pareto,col sep=comma]
+ {evidence/ara-v1-trials.csv};
+\addlegendimage{only marks,mark=*,black!45}
+\addlegendentry{其余候选}
+\addlegendimage{only marks,mark=diamond*,red!70!black}
+\addlegendentry{Pareto 候选}
+\addplot[black,dashed,forget plot] coordinates {(0.15,0) (0.15,1.05)};
+\addplot[black,dashed,forget plot] coordinates {(0,0.10) (0.16,0.10)};
+\node[anchor=south west,font=\scriptsize] at (axis cs:0.005,0.11)
+ {$K\leq0.10$};
+\end{axis}
+\end{tikzpicture}
+\par\small (a) 所有候选与 Pareto 集
+\end{minipage}\hfill
+\begin{minipage}[t]{0.49\textwidth}
+\centering
+\begin{tikzpicture}
+\begin{axis}[
+ width=\linewidth,height=57mm,
+ xlabel={试次 ID（从 0 开始）},ylabel={Keywords},
+ xmin=0,xmax=119,ymin=0,ymax=1.05,
+ xtick={0,35,66,90,119},ytick={0,0.1,0.5,1},
+ tick label style={font=\scriptsize},label style={font=\small},
+ grid=major,grid style={black!8},
+ legend style={font=\scriptsize,draw=none,at={(0.5,1.02)},
+ anchor=south,legend columns=2},
+]
+\addplot[only marks,mark=*,mark size=1.2pt,black!45]
+ table[x=trial_number,y=keywords,col sep=comma]
+ {evidence/ara-v1-trials.csv};
+\addlegendentry{每次 Keywords}
+\addplot[blue!70!black,thick,const plot]
+ table[x=trial_number,y=running_best_keywords,col sep=comma]
+ {evidence/ara-v1-trials.csv};
+\addlegendentry{累计最低值}
+\addplot[black,dashed,forget plot] coordinates {(35.5,0) (35.5,1.05)};
+\addplot[black,dotted,forget plot] coordinates {(0,0.10) (119,0.10)};
+\node[anchor=north,font=\scriptsize] at (axis cs:17,0.44) {startup};
+\node[anchor=north,font=\scriptsize] at (axis cs:78,0.44) {自适应 TPE};
+\end{axis}
+\end{tikzpicture}
+\par\small (b) 搜索顺序与累计最低值
+\end{minipage}
+\caption{point-v1 在验证集上的一次自适应搜索，最终验收失败。
+(a) 全部 120 个候选；红色标出十个非支配点，虚线为 KL 0.15 和 Keywords 0.10 门槛。
+(b) 同一验证集的逐次关键词率与累计最低值，竖线位于 ID 35 之后，区分 36 次 startup 与其余 TPE 试次。
+图中不含独立重复、平滑估计或误差区间；Pareto 候选也未通过联合门槛。}
+\label{fig:ara-v1-search}
+\end{figure*}

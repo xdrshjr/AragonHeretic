@@ -1,0 +1,77 @@
+% IEEEtran selects the legacy `ptm` family while the class is loading.  XeTeX
+% uses TU encoding, so provide silent bootstrap shapes until fontspec installs
+% the embedded OpenType family below.
+\DeclareFontFamily{TU}{ptm}{}
+\DeclareFontShape{TU}{ptm}{m}{n}{<->ssub*lmr/m/n}{}
+\DeclareFontShape{TU}{ptm}{bx}{n}{<->ssub*lmr/bx/n}{}
+\DeclareFontShape{TU}{ptm}{m}{it}{<->ssub*lmr/m/it}{}
+\DeclareFontShape{TU}{ptm}{bx}{it}{<->ssub*lmr/bx/it}{}
+\documentclass[conference]{IEEEtran}
+
+\usepackage{iftex}
+\ifXeTeX\else
+  \PackageError{paper-build}{This paper requires XeLaTeX}{Run the PowerShell build script}
+\fi
+
+\usepackage{xeCJK}
+\setmainfont{Times New Roman}
+\setCJKmainfont[
+  BoldFont=FandolSong-Bold,
+  ItalicFont=FandolKai-Regular,
+  BoldItalicFont=FandolHei-Bold,
+  SmallCapsFont=FandolSong-Regular
+]{FandolSong-Regular}
+\setCJKsansfont[BoldFont=FandolHei-Bold]{FandolHei-Regular}
+\setCJKmonofont{FandolFang-Regular}
+\usepackage{amsmath,amssymb,mathtools}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{tabularx}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{url}
+\usepackage{tikz}
+\usepackage{pgfplots}
+\pgfplotsset{compat=1.18}
+\usetikzlibrary{arrows.meta,calc,fit,matrix,positioning,shapes.geometric}
+\usepackage[hidelinks]{hyperref}
+\hypersetup{
+  pdftitle={从多方向到无显式方向：任意秩拒答消融的形式化、适配与失败实验分析},
+  pdfauthor={匿名作者},
+  pdfsubject={拒答消融的历史形式化、本地适配与验证集失败实验},
+  pdfkeywords={拒答消融, 源码形式化, 局部邻域映射, 多目标优化}
+}
+
+\newcolumntype{Y}{>{\raggedright\arraybackslash}X}
+\newcolumntype{C}{>{\centering\arraybackslash}X}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\method}{ARA}
+\newcommand{\sommethod}{SOM 多方向消融}
+\urlstyle{same}
+
+\title{从多方向到无显式方向：任意秩拒答消融的形式化、适配与失败实验分析}
+
+\author{\IEEEauthorblockN{匿名作者（投稿占位）}
+\IEEEauthorblockA{匿名单位（投稿占位）\\
+匿名邮箱（投稿占位）}}
+
+\begin{document}
+
+\maketitle
+
+\input{sections/00-abstract}
+\input{sections/01-introduction}
+\input{sections/02-background}
+\input{sections/03-method}
+\input{sections/03a-local-adaptation}
+\input{sections/04-comparison}
+\input{sections/05-evidence-audit}
+\input{sections/05a-ara-v1-results}
+\input{sections/06-discussion}
+\input{sections/07-related-work}
+\input{sections/08-conclusion}
+
+\bibliographystyle{IEEEtran}
+\bibliography{references}
+
+\end{document}

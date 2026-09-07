@@ -1,0 +1,18 @@
+\begin{table*}[t]
+\centering
+\caption{方向法、上游原型与本地 point-v1 的结构比较。SOM-MD 为本文简称；各行没有共享效果评测协议。}
+\label{tab:method-comparison}
+\footnotesize
+\setlength{\tabcolsep}{3.5pt}
+\renewcommand{\arraystretch}{1.16}
+\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{21mm}>{\raggedright\arraybackslash}p{24mm}Y Y Y Y@{}}
+\toprule
+方法 & 决策变量 & 几何锚点 & 干预算子 & 搜索对象 & 证据边界 \\
+\midrule
+单方向 & 一个方向 $r$ & 有害与无害状态均值差 & 单个正交投影，可折叠进权重 & 层与候选方向筛选 & 同行评议结果限于原论文协议 \\
+SOM-MD & 有序方向组 & 16 个有害 SOM 原型减一个无害质心 & 2--7 个投影顺序复合 & BO/TPE 搜索排列 & 原文 7+1 个目标设置；验证/测试关系不确定 \\
+上游 ARA & 模块 $W$ 或因子 $A,B$ & 冻结模块 I/O 与硬 $k$NN & 全矩阵写回或低秩适配；可有行归一化 & L-BFGS 与历史分段评分 TPE & 源码形式化与数学审计；无本文归档实测 \\
+本地 point-v1 & 秩至多 128 的 $BA$ & 冻结 I/O、归一化软邻域 & 缓存输出加增量；无行归一化 & 六维 TPE，原始 Keywords/KL & 一次 120 次试验验证搜索；联合门槛失败 \\
+\bottomrule
+\end{tabularx}
+\end{table*}

@@ -1,0 +1,24 @@
+\begin{table*}[t]
+  \centering
+  \caption{上游 ARA 原型的历史默认值与搜索域（edc3b123456c）。所有行仅属于该原型，不是本地 point-v1 或 trajectory-v2 的实验配置。}
+  \label{tab:source-parameters}
+  \footnotesize
+  \setlength{\tabcolsep}{4pt}
+  \renewcommand{\arraystretch}{1.12}
+  \begin{tabularx}{\textwidth}{@{}p{22mm}p{32mm}p{58mm}Y@{}}
+    \toprule
+    类别 & 参数 & 默认值或搜索域 & 实现语义 \\
+    \midrule
+    目标模块 & 组件 & 注意力输出投影、MLP 下投影 & 在所选连续层区间内逐模块建立缓存并优化 \\
+    层区间 & 起始层、结束层 & $[0,\lfloor L/2\rfloor]$、$[\lfloor L/2\rfloor,L]$ & 结束层按 Python 切片语义不包含在区间内 \\
+    损失权重 & $\lambda_g,\lambda_b,\beta$ & $[0,1]$；$[10^{-4},1]$（对数采样）；$[0,1.3]$ & 分别控制保持项、目标项和远离原目标邻域的校正强度 \\
+    局部邻域 & $k$ & 整数 $[1,15]$ & 两个距离项使用相同近邻数 \\
+    全矩阵路径 & 行归一化 & 默认开启 & 每次闭包计算前按初始权重的逐行范数重参数化 \\
+    低秩路径 & 开关、秩 $r$ & 默认关闭；$r=128$ & 缩放取 $\alpha=r$，故适配器乘子 $\alpha/r=1$ \\
+    L-BFGS & 学习率、内部迭代、历史、线搜索 & $1$；$20$；$10$；strong Wolfe & 每个目标模块固定调用 $5$ 次 \code{step(closure)} \\
+    外层搜索 & 试次数、启动试次、候选数 & $200$；$60$；$128$ & 多变量 TPE，两个目标均最小化 \\
+    质量代理 & $\sigma,\tau$ & $1.0,0.01$ & 用于首词元 KL 的缩放与分段阈值 \\
+    缓存规模 & 优化/评估提示数 & 每类 $400$；每类 $100$ & 前者建立内层缓存，后者计算外层代理 \\
+    \bottomrule
+  \end{tabularx}
+\end{table*}

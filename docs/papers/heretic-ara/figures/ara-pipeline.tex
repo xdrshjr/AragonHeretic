@@ -1,0 +1,41 @@
+\begin{figure*}[t]
+  \centering
+  \resizebox{\textwidth}{!}{%
+  \begin{tikzpicture}[
+    font=\small,
+    box/.style={draw, rounded corners=2pt, align=center, minimum height=11mm,
+      minimum width=25mm, fill=blue!5, inner sep=4pt},
+    cache/.style={box, fill=cyan!8},
+    opt/.style={box, fill=orange!10},
+    map/.style={box, fill=green!9},
+    score/.style={box, fill=purple!8},
+    arr/.style={-{Latex[length=2.2mm]}, thick},
+    feedback/.style={-{Latex[length=2.2mm]}, thick, dashed, color=purple!70!black}
+  ]
+    \node[box] (prompt) {保持提示集 $\mathcal P_g$\\目标提示集 $\mathcal P_b$};
+    \node[box, right=7mm of prompt] (hook) {目标层前向钩子\\仅取末词元};
+    \node[cache, right=7mm of hook] (iocache) {冻结 I/O 缓存\\$X_g,Y_g,X_b,Y_b$};
+    \node[opt, right=7mm of iocache] (loss) {$k$ 近邻三项损失\\$\mathcal L_{\rm total}$};
+    \node[opt, right=7mm of loss] (lbfgs) {L-BFGS 内层优化\\强 Wolfe 线搜索};
+
+    \node[map, above right=3mm and 8mm of lbfgs] (full) {全矩阵更新\\逐行范数保持};
+    \node[map, below right=3mm and 8mm of lbfgs] (lora) {低秩更新\\$W_0+BA$};
+    \node[score, right=12mm of $(full)!0.5!(lora)$] (score) {外层分段评分\\拒答比与首词元质量代理};
+    \node[score, below=9mm of loss] (tpe) {多目标 TPE 提议 $\theta$\\更新层区间与损失超参数};
+
+    \draw[arr] (prompt) -- (hook);
+    \draw[arr] (hook) -- (iocache);
+    \draw[arr] (iocache) -- (loss);
+    \draw[arr] (loss) -- (lbfgs);
+    \draw[arr] (lbfgs) -- (full);
+    \draw[arr] (lbfgs) -- (lora);
+    \draw[arr] (full) -- (score);
+    \draw[arr] (lora) -- (score);
+    \draw[feedback] (score.south) |- (tpe.east);
+    \draw[feedback] (tpe.north) -- node[midway, right, align=left, font=\scriptsize]
+      {下一试次：恢复基线映射\\复用冻结缓存} (loss.south);
+  \end{tikzpicture}%
+  }
+  \caption{上游 ARA 原型的历史双层流程（硬近邻与分段评分）。前向钩子与 I/O 捕获只执行一次，外层试次恢复基线映射后复用冻结缓存；全矩阵与低秩路径是两种互斥的参数化方式。本图不描述本地 point-v1 的软目标、完整因子重置或原始指标评分。}
+  \label{fig:ara-pipeline}
+\end{figure*}
