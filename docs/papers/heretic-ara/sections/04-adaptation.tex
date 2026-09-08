@@ -1,0 +1,67 @@
+\section{数值修复与轨迹版本适配}
+\label{sec:adaptation}
+
+\subsection{版本身份与目标模块识别}
+
+方法解释需要区分运行记录和后续源码。归档声明运行 HEAD 为 \code{cd2977a3}，同时说明运行工作树含未提交修复；后续提交 \code{868ca73b} 能解释相关修复，但不是运行时工作树的精确快照。本文以当前冻结的 point-v1 实现和该历史提交交叉核对数值路径，以归档作为唯一量化来源。trajectory-v2 的适配提交为 \code{2871bc19}，其后续代码只用于说明已实现机制。完整版本标识和文件哈希随论文证据文件保存，不将短提交号当作完整运行身份。
+
+point-v1 的修复重点在可比较的数值过程。局部目标采用固定的 Gram 参考值，QR/SVD 分解使用双精度中间值，并以相对输出误差检查规范化；每个候选完整恢复因子状态。这些处理针对尺度冗余、浮点误差和候选残留等具体实现问题。本文没有逐项移除修复的对照实验，因此只能说明修复路径的数学意图和代码存在，不能把 120 个候选全部完成因果归因于某一项修复。
+
+混合模块结构要求区分逻辑组件名与实际叶模块。\code{targeting.py} 将 \code{self\_attn.o\_proj} 和 \code{linear\_attn.out\_proj} 等实际路径归入逻辑注意力输出组件，同时去重模块对象。候选和校准库使用层号、组件名、模块索引及完整模块路径定位目标，而不是把 \code{attn.o\_proj} 的末尾字符串直接推广到所有层。v2 模板要求普通注意力 16、线性注意力 48、MLP 64，总计 128 个目标；这些数字在本文中是配置检查条件，没有用来反推 v1 运行的逐类模块实测数量。
+
+\subsection{预测位置对齐的轨迹校准}
+
+trajectory-v2 扩展的是校准观测位置，并未取消冻结基座代理。\code{capture\_model\_trajectory} 先由原模型生成最多 8 个有效续写 token，再对提示及其续写进行 teacher forcing，即固定前序 token 后采集用于预测后续 token 的状态。\code{causal\_capture\_positions} 依据提示长度、续写长度和 padding 确定位置：第零步为提示末位置，下一步才位于第一个续写 token 处。提前结束的续写只保留有效步，不能把 padding 或结束后的无效位置计入校准。
+
+对提示 $i$ 的 $T_i$ 个有效步骤，权重为
+\begin{equation}
+ w_{i,t}=\frac{0.85^t}{\sum_{u=0}^{T_i-1}0.85^u},
+ \qquad 0\leq t<T_i\leq8.
+ \label{eq:trajectory-weight}
+\end{equation}
+每条提示的权重和为一，避免较长续写仅因位置更多而得到更大总权重。校准库按步 $t$ 汇总 good/bad 参考，只在同一步计算平滑邻居距离，且每一步使用自身 good 输出的中心化均方尺度 $s_t$。把所有位置直接混成一个邻居库会允许跨步匹配，已不再是当前实现的目标。
+
+令 $k_{i,t},p_{i,t},u_{i,t}$ 分别表示沿用式~\eqref{eq:keep}--\eqref{eq:push} 思路定义的逐行保持、拉近和推远值，则轨迹损失汇总为
+\begin{align}
+ \bar L_{\rm keep}&=\frac{\sum_{i,t\in g}w_{i,t}k_{i,t}}
+ {\sum_{i,t\in g}w_{i,t}},\nonumber\\
+ \bar L_{\rm pull}&=\frac{\sum_{i,t\in b}w_{i,t}p_{i,t}}
+ {\sum_{i,t\in b}w_{i,t}},\qquad
+ \bar L_{\rm push}=\frac{\sum_{i,t\in b}w_{i,t}u_{i,t}}
+ {\sum_{i,t\in b}w_{i,t}},\nonumber\\
+ L_{\rm traj}&=\bar L_{\rm keep}
+  +\alpha(\bar L_{\rm pull}+\beta\bar L_{\rm push})+10^{-4}G(A,B).
+ \label{eq:trajectory-loss}
+\end{align}
+式中的 $g,b$ 分别索引两类查询行；查询权重参与外层汇总，同一步 softmin 内的参考点仍等权。v2 的 Gram 项没有 point-v1 的 $G_0$ 除数，二者不可用同一条正则公式替代。
+
+\subsection{部署增益与局部检查}
+
+轨迹版本把优化强度与部署幅度分开。局部求解仍由 $\alpha$ 调节拉近、推远相对保持项的比重；求解和因子规范化之后，再将规范化后的 $B$ 乘以组件部署增益 $\gamma$。最终增量为 $\gamma B'A'$，它一般与优化时的 $B'A'$ 不同，因此不能把 $\gamma$ 混写成损失权重。v2 的 QR/SVD 走独立实现路径，没有 point-v1 中显式转双精度的同一操作，本文不声称两版分解都在 FP64 中执行。
+
+部署检查直接衡量增益作用后的更新。对 good 查询行，定义
+\begin{equation}
+ R_g=\frac{\sum_{i,t\in g}w_{i,t}
+ \dfrac{\RMS(\Delta Y_{i,t})}
+ {\max\{\RMS(Y_{i,t}),10^{-6}\}}}
+ {\sum_{i,t\in g}w_{i,t}},\qquad
+ R_g\leq0.60,\quad \sigma_{\max}(\Delta W)\leq8.0.
+ \label{eq:deployment-check}
+\end{equation}
+$\RMS$ 在每行的输出维度上计算；先求各行比率再按提示权重平均，与把所有行合并后计算一个 RMS 比率并不等价。这两个阈值属于实际部署检查，不是新增训练损失项，也不是全模型能力约束。实现还检查模块身份、非有限值及运行资源，失败时回滚当前更新。
+
+\subsection{连续评分、搜索与隔离验收}
+
+v2 用连续的拒答前缀分数替换 Keywords 作为主要行为搜索目标。令 $z$ 为给定候选续写，定义长度归一化对数概率
+\begin{equation}
+ \ell(z\mid x)=\frac{1}{|z|}\sum_{j=1}^{|z|}
+ \log P(z_j\mid x,z_{<j}).
+ \label{eq:prefix-likelihood}
+\end{equation}
+在拒答前缀组和直接回答前缀组内分别对 $\ell$ 做 log-mean-exp，再取两组之差并对提示平均，得到 Refusal log-odds。该量比较预设续写组的相对倾向，不是对自然生成回复统计的拒答率，也不等于语义安全分类。Keywords 仍作为约束和验收量保留。
+
+协议对照见表~\ref{tab:protocol}。v1 的六维参数包括层起点、跨度、注意力强度、原始 MLP 强度、推远权重和间隔；原始 MLP 强度可为负，应用时截断为零。v2 增加两类组件的部署增益，按 8 个锚点、24 个随机启动候选、88 个带约束 TPE 候选组织固定预算。这里的 TPE 指树结构 Parzen 估计采样器。验证切分和校准规模同时改变，v2 模板也没有显式沿用 v1 增补的中文关键词，因此两版即便日后都有分数，也须统一这些条件后才能直接比较。
+
+\input{tables/ara-protocol}
+
+候选验收之后的协议不允许审计结果反向影响搜索。v2 先锁定候选并重放，暂存适配器，再由 \code{acceptance\_export.py} 的审计回调进入新进程重载验证，在该进程中按账本一次消费独立 audit 集；检查通过才完成发布，任一步失败均终止发布。图~\ref{fig:architecture} 将 Audit 和 Reload 置于共同检查框，是为容纳版本实现差异，不规定跨版本统一先后顺序。v1 历史流程须按其对应源码解释；本次在候选门槛已停止，因而不存在后续审计顺序的实测证据。

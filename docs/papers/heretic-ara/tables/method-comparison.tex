@@ -1,18 +1,20 @@
-\begin{table*}[t]
-\centering
-\caption{方向法、上游原型与本地 point-v1 的结构比较。SOM-MD 为本文简称；各行没有共享效果评测协议。}
-\label{tab:method-comparison}
-\footnotesize
-\setlength{\tabcolsep}{3.5pt}
-\renewcommand{\arraystretch}{1.16}
-\begin{tabularx}{\textwidth}{@{}>{\raggedright\arraybackslash}p{21mm}>{\raggedright\arraybackslash}p{24mm}Y Y Y Y@{}}
-\toprule
-方法 & 决策变量 & 几何锚点 & 干预算子 & 搜索对象 & 证据边界 \\
-\midrule
-单方向 & 一个方向 $r$ & 有害与无害状态均值差 & 单个正交投影，可折叠进权重 & 层与候选方向筛选 & 同行评议结果限于原论文协议 \\
-SOM-MD & 有序方向组 & 16 个有害 SOM 原型减一个无害质心 & 2--7 个投影顺序复合 & BO/TPE 搜索排列 & 原文 7+1 个目标设置；验证/测试关系不确定 \\
-上游 ARA & 模块 $W$ 或因子 $A,B$ & 冻结模块 I/O 与硬 $k$NN & 全矩阵写回或低秩适配；可有行归一化 & L-BFGS 与历史分段评分 TPE & 源码形式化与数学审计；无本文归档实测 \\
-本地 point-v1 & 秩至多 128 的 $BA$ & 冻结 I/O、归一化软邻域 & 缓存输出加增量；无行归一化 & 六维 TPE，原始 Keywords/KL & 一次 120 次试验验证搜索；联合门槛失败 \\
-\bottomrule
-\end{tabularx}
-\end{table*}
+\begin{table}[tbp]
+ \centering
+ \caption{方法机制与证据层次对照。上游 ARA 同时具有全矩阵与 LoRA 路径；表中实现差异不代表已证实的效果排序。}
+ \label{tab:methods}
+ \small
+ \setlength{\tabcolsep}{4pt}
+ \renewcommand{\arraystretch}{1.15}
+ \begin{tabularx}{\linewidth}{@{}p{14mm}YYYY@{}}
+  \toprule
+  项目 & Heretic 方向消融 & 上游 ARA & 本地 point-v1 & 本地 trajectory-v2 \\
+  \midrule
+  来源 & Heretic 实现；方向研究\cite{arditi2024,heretic} & PR \#211 固定源码\cite{upstreamara} & 本地校准适配；v1 归档\cite{araarchive} & 当前本地适配代码 \\
+  参数化 & 方向及组件层权重；归一化模式另有变换 & 全矩阵或 LoRA 增量 & 冻结基座；$BA$，秩上界 128 & 冻结基座；$BA$，另有部署增益 \\
+  采集位置 & 提示末端残差 & 模块输入输出，单预测位置 & 干净模块输入输出，单预测位置 & 基座短续写的逐步预测位置 \\
+  局部目标 & 按构造方向执行消融 & 保持、近邻拉近、负距离推远 & 尺度校准、平滑距离、间隔推远及归一化 Gram 项 & 同步参考、提示权重汇总及未归一化 Gram 项 \\
+  搜索评价 & 评分插件与双目标搜索 & 依上游配置；本文不报告分数 & Keywords 与首 token KL & Refusal log-odds 与首 token KL；Keywords 为约束 \\
+  证据等级 & 机制可查；同协议结果缺失 & 固定源码可查；本文未运行 & 120 个验证候选；验收失败 & 仅实现分析；本归档无实测 \\
+  \bottomrule
+ \end{tabularx}
+\end{table}

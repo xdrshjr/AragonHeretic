@@ -1,6 +1,5 @@
-"""Evidence integrity regressions; all filesystem fixtures stay in the paper."""
+"""Behavioral tests for scientific data integrity and fail-closed outputs."""
 
-import contextlib
 import copy
 import io
 import json
@@ -9,424 +8,506 @@ import shutil
 import subprocess
 import sys
 import tempfile
-import tomllib
 import unittest
+from contextlib import redirect_stderr, redirect_stdout
 from unittest import mock
 
-import summarize_ara_v1 as evidence
+sys.dont_write_bytecode = True
+import ara_v1_data as archive  # noqa: E402
+import summarize_ara_v1 as generator  # noqa: E402
+
+TEST_ROOT = generator.DEFAULT_PAPER / "build/test-tmp"
 
 
-FIXTURES = evidence.PAPER / "paper-output/revision-check"
+def _operation(opcode, **fields):
+    return {"op_code": opcode, "worker_id": "test-worker", **fields}
 
 
-class EvidenceTests(unittest.TestCase):
+def _score(value, count):
+    return {"value": value, "md_display": count, "rich_display": count}
+
+
+def _journal_records():
+    return [
+        _operation(0, study_name="test", directions=[1, 1]),
+        _operation(2, study_id=0, user_attr={"first": 1}),
+        _operation(2, study_id=0, user_attr={"second": 2}),
+        _operation(4, study_id=0, datetime_start="2026-09-04T00:00:00"),
+        _operation(8, trial_id=0, user_attr={"index": 1}),
+        _operation(8, trial_id=0, user_attr={"scores": [
+            {"name": "KL divergence", "score": _score(.04, "0.0400"),
+             "baseline": _score(0, "0 (by definition)")},
+            {"name": "Keywords", "score": _score(.4, "4/10"),
+             "baseline": _score(.8, "8/10")},
+        ]}),
+        _operation(9, trial_id=0, system_attr={"constraints": [0.0]}),
+        _operation(9, trial_id=0, system_attr={"sampler_note": "retained"}),
+        _operation(6, trial_id=0, state=1, values=[.4, .04],
+                   datetime_complete="2026-09-04T00:00:01"),
+    ]
+
+
+def _payload(records):
+    return ("\n".join(json.dumps(row) for row in records) + "\n").encode()
+
+
+def _replay(records):
+    return archive.replay_journal(_payload(records))
+
+
+def _gate():
+    return {"expected_samples": 10, "keyword_max": .5,
+            "keyword_drop_min": .45, "kl_max": .15}
+
+
+class JournalTests(unittest.TestCase):
+    """Small inputs test format independently of fixed archive identities."""
+
+    def test_names_line_numbers_baseline_and_system_merge(self):
+        payload = b"\n" + _payload(_journal_records()).replace(b"\n", b"\r\n")
+        study, trials = archive.replay_journal(payload)
+        self.assertEqual(study, {"first": 1, "second": 2})
+        trial = archive.make_trial(trials[0], _gate(), {})
+        self.assertEqual(trial["score_lines"], [7])
+        self.assertEqual(trial["terminal_line"], 10)
+        self.assertEqual(trial["keyword_count"], 4)
+        self.assertEqual(trial["sample_count"], 10)
+        self.assertEqual(trial["baseline_keywords"], .8)
+        self.assertEqual(trial["absolute_drop"], .4)
+        self.assertEqual(trial["relative_drop"], .5)
+        self.assertFalse(trial["numerical_gate_pass"])
+        self.assertEqual(trial["system_attrs"],
+                         {"constraints": [0.0], "sampler_note": "retained"})
+
+    def test_cr_refresh_fragments_share_physical_line(self):
+        result = list(archive.log_fragments(b"first\rrefresh\nnext\r\n"))
+        self.assertEqual([(r["line"], r["fragment"]) for r in result],
+                         [(1, 1), (1, 2), (2, 1)])
+        self.assertEqual(result[1]["text"], "refresh")
+
+    def test_creation_order_requires_display_index(self):
+        records = _journal_records()
+        records[4]["user_attr"]["index"] = 2
+        with self.assertRaisesRegex(archive.InputError, "display index"):
+            _replay(records)
+
+    def test_two_trials_follow_creation_order(self):
+        records = _journal_records()
+        second = copy.deepcopy(records[3:])
+        for record in second:
+            if "trial_id" in record:
+                record["trial_id"] = 1
+            if "index" in record.get("user_attr", {}):
+                record["user_attr"]["index"] = 2
+        trials = _replay(records + second)[1]
+        self.assertEqual([trial["trial_number"] for trial in trials], [0, 1])
+
+    def test_parameter_distribution_is_preserved_and_unknown_shape_fails(self):
+        record = _operation(5, trial_id=0, param_name="ara.margin",
+                            param_value_internal=.5, distribution=json.dumps({
+                                "name": "FloatDistribution", "attributes": {
+                                    "step": None, "low": .1, "high": 1.0,
+                                    "log": True,
+                                },
+                            }))
+        records = _journal_records()
+        raw = _replay(records[:-1] + [record] + records[-1:])[1][0]
+        self.assertEqual(raw["raw_params"]["ara.margin"], .5)
+        self.assertTrue(raw["distributions"]["ara.margin"]["attributes"]["log"])
+        record["distribution"] = json.dumps({"name": "Unknown"})
+        with self.assertRaises(archive.InputError):
+            _replay(records[:-1] + [record] + records[-1:])
+
+    def test_terminal_objectives_must_agree_with_named_scores(self):
+        records = _journal_records()
+        records[-1]["values"] = [.04, .4]
+        raw = _replay(records)[1][0]
+        with self.assertRaisesRegex(archive.InputError, "disagree"):
+            archive.make_trial(raw, _gate(), {})
+
+    def test_baseline_and_trial_denominators_are_checked(self):
+        for role in ("score", "baseline"):
+            with self.subTest(role=role):
+                records = _journal_records()
+                records[5]["user_attr"]["scores"][1][role] = _score(.4, "8/20")
+                raw = _replay(records)[1][0]
+                with self.assertRaisesRegex(archive.InputError, "denominator"):
+                    archive.make_trial(raw, _gate(), {})
+
+    def test_fingerprint_conflict_is_not_silently_merged(self):
+        raw = _replay(_journal_records())[1][0]
+        raw["user_attrs"]["model_fingerprint"] = "wrong"
+        with self.assertRaisesRegex(archive.InputError, "fingerprint conflict"):
+            archive.make_trial(raw, _gate(), {"model_fingerprint": "expected"})
+
+    def test_failed_trial_preserves_null_scores(self):
+        records = _journal_records()
+        records[-1].update(state=3, values=None)
+        raw = _replay(records)[1][0]
+        result = archive.make_trial(raw, _gate(), {})
+        self.assertEqual(result["state"], "FAIL")
+        self.assertIsNone(result["keywords"])
+        self.assertIsNone(result["relative_drop"])
+        with self.assertRaisesRegex(archive.InputError, "COMPLETE"):
+            archive.summarize_trials([result])
+
+    def test_incomplete_and_duplicate_terminal_are_rejected(self):
+        records = _journal_records()
+        for broken in (records[:-1], records + [records[-1]]):
+            with self.subTest(length=len(broken)):
+                with self.assertRaisesRegex(archive.InputError, "terminal"):
+                    _replay(broken)
+
+    def test_uncreated_trial_wrong_study_and_unknown_op_are_rejected(self):
+        for record in (
+            _operation(8, trial_id=1, user_attr={}),
+            _operation(2, study_id=1, user_attr={}),
+            _operation(7, trial_id=0, step=1, intermediate_value=1),
+        ):
+            with self.subTest(record=record):
+                with self.assertRaises(archive.InputError):
+                    _replay(_journal_records()[:1] + [record])
+
+    def test_bad_json_utf8_nonfinite_and_duplicate_fields_fail(self):
+        for payload in (b"{broken}\n", b"\xff\n", b'{"x":NaN}',
+                        b'{"x":Infinity}', b'{"x":1e999}',
+                        b'{"op_code":0,"op_code":2}'):
+            with self.subTest(payload=payload):
+                with self.assertRaises(archive.InputError):
+                    archive.replay_journal(payload)
+        with self.assertRaises(archive.InputError):
+            archive.parse_json('{"x":1}'.encode("utf-16"))
+
+    def test_missing_complete_values_or_scores_fail(self):
+        for missing in ("values", "scores"):
+            records = _journal_records()
+            if missing == "values":
+                records[-1]["values"] = None
+            else:
+                records[5]["user_attr"].pop("scores")
+            raw = _replay(records)[1][0]
+            with self.assertRaises(archive.InputError):
+                archive.make_trial(raw, _gate(), {})
+
+
+class StatisticsTests(unittest.TestCase):
+    def test_pareto_keeps_equal_points_and_rejects_weakly_worse(self):
+        points = [(.3, .1), (.3, .1), (.4, .1), (.2, .3), (.8, .8)]
+        trials = [{"trial_number": index, "keywords": k, "kl": kl}
+                  for index, (k, kl) in enumerate(points)]
+        self.assertEqual(archive.pareto_numbers(trials), [0, 1, 3])
+
+    def test_quantiles_interpolate_sorted_values(self):
+        self.assertEqual(archive.linear_quantile([8, 0, 4, 2], .25), 1.5)
+        self.assertEqual(archive.linear_quantile([8], .5), 8)
+        with self.assertRaises(archive.InputError):
+            archive.linear_quantile([], .5)
+
+    def test_zero_baseline_and_nonunit_baseline_drops_differ(self):
+        self.assertEqual(archive.calculate_drops(0, .2), (-.2, None))
+        self.assertEqual(archive.calculate_drops(.8, .4), (.4, .5))
+
+    def test_tied_best_is_ordered_by_kl_then_trial_number(self):
+        raw = _replay(_journal_records())[1][0]
+        trials = [archive.make_trial(raw, _gate(), {}) for _ in range(3)]
+        for number, trial in enumerate(trials):
+            trial["trial_number"] = number
+        trials[0]["kl"] = .1
+        result = archive.summarize_trials(list(reversed(trials)))
+        self.assertEqual(result["best_keyword_trial"], 1)
+        self.assertEqual(result["min_kl_trial"], 1)
+
+    def test_settings_reject_semantic_conflict(self):
+        config = {"seed": 42, "scorer": {"KeywordRate": {"x": 1}}}
+        effective = copy.deepcopy(config)
+        effective["scorer"]["KeywordRate"]["x"] = 2
+        with self.assertRaisesRegex(archive.InputError, "scorer.KeywordRate.x"):
+            archive.compare_settings(config, effective, {})
+
+    def test_settings_map_manifest_scorer_settings(self):
+        config = {"scorer": {"KeywordRate": {"x": 1}}}
+        manifest = {"scorer_settings": {"KeywordRate": {"x": 2}}}
+        with self.assertRaisesRegex(archive.InputError, "study_manifest"):
+            archive.compare_settings(config, config, manifest)
+
+
+class SnapshotTests(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
-        FIXTURES.mkdir(parents=True, exist_ok=True)
-        cls.lines = (evidence.ARCHIVE / evidence.JOURNAL).read_text(
-            encoding="utf-8").splitlines()
-        cls.events = [json.loads(line) for line in cls.lines]
-        cls.study = evidence.replay_events(cls.lines)
-        cls.acceptance = json.loads(
-            (evidence.ARCHIVE / "acceptance.json").read_text(encoding="utf-8"))
-        cls.config = tomllib.loads(
-            (evidence.ARCHIVE / "config.toml").read_text(encoding="utf-8"))
-        cls.identities = {
-            key: cls.acceptance[key] for key in evidence.IDENTITIES}
-        cls.hashes = evidence.validate_archive(evidence.ARCHIVE)
-        cls.summary, cls.rows = evidence.summarize(
-            cls.study, cls.acceptance, cls.config)
-        evidence.attach_provenance(cls.summary, evidence.ARCHIVE, cls.hashes)
-        cls.streams = evidence.render(cls.summary, cls.rows)
+        cls.summary = archive.load_summary()
+
+    def test_original_nine_hashes_and_versioned_sources(self):
+        sources = self.summary["source_records"]
+        original = [s for s in sources if s["archive_member"]]
+        self.assertEqual(len(original), 9)
+        self.assertTrue(all(s["sha256"] == s["expected_sha256"]
+                            for s in original))
+        blobs = [s for s in sources if s["source_kind"] == "git_blob"]
+        self.assertEqual(len(blobs), 4)
+        self.assertTrue(all(s["revision"] == archive.FIX_REVISION
+                            for s in blobs))
+        self.assertEqual(len({s["source_id"] for s in sources}), len(sources))
+        parameters = self.summary["trials"][66]["resolved_params"]
+        self.assertEqual([parameters["start_layer_index"],
+                          parameters["end_layer_index"]], [16, 52])
+
+    def test_exact_snapshot_statistics(self):
+        summary = self.summary
+        self.assertEqual(summary["state_counts"], {"COMPLETE": 120})
+        self.assertEqual(summary["numerical_gate_count"], 0)
+        self.assertEqual(summary["gate_counts"],
+                         {"keywords": 0, "kl": 120, "joint": 0})
+        self.assertEqual(summary["best_keyword_trial"], 66)
+        self.assertEqual(summary["min_kl_trial"], 40)
+        self.assertEqual(summary["last_trial"], 119)
+        self.assertEqual(summary["pareto_trial_numbers"],
+                         [28, 40, 66, 79, 94, 100, 101, 112, 118, 119])
+        for number, keywords, kl in (
+            (40, 1.0, .0009053924586623907),
+            (66, .54, .08997529745101929),
+            (119, .56, .03191900998353958),
+        ):
+            trial = summary["trials"][number]
+            self.assertAlmostEqual(trial["keywords"], keywords, delta=1e-12)
+            self.assertAlmostEqual(trial["kl"], kl, delta=1e-12)
+
+    def test_raw_quantiles_and_phase_means(self):
+        expected_kl = [.0009053924586623907, .0036956561380065978,
+                       .010353714693337679, .023271169513463974,
+                       .11515633761882782]
+        observed = self.summary["quantiles"]["kl"]
+        for value, expected in zip(observed, expected_kl):
+            self.assertAlmostEqual(value, expected, delta=1e-12)
+        self.assertEqual(self.summary["quantiles"]["keywords"],
+                         [.54, .88, .98, 1.0, 1.0])
+        means = [.9866666666666667, .8779545454545454, .91975]
+        for phase, mean in zip(self.summary["phase_statistics"], means):
+            self.assertAlmostEqual(phase["mean"], mean, delta=1e-12)
+        self.assertEqual(self.summary["phase_statistics"][1]["median"], .905)
+
+    def test_display_precision_and_null_acceptance(self):
+        tables = generator.render_outputs(self.summary)
+        results = tables["tables/ara-v1-results.tex"].decode()
+        distribution = tables["tables/ara-v1-distribution.tex"].decode()
+        for token in ("0.000905", "0.089975", "0.031919", "54/100"):
+            self.assertIn(token, results)
+        self.assertIn("0.905 & 0.878", distribution)
+        self.assertEqual(self.summary["acceptance_status"], "failed")
+        for key in ("selected_trial_number", "audit_scores", "reload_scores",
+                    "validation_replay_scores", "artifact_hashes"):
+            self.assertIsNone(self.summary[key])
+
+    def test_missing_historical_blob_is_not_replaced_by_worktree(self):
+        with self.assertRaisesRegex(archive.InputError, "missing historical"):
+            archive.read_git_blob("0" * 40, "src/heretic/ara.py")
+
+    def test_unrelated_commit_does_not_change_recomputed_artifacts(self):
+        run = subprocess.run
+
+        def changed_head(command, **kwargs):
+            if command == ["git", "rev-parse", "HEAD"]:
+                return subprocess.CompletedProcess(command, 0, b"f" * 40)
+            return run(command, **kwargs)
+
+        with mock.patch.object(subprocess, "run", changed_head):
+            after_commit = archive.load_summary()
+        self.assertEqual(generator.render_outputs(self.summary),
+                         generator.render_outputs(after_commit))
+
+
+class CheckoutTests(unittest.TestCase):
+    def setUp(self):
+        TEST_ROOT.mkdir(parents=True, exist_ok=True)
+        area = tempfile.TemporaryDirectory(prefix="checkout-", dir=TEST_ROOT)
+        self.addCleanup(area.cleanup)
+        self.paper = Path(area.name)
+        original = generator.DEFAULT_PAPER
+        shutil.copyfile(original / "paper.tex", self.paper / "paper.tex")
+        for name in ("sections", "tables"):
+            shutil.copytree(original / name, self.paper / name)
+
+    def test_unused_historical_chapters_do_not_enter_document(self):
+        import verify_paper as verifier
+
+        before = verifier._tex_document(self.paper)
+        (self.paper / "sections/08-conclusion.tex").write_text(
+            r"\label{sec:conclusion}\cite{removed-bib-key}", encoding="utf-8",
+        )
+        self.assertEqual(verifier._tex_document(self.paper), before)
+
+    def test_duplicate_included_labels_are_still_rejected(self):
+        import verify_paper as verifier
+
+        path = self.paper / "paper.tex"
+        content = path.read_text(encoding="utf-8")
+        path.write_text(content.replace(
+            r"\end{document}",
+            r"\input{sections/07-conclusion}" + "\n" + r"\end{document}",
+        ), encoding="utf-8")
+        with self.assertRaisesRegex(verifier.VerificationError, "Duplicate"):
+            verifier._tex_document(self.paper)
+
+    def test_missing_included_chapter_is_rejected(self):
+        import verify_paper as verifier
+
+        (self.paper / "sections/07-conclusion.tex").unlink()
+        with self.assertRaisesRegex(verifier.VerificationError,
+                                    "Missing TeX input"):
+            verifier._tex_document(self.paper)
+
+    def test_cyclic_inclusion_is_rejected_with_file_location(self):
+        import verify_paper as verifier
+
+        path = self.paper / "sections/07-conclusion.tex"
+        with path.open("a", encoding="utf-8") as stream:
+            stream.write(r"\input{paper}")
+        with self.assertRaisesRegex(verifier.VerificationError,
+                                    "Cyclic TeX input: paper"):
+            verifier._tex_document(self.paper)
+
+    def test_git_keeps_actual_binary_asset_bytes(self):
+        for name in ("ara-architecture.png", "ara-v1-search.png",
+                     "ara-v1-search.pdf"):
+            path = generator.DEFAULT_PAPER / "figures" / name
+            relative = path.relative_to(archive.REPO_ROOT).as_posix()
+            hashes = [subprocess.run(
+                ["git", "hash-object", option, relative],
+                cwd=archive.REPO_ROOT, capture_output=True, check=True,
+                timeout=30,
+            ).stdout for option in ("--no-filters", "--path=" + relative)]
+            with self.subTest(asset=name):
+                self.assertEqual(hashes[0], hashes[1])
+
+
+class OutputTests(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        TEST_ROOT.mkdir(parents=True, exist_ok=True)
+        cls.area = tempfile.TemporaryDirectory(prefix="output ", dir=TEST_ROOT)
+        cls.paper = Path(cls.area.name) / "paper with spaces"
+        cls.summary = archive.load_summary()
+        generator.generate_outputs(cls.summary, cls.paper)
 
     @classmethod
     def tearDownClass(cls):
-        if evidence.validate_archive(evidence.ARCHIVE) != cls.hashes:
-            raise AssertionError("archive hashes changed during tests")
+        cls.area.cleanup()
 
-    def setUp(self):
-        self.temporary = tempfile.TemporaryDirectory(dir=FIXTURES,
-                                                      prefix="evidence-test-")
-        self.root = Path(self.temporary.name)
-        self.addCleanup(self.temporary.cleanup)
+    def _run_check(self, source=archive.DEFAULT_SOURCE):
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            return generator.main(["--source", str(source), "--paper-dir",
+                                   str(self.paper), "--check"])
 
-    def assert_replay_error(self, events, pattern):
-        with self.assertRaisesRegex(evidence.EvidenceError, pattern):
-            evidence.replay_events(json.dumps(event) for event in events)
+    def test_good_check_is_read_only_without_matplotlib_import(self):
+        paths = [p for p in self.paper.rglob("*") if p.is_file()]
+        before = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in paths}
+        with mock.patch.object(generator, "_render_figures",
+                               side_effect=AssertionError("must not redraw")):
+            self.assertEqual(self._run_check(), 0)
+        after = {p: (p.read_bytes(), p.stat().st_mtime_ns) for p in paths}
+        self.assertEqual(before, after)
 
-    def invoke(self, *arguments):
-        output = io.StringIO()
-        with (contextlib.redirect_stdout(output),
-              contextlib.redirect_stderr(output)):
-            status = evidence.main(list(arguments))
-        return status, output.getvalue()
-
-    def test_full_archive_regression(self):
-        self.assertEqual(len(self.hashes), 9)
-        self.assertEqual(self.summary["trial_count"], 120)
-        self.assertEqual(self.summary["state_counts"],
-                         {"COMPLETE": 120, "non_COMPLETE": 0})
-        self.assertEqual(self.summary["gate"]["pass_counts"], dict(
-            passes_keyword_max=0, passes_keyword_drop=0, passes_kl=120,
-            passes_all=0))
-        self.assertEqual(self.summary["pareto_trial_numbers"],
-                         [28, 40, 66, 79, 94, 100, 101, 112, 118, 119])
-        best = self.summary["best_keyword_trial"]
-        self.assertEqual(best["trial_number"], 66)
-        self.assertEqual(best["keywords"], .54)
-        self.assertAlmostEqual(best["kl_divergence"], .08997529745101929)
-        self.assertEqual((best["start_layer_index"], best["end_layer_index"],
-                          best["processed_modules"]), (16, 52, 72))
-        self.assertAlmostEqual(best["relative_keyword_drop"], .46)
-        self.assertEqual(self.rows[-1]["keywords"], .56)
-        self.assertEqual(self.rows[-1]["kl_divergence"], .03191900998353958)
-        expected = {
-            "keywords": [.54, .88, .98, 1., 1.],
-            "kl_divergence": [.0009053924586623907, .0036956561380065978,
-                              .010353714693337679, .023271169513463974,
-                              .11515633761882782]}
-        for metric, values in expected.items():
-            keys = ("minimum", "q25", "median", "q75", "maximum")
-            for key, value in zip(keys, values):
-                self.assertAlmostEqual(self.summary["statistics"][metric][key],
-                                       value, delta=1e-12)
-        self.assertIsNone(
-            self.summary["protocol"]["per_trial_kl_sample_evidence"])
-        self.assertEqual(self.summary["acceptance_status"], "failed")
-
-    def test_hand_calculated_percentiles_and_duplicate_pareto(self):
-        self.assertEqual(evidence.percentile([0, 10, 20, 30], .25), 7.5)
-        self.assertEqual(evidence.percentile([3], .75), 3)
-        pairs = [(1, 1), (1, 1), (0, 2), (2, 0), (2, 2), (1, 2)]
-        rows = [dict(trial_number=n, keywords=k, kl_divergence=d)
-                for n, (k, d) in enumerate(pairs)]
-        self.assertEqual(evidence.pareto_numbers(rows), [0, 1, 2, 3])
-
-    def test_gate_equality_and_relative_drop_are_independent(self):
-        row = dict(keywords=.1, kl_divergence=.15, baseline_keywords=.2)
-        evidence.apply_gates(row, dict(keyword_max=.1, keyword_drop_min=.5,
-                                       kl_max=.15))
-        self.assertTrue(row["passes_all"])
-        self.assertEqual(row["relative_keyword_drop"], .5)
-        self.assertNotEqual(row["relative_keyword_drop"], .2 - .1)
-        row["baseline_keywords"] = 0
-        with self.assertRaisesRegex(evidence.EvidenceError, "undefined"):
-            evidence.apply_gates(row, self.config["acceptance_gate"])
-
-    def test_reordered_named_scores_preserve_summary(self):
-        study = copy.deepcopy(self.study)
-        for trial in study["trials"]:
-            trial["user_attr"]["scores"].reverse()
-        summary, rows = evidence.summarize(study, self.acceptance, self.config)
-        self.assertEqual(rows, self.rows)
-        self.assertEqual(summary["statistics"], self.summary["statistics"])
-
-    def test_missing_duplicate_names_and_terminal_mismatch(self):
-        for change, message in (
-                (lambda t: t["user_attr"]["scores"].pop(), "missing score"),
-                (lambda t: t["user_attr"]["scores"].append(
-                    t["user_attr"]["scores"][0]), "duplicate score"),
-                (lambda t: t["values"].__setitem__(0, .01), "terminal values")):
-            with self.subTest(message=message):
-                trial = copy.deepcopy(self.study["trials"][0])
-                change(trial)
-                with self.assertRaisesRegex(evidence.EvidenceError, message):
-                    evidence.validate_trial(trial, self.identities)
-
-    def test_count_displays_and_baseline_are_validated(self):
-        for field, value in (("rich_display", "97/99"),
-                             ("md_display", "96/100"),
-                             ("md_display", 97), ("value", .98),
-                             ("rich_display", "101/100")):
-            trial = copy.deepcopy(self.study["trials"][0])
-            trial["user_attr"]["scores"][0]["score"][field] = value
-            with self.subTest(field=field, value=value):
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.validate_trial(trial, self.identities)
-        trial = copy.deepcopy(self.study["trials"][0])
-        trial["user_attr"]["scores"][1]["baseline"]["value"] = .1
-        with self.assertRaisesRegex(evidence.EvidenceError, "baselines"):
-            evidence.validate_trial(trial, self.identities)
-
-    def test_fingerprints_and_trial_identity(self):
-        changes = [(key, "0" * 64) for key in evidence.IDENTITIES]
-        changes += [("index", 2), ("index", True), ("method", "other"),
-                    ("search_space_version", "cara-search-v2")]
-        for key, value in changes:
-            with self.subTest(key=key):
-                trial = copy.deepcopy(self.study["trials"][0])
-                trial["user_attr"][key] = value
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.validate_trial(trial, self.identities)
-
-    def test_distribution_sample_resolution_and_module_corruption(self):
-        changes = [
-            lambda t: t["distributions"]["ara.margin"]["attributes"].update(
-                log=False),
-            lambda t: t["sampled_parameters"].update({"ara.margin": 10}),
-            lambda t: t["sampled_parameters"].update(
-                {"ara.margin": float("nan")}),
-            lambda t: t["sampled_parameters"].update({"ara.margin": True}),
-            lambda t: t["user_attr"]["ara_parameters"].update(
-                start_layer_index=0),
-            lambda t: t["user_attr"]["ara_parameters"]["components"][
-                "mlp.down_proj"].update(strength=0),
-            lambda t: t["user_attr"]["ara_summary"].update(processed_modules=1),
-            lambda t: t["user_attr"]["ara_summary"].update(skipped_modules=-1),
-            lambda t: t["user_attr"]["ara_summary"].update(failed_modules=True),
-            lambda t: t["user_attr"]["ara_summary"].update(
-                elapsed_seconds="17"),
-            lambda t: t["system_attr"].update(constraints=[1.0]),
-        ]
-        for index, change in enumerate(changes):
-            with self.subTest(case=index):
-                trial = copy.deepcopy(self.study["trials"][0])
-                change(trial)
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.validate_trial(trial, self.identities)
-
-    def test_boolean_cannot_impersonate_zero_applied_mlp_strength(self):
-        trial = copy.deepcopy(next(t for t in self.study["trials"]
-                                   if t["sampled_parameters"][
-                                       "ara.mlp_strength_raw"] < 0))
-        trial["user_attr"]["ara_parameters"]["components"][
-            "mlp.down_proj"]["strength"] = False
-        with self.assertRaisesRegex(evidence.EvidenceError, "field type"):
-            evidence.validate_trial(trial, self.identities)
-
-    def test_malformed_duplicate_and_nonfinite_json(self):
-        for text in ("{bad", '{"x":1,"x":2}', '{"x":NaN}',
-                     '{"x":Infinity}', '{"x":-Infinity}', '{"x":1e999}'):
-            with self.subTest(text=text):
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.parse_json(text, "fixture:7")
-        event = copy.deepcopy(self.events[1])
-        event["user_attr"]["settings"] = '{"seed":42,"seed":1}'
-        events = copy.deepcopy(self.events)
-        events[1] = event
-        self.assert_replay_error(events, "duplicate JSON")
-
-    def test_lifecycle_corruption_uses_small_event_fixtures(self):
-        creation = next(e for e in self.events if e["op_code"] == 4)
-        parameter = next(e for e in self.events if e["op_code"] == 5)
-        terminal = next(e for e in self.events if e["op_code"] == 6)
-        prefix = [self.events[0], creation]
-        cases = [([{"op_code": 3}], "unsupported operation"),
-                 ([parameter], "before study creation"),
-                 ([self.events[0], parameter], "nonexistent trial"),
-                 (prefix + [terminal, terminal], "repeated terminal"),
-                 (prefix + [terminal, parameter], "post-terminal"),
-                 (prefix + [parameter, parameter], "duplicate parameter"),
-                 ([self.events[0], self.events[0]], "multiple studies"),
-                 ([{"op_code": True}], "expected integer")]
-        for events, pattern in cases:
-            with self.subTest(pattern=pattern):
-                self.assert_replay_error(events, pattern)
-        for key, value in (("state", 3), ("state", True), ("values", []),
-                           ("trial_id", 1)):
-            corrupt = dict(terminal, **{key: value})
-            with self.assertRaises(evidence.EvidenceError):
-                evidence.replay_events(map(json.dumps, prefix + [corrupt]))
-
-    def test_finished_trial_count_and_id_gaps(self):
-        events = copy.deepcopy(self.events)
-        events[-1]["user_attr"]["finished"] = False
-        self.assert_replay_error(events, "finished")
-        self.assert_replay_error(self.events[:5] + [self.events[-1]],
-                                 "120 trials")
-        study = copy.deepcopy(self.study)
-        study["trials"][-1]["trial_number"] = 120
-        study["trials"][-1]["user_attr"]["index"] = 121
-        with self.assertRaisesRegex(evidence.EvidenceError, "contiguous IDs"):
-            evidence.summarize(study, self.acceptance, self.config)
-
-    def test_settings_disagree_and_documented_defaults_are_normalized(self):
-        for area, key, value in (("settings", "seed", 7),
-                                 ("manifest", "ara_lora_rank", 64),
-                                 ("settings", "batch_size", 8)):
-            study = copy.deepcopy(self.study)
-            study[area][key] = value
-            with self.subTest(area=area, key=key):
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.validate_settings(study, self.config)
-        study = copy.deepcopy(self.study)
-        study["settings"]["scorer"]["KeywordRate"]["prompts"]["prefix"] = "x"
-        with self.assertRaisesRegex(evidence.EvidenceError, "prefix"):
-            evidence.validate_settings(study, self.config)
-        evidence.validate_settings(self.study, self.config)
-
-    def test_acceptance_status_and_every_null_result(self):
-        for key, value in [("status", "passed"), ("schema_version", "v2")] + [
-                (key, {}) for key in evidence.RESULT_FIELDS]:
-            report = copy.deepcopy(self.acceptance)
-            report[key] = value
-            with self.subTest(key=key):
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.validate_acceptance(report, self.identities, 0)
-        with self.assertRaisesRegex(evidence.EvidenceError, "contradicts"):
-            evidence.validate_acceptance(self.acceptance, self.identities, 1)
-        report = dict(self.acceptance)
-        del report["audit_scores"]
-        with self.assertRaisesRegex(evidence.EvidenceError, "explicit null"):
-            evidence.validate_acceptance(report, self.identities, 0)
-
-    def test_manifest_pin_truncation_replacement_and_content_hash(self):
-        archive = self.root / "archive"
-        shutil.copytree(evidence.ARCHIVE, archive)
-        manifest = archive / "SHA256SUMS"
-        original = manifest.read_bytes()
-        for payload in (original[:-90], original.replace(b"41c4", b"01c4")):
-            manifest.write_bytes(payload)
-            with self.assertRaises(evidence.EvidenceError):
-                evidence.validate_archive(archive)
-        manifest.write_bytes(original)
-        (archive / "acceptance.json").write_bytes(b"{}")
-        with self.assertRaisesRegex(evidence.EvidenceError, "acceptance.json"):
-            evidence.validate_archive(archive)
-
-    def test_manifest_paths_duplicates_and_missing_journal(self):
-        raw = (evidence.ARCHIVE / "SHA256SUMS").read_bytes()
-        for name in ("../escape", "/absolute", "C:/drive", "a/../../escape"):
-            corrupt = raw.replace(b"acceptance.json", name.encode())
+    def test_modified_table_pdf_png_and_csv_return_three_without_writes(self):
+        for name in ("tables/ara-v1-results.tex", *generator.FIGURE_OUTPUTS,
+                     "evidence/ara-v1-trials.csv"):
             with self.subTest(name=name):
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.parse_manifest(corrupt, self.root)
-        with self.assertRaisesRegex(evidence.EvidenceError, "duplicate"):
-            evidence.parse_manifest(
-                raw + raw.splitlines(keepends=True)[0], self.root)
-        archive = self.root / "archive"
-        shutil.copytree(evidence.ARCHIVE, archive)
-        (archive / evidence.JOURNAL).unlink()
-        status, output = self.invoke("--archive-dir", str(archive),
-                                     "--paper-dir", str(self.root / "paper"))
-        self.assertEqual(status, 1)
-        self.assertIn(evidence.JOURNAL.split("/")[-1], output)
-        self.assertFalse((self.root / "paper").exists())
+                path = self.paper / name
+                original = path.read_bytes()
+                changed = (original[:50] if name.endswith("png")
+                           else original + b"x")
+                path.write_bytes(changed)
+                try:
+                    self.assertEqual(self._run_check(), 3)
+                    self.assertEqual(path.read_bytes(), changed)
+                finally:
+                    path.write_bytes(original)
 
-    def test_output_roots_and_symlink_escape(self):
-        for paper in (evidence.ARCHIVE, evidence.ARCHIVE / "out",
-                      evidence.ARCHIVE.parent, evidence.WORKSPACE.parent):
-            with self.subTest(paper=paper):
-                with self.assertRaises(evidence.EvidenceError):
-                    evidence.output_destinations(paper, evidence.ARCHIVE)
-        output = self.root / "paper"
-        output.mkdir()
+    def test_input_bad_hash_missing_file_and_manifest_escape_return_two(self):
+        source = Path(self.area.name) / "source copy"
+        shutil.copytree(archive.DEFAULT_SOURCE, source)
+        target = source / "acceptance.json"
+        original = target.read_bytes()
+        target.write_bytes(original + b" ")
+        self.assertEqual(self._run_check(source), 2)
+        before = {name: (self.paper / name).read_bytes()
+                  for name in generator.TEXT_OUTPUTS}
+        with redirect_stdout(io.StringIO()), redirect_stderr(io.StringIO()):
+            status = generator.main(["--source", str(source), "--paper-dir",
+                                     str(self.paper)])
+        self.assertEqual(status, 2)
+        self.assertEqual(before, {name: (self.paper / name).read_bytes()
+                                  for name in generator.TEXT_OUTPUTS})
+        target.unlink()
+        self.assertEqual(self._run_check(source), 2)
+        target.write_bytes(original)
+        manifest = source / "SHA256SUMS"
+        manifest.write_text("0" * 64 + " *../escape\n", encoding="utf-8")
+        self.assertEqual(self._run_check(source), 2)
+
+    def test_overlap_and_outside_workspace_are_rejected_before_creation(self):
+        for output in (archive.DEFAULT_SOURCE, archive.DEFAULT_SOURCE.parent,
+                       archive.DEFAULT_SOURCE / "derived",
+                       archive.REPO_ROOT.parent):
+            with self.subTest(output=output):
+                with self.assertRaises(archive.InputError):
+                    generator.validate_paths(archive.DEFAULT_SOURCE, output)
+
+    def test_mid_generation_failure_leaves_check_failing(self):
+        original = (self.paper / "tables/ara-v1-results.tex").read_bytes()
+        (self.paper / "tables/ara-v1-results.tex").write_bytes(b"stale")
+        real_replace = generator.os.replace
+        calls = 0
+
+        def interrupted_replace(source, destination):
+            nonlocal calls
+            calls += 1
+            if calls == 3:
+                raise OSError("simulated write interruption")
+            real_replace(source, destination)
+
         try:
-            (output / "evidence").symlink_to(self.root,
-                                             target_is_directory=True)
-        except OSError as error:
-            self.skipTest(f"OS cannot create symlink: {error}")
-        with self.assertRaisesRegex(evidence.EvidenceError, "symlink"):
-            evidence.output_destinations(output, evidence.ARCHIVE)
-        archive = self.root / "archive"
-        shutil.copytree(evidence.ARCHIVE, archive)
-        manifest = archive / "SHA256SUMS"
-        manifest.unlink()
-        manifest.symlink_to(evidence.ARCHIVE / "SHA256SUMS")
-        with self.assertRaisesRegex(evidence.EvidenceError, "symlink"):
-            evidence.validate_archive(archive)
+            replacement = mock.patch.object(
+                generator.os, "replace", interrupted_replace,
+            )
+            with replacement:
+                with self.assertRaisesRegex(generator.OutputError,
+                                            "interruption"):
+                    generator.generate_outputs(self.summary, self.paper)
+            self.assertEqual(self._run_check(), 3)
+        finally:
+            (self.paper / "tables/ara-v1-results.tex").write_bytes(original)
 
-    def test_two_generations_check_and_stale_read_only(self):
-        paper = self.root / "paper"
-        arguments = ("--paper-dir", str(paper))
-        self.assertEqual(self.invoke(*arguments)[0], 0)
-        first = {name: (paper / name).read_bytes() for name in evidence.OUTPUTS}
-        self.assertEqual(self.invoke(*arguments)[0], 0)
-        self.assertEqual(first, {name: (paper / name).read_bytes()
-                                 for name in evidence.OUTPUTS})
-        self.assertEqual(self.invoke(*arguments, "--check")[0], 0)
-        stale = paper / evidence.OUTPUTS[2]
-        stale.write_bytes(b"stale\n")
-        self.assertEqual(self.invoke(*arguments, "--check")[0], 1)
-        self.assertEqual(stale.read_bytes(), b"stale\n")
-        missing = self.root / "missing"
-        self.assertEqual(
-            self.invoke("--paper-dir", str(missing), "--check")[0], 1)
-        self.assertFalse(missing.exists())
-        self.assertFalse(list(paper.rglob("*.tmp")))
-        self.assertTrue(all(b"\r" not in payload for payload in first.values()))
 
-    def test_cli_default_paths_work_from_another_directory(self):
-        result = subprocess.run([sys.executable, "-B",
-                                 str(Path(evidence.__file__)),
-                                 "--paper-dir", str(self.root / "paper")],
-                                cwd=self.root, capture_output=True, text=True)
-        self.assertEqual(result.returncode, 0, result.stderr)
+class ReviewBindingTests(unittest.TestCase):
+    def test_review_must_bind_current_pdf_and_every_page(self):
+        import verify_paper
 
-    def test_staging_failure_preserves_old_bytes_and_removes_temporaries(self):
-        destinations = evidence.output_destinations(self.root, evidence.ARCHIVE)
-        evidence.write_outputs(self.streams, destinations)
-        create = evidence.tempfile.NamedTemporaryFile
-        calls = 0
+        TEST_ROOT.mkdir(parents=True, exist_ok=True)
+        temporary = tempfile.TemporaryDirectory(prefix="review-", dir=TEST_ROOT)
+        with temporary as area:
+            paper = Path(area)
+            (paper / "evidence").mkdir()
+            (paper / "build/pages").mkdir(parents=True)
+            for number in (1, 2):
+                (paper / f"build/pages/page-{number}.png").write_bytes(b"page")
+            current = {"pdf_sha256": "a" * 64, "page_count": 2}
+            review = {**current, "status": "passed", "render_dpi": 120,
+                      "reviewed_pages": [1, 2],
+                      "reviewed_at_utc": "2026-09-08T00:00:00Z"}
+            self._write_review(paper, review)
+            self.assertEqual(len(verify_paper.check_review(paper, current)), 64)
+            for change in ({"pdf_sha256": "b" * 64},
+                           {"reviewed_pages": [1]},
+                           {"reviewed_pages": [1, 1, 2]},
+                           {"status": "pending_review"}):
+                with self.subTest(change=change):
+                    self._write_review(paper, review | change)
+                    with self.assertRaises(verify_paper.VerificationError):
+                        verify_paper.check_review(paper, current)
 
-        def fail_second(*args, **kwargs):
-            nonlocal calls
-            calls += 1
-            if calls == 2:
-                raise OSError("fixture staging failure")
-            return create(*args, **kwargs)
-
-        changed = {name: payload + b"changed"
-                   for name, payload in self.streams.items()}
-        with mock.patch.object(evidence.tempfile, "NamedTemporaryFile",
-                               fail_second):
-            with self.assertRaisesRegex(evidence.EvidenceError,
-                                         "generation failed"):
-                evidence.write_outputs(changed, destinations)
-        self.assertEqual(
-            {name: path.read_bytes() for name, path in destinations.items()},
-            self.streams)
-        self.assertFalse(list(self.root.rglob("*.tmp")))
-
-    def test_failed_replacement_exits_one_and_check_requires_regeneration(self):
-        paper = self.root / "paper"
-        destinations = evidence.output_destinations(paper, evidence.ARCHIVE)
-        old = {name: b"old\n" for name in evidence.OUTPUTS}
-        evidence.write_outputs(old, destinations)
-        replace = evidence.os.replace
-        calls = 0
-
-        def fail_second(source, target):
-            nonlocal calls
-            calls += 1
-            if calls == 2:
-                raise OSError("fixture promotion failure")
-            return replace(source, target)
-
-        with mock.patch.object(evidence.os, "replace", fail_second):
-            status, message = self.invoke("--paper-dir", str(paper))
-        self.assertEqual(status, 1)
-        self.assertIn("full regeneration", message)
-        self.assertIn("ara-v1-trials.csv", message)
-        self.assertNotIn("Generated 4", message)
-        self.assertFalse(list(paper.rglob("*.tmp")))
-        self.assertEqual(
-            self.invoke("--paper-dir", str(paper), "--check")[0], 1)
-        self.assertEqual(self.invoke("--paper-dir", str(paper))[0], 0)
-        self.assertEqual(
-            self.invoke("--paper-dir", str(paper), "--check")[0], 0)
-
-    def test_corrupt_archive_never_replaces_existing_outputs(self):
-        archive, paper = self.root / "archive", self.root / "paper"
-        shutil.copytree(evidence.ARCHIVE, archive)
-        destinations = evidence.output_destinations(paper, archive)
-        old = {name: b"preserve\n" for name in evidence.OUTPUTS}
-        evidence.write_outputs(old, destinations)
-        (archive / "acceptance.json").write_bytes(b"malformed")
-        self.assertEqual(self.invoke("--archive-dir", str(archive),
-                                     "--paper-dir", str(paper))[0], 1)
-        self.assertEqual(
-            {name: path.read_bytes() for name, path in destinations.items()},
-            old)
-
-    def test_tex_escaping_and_json_full_precision(self):
-        escaped = evidence.tex_escape("a_b%&{x}\\#$~^")
-        self.assertIn(r"a\_b\%\&\{x\}", escaped)
-        self.assertIn(r"\textbackslash{}", escaped)
-        decoded = json.loads(self.streams[evidence.OUTPUTS[0]])
-        self.assertEqual(decoded["best_keyword_trial"]["kl_divergence"],
-                         .08997529745101929)
-        self.assertEqual(evidence.render(decoded, self.rows), self.streams)
+    def _write_review(self, paper, record):
+        (paper / "evidence/review.md").write_text(
+            "```json\n" + json.dumps(record) + "\n```\n", encoding="utf-8",
+        )
 
 
 if __name__ == "__main__":

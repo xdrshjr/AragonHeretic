@@ -1,0 +1,2 @@
+# Python >=3.11; this environment is independent of model dependencies.
+matplotlib==3.11.0

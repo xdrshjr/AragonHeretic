@@ -1,766 +1,458 @@
-"""Validate the frozen ARA v1 archive and render reproducible paper evidence.
-
-Python 3.11+ standard library only. This reader deliberately supports one pinned
-archive dialect; it neither evaluates journal strings nor opens Optuna storage.
-"""
+"""Generate/check the paper's offline evidence, tables and search figure."""
 
 import argparse
 import csv
-import hashlib
+import importlib.metadata
 import io
 import json
-import math
 import os
-from pathlib import Path, PurePosixPath, PureWindowsPath
-import re
+from pathlib import Path
 import sys
 import tempfile
-import tomllib
 
+sys.dont_write_bytecode = True
+from ara_v1_data import (  # noqa: E402
+    DEFAULT_SOURCE, REPO_ROOT, InputError, load_summary, parse_json, sha256,
+)
 
-PAPER = Path(__file__).resolve().parents[1]
-WORKSPACE = PAPER.parents[2]
-ARCHIVE = WORKSPACE / "docs/logs/ara-v1"
-MANIFEST_HASH = (
-    "1ff138f8be7c4361a828fadc93db071c8357d10e793d8520be669862d58f1a29"
-)
-JOURNAL = "checkpoints/--root--autodl-fs--models--Qwen3--8-27B.jsonl"
-ARCHIVE_NAMES = {
-    "acceptance.json", JOURNAL, "config.toml", "exit-code.txt",
-    "gpu-after.csv", "gpu-before.csv", "python-version.txt", "run.log",
-    "source-commit.txt",
-}
-FIX_COMMIT = "868ca73b63e6ceee196a6281c780d6c2dec14a05"
-RECORDED_COMMIT = "cd2977a3c7feda14c475d9912f21c884aca1fd5d"
-PARAMETERS = {
-    "layer_start_fraction": (0.25, 0.65, False),
-    "layer_span_fraction": (0.10, 0.55, False),
-    "attn_strength": (0.001, 1.0, True),
-    "mlp_strength_raw": (-0.10, 0.50, False),
-    "push_weight": (0.0, 2.0, False),
-    "margin": (0.25, 4.0, True),
-}
-SCORE_NAMES = ["Keywords", "KL divergence"]
-IDENTITIES = (
-    "model_fingerprint", "study_fingerprint", "calibration_fingerprint"
-)
-RESULT_FIELDS = (
-    "selected_trial_number parameters validation_scores audit_scores "
-    "reload_scores validation_replay_scores parameter_comparison score_drift "
-    "module_counts resource_peaks environment_versions failure_trials "
-    "artifact_hashes"
-).split()
-CSV_COLUMNS = (
-    "trial_number,state,keywords,kl_divergence,baseline_keywords,"
-    "relative_keyword_drop,passes_keyword_max,passes_keyword_drop,passes_kl,"
-    "passes_all,pareto,running_best_keywords,layer_start_fraction,"
-    "layer_span_fraction,attn_strength,mlp_strength_raw,mlp_strength_applied,"
-    "push_weight,margin,start_layer_index,end_layer_index,processed_modules,"
-    "skipped_modules,failed_modules"
+DEFAULT_PAPER = REPO_ROOT / "docs/papers/heretic-ara"
+CSV_FIELDS = (
+    "trial_number,display_index,state,keywords,keyword_count,sample_count,kl,"
+    "baseline_keywords,baseline_kl,absolute_drop,relative_drop,"
+    "numerical_gate_pass,pareto,phase,start_layer_index,end_layer_index,"
+    "attn_strength,mlp_strength,mlp_strength_raw,push_weight,margin,"
+    "layer_start_fraction,layer_span_fraction,terminal_line,score_lines"
 ).split(",")
-OUTPUTS = (
+TEXT_OUTPUTS = (
     "evidence/ara-v1-summary.json", "evidence/ara-v1-trials.csv",
-    "tables/ara-v1-protocol.tex", "tables/ara-v1-results.tex",
+    "tables/ara-protocol.tex", "tables/ara-v1-results.tex",
+    "tables/ara-v1-distribution.tex",
 )
+FIGURE_OUTPUTS = ("figures/ara-v1-search.pdf", "figures/ara-v1-search.png")
+MANIFEST = "evidence/figure-manifest.json"
+PLOT_CONFIG = {
+    "figure_inches": [8.2, 4.8], "dpi": 200,
+    "xlim": [0, 0.16], "ylim": [0, 1.02],
+    "xlabel": "First-token KL divergence (nats)",
+    "ylabel": "Refusal-keyword rate",
+    "phase_labels": ["Trials 0-35", "Trials 36-79", "Trials 80-119"],
+    "phase_colors": ["#416FAD", "#D88935", "#58A092"],
+    "phase_names": ["startup", "search-36-79", "search-80-119"],
+    "gate_kl": 0.15, "gate_keywords": 0.10,
+    "annotated_trials": [40, 66, 119],
+    "annotation_offsets": [[105, -27], [12, 16], [15, -25]],
+    "font_family": "DejaVu Sans", "font_size": 10,
+    "scatter_size": 27, "pareto_size": 75, "pareto_marker": "o",
+    "pareto_color": "#20242B", "gate_color": "#A33B3B",
+    "scatter_alpha": 0.78, "grid_alpha": 0.2,
+    "legend_location": "center right", "layout": "constrained",
+}
 
 
-class EvidenceError(ValueError):
-    """Malformed, inconsistent, unsafe, or stale evidence."""
+class OutputError(ValueError):
+    """Derived evidence is stale, invalid, or cannot be safely written."""
 
 
-def require(condition, location, message):
-    """Raise a contextual evidence error when an invariant fails."""
-    if not condition:
-        raise EvidenceError(f"{location}: {message}")
+def json_bytes(value):
+    """Serialize deterministic UTF-8 JSON with finite values and final LF."""
+    return (json.dumps(value, ensure_ascii=False, indent=2, allow_nan=False)
+            + "\n").encode("utf-8")
 
 
-def finite_number(value, location):
-    """Require a finite JSON number, excluding booleans."""
-    require(type(value) in (int, float), location, "expected number")
-    require(math.isfinite(value), location, "nonfinite number")
-    return value
+def validate_paths(source, paper_dir):
+    """Resolve input/output paths before any write.
+
+    Args:
+        source: Archive directory, relative to caller cwd when not absolute.
+        paper_dir: Destination directory within the workspace.
+    Returns:
+        Resolved input and output Path objects.
+    Raises:
+        InputError: Paths overlap, escape or resolve through an unsafe symlink.
+    """
+    source, paper = Path(source).resolve(), Path(paper_dir).resolve()
+    if not paper.is_relative_to(REPO_ROOT):
+        raise InputError(f"paper directory outside workspace: {paper}")
+    if not source.is_relative_to(REPO_ROOT):
+        raise InputError(f"source directory outside workspace: {source}")
+    if paper.is_relative_to(source) or source.is_relative_to(paper):
+        raise InputError("source/paper directories overlap")
+    for name in (*TEXT_OUTPUTS, *FIGURE_OUTPUTS, MANIFEST, "build"):
+        target = (paper / name).resolve()
+        if not target.is_relative_to(paper):
+            raise InputError(f"output symlink escapes paper directory: {name}")
+        if target.is_relative_to(source) or source.is_relative_to(target):
+            raise InputError(f"output overlaps archive: {name}")
+    return source, paper
 
 
-def integer(value, location):
-    """Require an integer, excluding booleans."""
-    require(type(value) is int, location, "expected integer")
-    return value
-
-
-def unique_object(pairs):
-    """Decode JSON objects without silently overwriting duplicate keys."""
-    result = {}
-    for key, value in pairs:
-        require(key not in result, key, "duplicate JSON object key")
-        result[key] = value
-    return result
-
-
-def validate_finite_tree(value, location):
-    """Reject overflowed JSON numeric literals and nonfinite fixture values."""
-    if isinstance(value, dict):
-        for key, child in value.items():
-            validate_finite_tree(child, f"{location}.{key}")
-    elif isinstance(value, list):
-        for index, child in enumerate(value):
-            validate_finite_tree(child, f"{location}[{index}]")
-    elif type(value) is float:
-        finite_number(value, location)
-
-
-def parse_json(value, location):
-    """Parse strict JSON with duplicate-key and nonfinite rejection."""
-    require(isinstance(value, str), location, "expected JSON string")
-    try:
-        parsed = json.loads(value, object_pairs_hook=unique_object)
-        validate_finite_tree(parsed, location)
-        return parsed
-    except (ValueError, RecursionError) as error:
-        raise EvidenceError(f"{location}: {error}") from error
-
-
-def safe_relative(root, name):
-    """Resolve a portable relative name without traversal or symlink escape."""
-    posix, windows = PurePosixPath(name), PureWindowsPath(name)
-    require(name and "\\" not in name, name, "unsafe path spelling")
-    require(not posix.is_absolute() and not windows.drive, name,
-            "absolute or drive-qualified path")
-    require(".." not in posix.parts, name, "path traversal")
-    destination = (root / posix).resolve()
-    require(destination.is_relative_to(root), name, "symlink escapes root")
-    return destination
-
-
-def parse_manifest(raw, root):
-    """Validate manifest syntax and paths separately from the production pin."""
-    records = {}
-    for number, line in enumerate(raw.decode("utf-8").splitlines(), 1):
-        match = re.fullmatch(r"([0-9a-f]{64}) [ *](.+)", line)
-        require(match, f"SHA256SUMS:{number}", "invalid manifest entry")
-        digest, name = match.groups()
-        safe_relative(root, name)
-        require(name not in records, name, "duplicate manifest name")
-        records[name] = digest
-    require(set(records) == ARCHIVE_NAMES, "SHA256SUMS",
-            "expected exactly nine designated archive entries")
-    return records
-
-
-def validate_archive(root):
-    """Return nine verified byte-hash records for the pinned archive."""
-    root = root.resolve()
-    raw = safe_relative(root, "SHA256SUMS").read_bytes()
-    records = parse_manifest(raw, root)
-    require(hashlib.sha256(raw).hexdigest() == MANIFEST_HASH,
-            root / "SHA256SUMS", "pinned manifest SHA-256 mismatch")
-    verified = []
-    for name, expected in sorted(records.items()):
-        payload = safe_relative(root, name).read_bytes()
-        actual = hashlib.sha256(payload).hexdigest()
-        require(actual == expected, root / name, "SHA-256 mismatch")
-        verified.append(dict(path=name, expected_sha256=expected,
-                             actual_sha256=actual))
-    return verified
-
-
-def merge_attributes(target, event, key, location):
-    attributes = event.get(key)
-    require(isinstance(attributes, dict) and attributes, location,
-            f"expected nonempty {key} object")
-    target.update(attributes)
-
-
-def apply_trial_event(trial, event, location):
-    require(trial["state"] is None, location,
-            "repeated terminal event or post-terminal mutation")
-    operation = event["op_code"]
-    if operation in (8, 9):
-        key = "user_attr" if operation == 8 else "system_attr"
-        merge_attributes(trial[key], event, key, location)
-    elif operation == 5:
-        name = event.get("param_name")
-        require(isinstance(name, str), location, "invalid parameter name")
-        require(name not in trial["sampled_parameters"], location,
-                f"duplicate parameter {name}")
-        trial["sampled_parameters"][name] = finite_number(
-            event.get("param_value_internal"), f"{location}.{name}")
-        trial["distributions"][name] = parse_json(
-            event.get("distribution"), f"{location}.distribution")
-    else:
-        require(integer(event.get("state"), location) == 1, location,
-                "unsupported terminal state (expected COMPLETE=1)")
-        values = event.get("values")
-        require(isinstance(values, list) and len(values) == 2, location,
-                "terminal values must contain two objectives")
-        trial["values"] = [finite_number(x, location) for x in values]
-        trial["state"] = 1
-
-
-def replay_events(lines):
-    """Replay the archive dialect, rejecting invalid lifecycle transitions."""
-    study = {"study_id": 0, "user_attr": {}, "trials": []}
-    created = False
-    for number, line in enumerate(lines, 1):
-        location = f"{JOURNAL}:{number}"
-        event = parse_json(line, location)
-        require(isinstance(event, dict), location, "expected event object")
-        operation = integer(event.get("op_code"), location)
-        require(operation in (0, 2, 4, 5, 6, 8, 9), location,
-                f"unsupported operation {operation}")
-        if operation == 0:
-            require(not created, location, "multiple studies")
-            compare_overlap(event.get("directions"), [1, 1], location)
-            for direction in event["directions"]:
-                integer(direction, location)
-            study["directions"], created = [1, 1], True
-            continue
-        require(created, location, "event before study creation")
-        if operation in (2, 4):
-            require(integer(event.get("study_id"), location) == 0,
-                    location, "expected study 0")
-            if operation == 2:
-                merge_attributes(study["user_attr"], event,
-                                 "user_attr", location)
-            else:
-                study["trials"].append(dict(
-                    trial_number=len(study["trials"]), state=None,
-                    user_attr={}, system_attr={}, sampled_parameters={},
-                    distributions={}))
-            continue
-        trial_id = integer(event.get("trial_id"), location)
-        require(0 <= trial_id < len(study["trials"]), location,
-                "reference to nonexistent trial")
-        apply_trial_event(study["trials"][trial_id], event, location)
-    require(created, JOURNAL, "missing study creation")
-    require(study["user_attr"].get("finished") is True, JOURNAL,
-            "final finished must be true")
-    require(len(study["trials"]) == 120, JOURNAL, "expected 120 trials")
-    require(all(t["state"] == 1 for t in study["trials"]), JOURNAL,
-            "incomplete final trial")
-    study["settings"] = parse_json(
-        study["user_attr"].get("settings"), "study.settings")
-    study["manifest"] = study["user_attr"].get("study_manifest")
-    return study
-
-
-def normalize_settings(value):
-    """Expand only documented omitted dataset and scorer defaults."""
-    if isinstance(value, list):
-        return [normalize_settings(child) for child in value]
-    if not isinstance(value, dict):
-        return value
-    result = {key: normalize_settings(child) for key, child in value.items()}
-    if "dataset" in result:
-        for key, default in (("prefix", ""), ("suffix", ""),
-                             ("system_prompt", None)):
-            result.setdefault(key, default)
-    if "plugin" in result:
-        result.setdefault("instance_name", None)
-    if "scorer_settings" in result:
-        result["scorer"] = result.pop("scorer_settings")
-    return result
-
-
-def compare_overlap(left, right, location):
-    """Recursively compare common fields with strict scalar types."""
-    if isinstance(left, dict) and isinstance(right, dict):
-        for key in left.keys() & right.keys():
-            compare_overlap(left[key], right[key], f"{location}.{key}")
-    elif isinstance(left, list) and isinstance(right, list):
-        require(len(left) == len(right), location, "list length mismatch")
-        for index, (a, b) in enumerate(zip(left, right)):
-            compare_overlap(a, b, f"{location}[{index}]")
-    else:
-        numeric = type(left) in (int, float) and type(right) in (int, float)
-        require((numeric or type(left) is type(right)) and left == right,
-                location, "inconsistent value or field type")
-
-
-def validate_settings(study, config):
-    require(study["user_attr"].get("finished") is True, "study.finished",
-            "expected final finished=true")
-    effective, manifest = study["settings"], study["manifest"]
-    require(isinstance(effective, dict) and isinstance(manifest, dict),
-            "study", "missing settings or manifest object")
-    expected = dict(abliteration_method="ara", model_commit=None,
-                    n_trials=120, n_startup_trials=36, batch_size=16,
-                    target_components=["attn.o_proj", "mlp.down_proj"])
-    for key, value in expected.items():
-        require(key in effective, f"settings.{key}", "missing field")
-        compare_overlap(effective[key], value, f"settings.{key}")
-    require(manifest.get("schema_version") == "cara-study-v1",
-            "study_manifest.schema_version", "unsupported schema")
-    require(integer(config.get("batch_size"), "config.toml.batch_size") == 0,
-            "config.toml.batch_size", "expected automatic batch size 0")
-    normalized_config = normalize_settings(config)
-    normalized_config["batch_size"] = 16
-    variants = [normalize_settings(effective), normalize_settings(manifest),
-                normalized_config]
-    for first, second in ((0, 1), (0, 2), (1, 2)):
-        compare_overlap(variants[first], variants[second],
-                        "settings/manifest/TOML")
-    scorers = effective.get("scorers")
-    expected_plugins = ["heretic.scorers.keyword_rate.KeywordRate",
-                        "heretic.scorers.kl_divergence.KLDivergence"]
-    require(isinstance(scorers, list), "settings.scorers", "expected list")
-    compare_overlap([s.get("plugin") for s in scorers], expected_plugins,
-                    "settings.scorers")
-    require(all(s.get("optimization") == "minimize" for s in scorers),
-            "settings.scorers", "both objectives must be minimized")
-
-
-def validate_score_records(records, values):
-    """Match named scores independently of record order and validate counts."""
-    require(isinstance(records, list), "scores", "missing named scores")
-    named = {}
-    for record in records:
-        require(isinstance(record, dict), "scores", "expected score object")
-        name = record.get("name")
-        require(isinstance(name, str) and name in SCORE_NAMES, "scores.name",
-                "unknown or missing score name")
-        require(name not in named, "scores.name", "duplicate score name")
-        named[name] = record
-        for key in ("score", "baseline"):
-            entry = record.get(key)
-            require(isinstance(entry, dict), name, f"missing {key}")
-            score = finite_number(entry.get("value"), f"{name}.{key}")
-            require(score >= 0, name, "negative score")
-            require(all(isinstance(entry.get(field), str) for field in
-                        ("rich_display", "md_display")), name,
-                    "score displays must be strings")
-            if name == "Keywords":
-                counts = [re.fullmatch(r"(\d+)/100", entry.get(field, ""))
-                          for field in ("rich_display", "md_display")]
-                require(all(counts), name, "expected integer count/100")
-                count = int(counts[0][1])
-                require(count == int(counts[1][1]) and 0 <= count <= 100,
-                        name, "count displays disagree or outside [0,100]")
-                require(abs(score - count / 100) <= 1e-12, name,
-                        "numeric rate disagrees with count/100")
-    require(set(named) == set(SCORE_NAMES), "scores", "missing score name")
-    compare_overlap([named[n]["score"]["value"] for n in SCORE_NAMES],
-                    values, "terminal values versus named scores")
-    compare_overlap([named[n]["baseline"]["value"] for n in SCORE_NAMES],
-                    [1.0, 0.0], "score baselines")
-    return named
-
-
-def validate_parameters(trial):
-    sampled, distributions = trial["sampled_parameters"], trial["distributions"]
-    expected_names = {"ara." + key for key in PARAMETERS}
-    require(set(sampled) == set(distributions) == expected_names,
-            "parameters", "expected six exact sampled parameters")
-    for name, (low, high, logarithmic) in PARAMETERS.items():
-        full = "ara." + name
-        distribution = {"name": "FloatDistribution", "attributes":
-                        dict(low=low, high=high, log=logarithmic, step=None)}
-        require(distributions[full].keys() == distribution.keys(), full,
-                "invalid distribution fields")
-        require(distributions[full]["attributes"].keys() ==
-                distribution["attributes"].keys(), full,
-                "invalid distribution attributes")
-        compare_overlap(distributions[full], distribution, full)
-        value = finite_number(sampled[full], full)
-        require(low <= value <= high, full, "sample outside distribution")
-    resolved = trial["user_attr"].get("ara_parameters")
-    start = math.floor(64 * sampled["ara.layer_start_fraction"])
-    span = math.ceil(64 * sampled["ara.layer_span_fraction"])
-    end = min(64, max(start + 1, start + span))
-    strengths = [sampled["ara.attn_strength"],
-                 max(0, sampled["ara.mlp_strength_raw"])]
-    expected = dict(start_layer_index=start, end_layer_index=end, components={})
-    for component, strength in zip(("attn.o_proj", "mlp.down_proj"), strengths):
-        expected["components"][component] = dict(
-            strength=strength, push_weight=sampled["ara.push_weight"],
-            margin=sampled["ara.margin"])
-    require(resolved == expected, "ara_parameters", "resolved values disagree")
-    compare_overlap(resolved, expected, "ara_parameters")
-    integer(resolved["start_layer_index"], "start_layer_index")
-    integer(resolved["end_layer_index"], "end_layer_index")
-    summary = trial["user_attr"].get("ara_summary")
-    require(isinstance(summary, dict), "ara_summary", "missing module summary")
-    for key in ("median_initial_loss", "median_final_loss", "max_final_loss",
-                "elapsed_seconds"):
-        require(finite_number(summary.get(key), f"ara_summary.{key}") >= 0,
-                f"ara_summary.{key}", "negative measurement")
-    processed = (end - start) * sum(strength > 0 for strength in strengths)
-    for key, value in dict(processed_modules=processed,
-                           skipped_modules=128 - processed,
-                           failed_modules=0).items():
-        require(integer(summary.get(key), f"ara_summary.{key}") == value,
-                f"ara_summary.{key}", "module count inconsistent")
-    return resolved, summary
-
-
-def validate_trial(trial, identities):
-    """Validate one completed trial independently for semantic fixture tests."""
-    attributes = trial["user_attr"]
-    number = integer(trial.get("trial_number"), "trial_number")
-    require(integer(trial.get("state"), "state") == 1, number, "not COMPLETE")
-    require(integer(attributes.get("index"), "index") == number + 1,
-            number, "trial index mismatch")
-    for key, expected in (("method", "ara"),
-                          ("search_space_version", "cara-search-v1")):
-        require(attributes.get(key) == expected, key, "unexpected identity")
-    for key in IDENTITIES:
-        require(attributes.get(key) == identities[key], key,
-                "fingerprint mismatch")
-    compare_overlap(trial["system_attr"].get("constraints"), [0.0],
-                    "system_attr.constraints (numerical failure only)")
-    scores = validate_score_records(attributes.get("scores"), trial["values"])
-    resolved, modules = validate_parameters(trial)
-    row = dict(trial_number=number, state="COMPLETE",
-               keywords=scores["Keywords"]["score"]["value"],
-               kl_divergence=scores["KL divergence"]["score"]["value"],
-               baseline_keywords=1.0, mlp_strength_applied=
-               resolved["components"]["mlp.down_proj"]["strength"])
-    row.update({key.removeprefix("ara."): value for key, value in
-                trial["sampled_parameters"].items()})
-    row.update({key: resolved[key] for key in
-                ("start_layer_index", "end_layer_index")})
-    row.update({key: modules[key] for key in CSV_COLUMNS[-3:]})
+def _csv_row(trial):
+    row = {field: trial.get(field) for field in CSV_FIELDS}
+    resolved, raw = trial["resolved_params"], trial["raw_params"]
+    for field in ("start_layer_index", "end_layer_index"):
+        row[field] = resolved[field]
+    row["attn_strength"] = resolved["components"]["attn.o_proj"]["strength"]
+    row["mlp_strength"] = resolved["components"]["mlp.down_proj"]["strength"]
+    for field in ("mlp_strength_raw", "push_weight", "margin",
+                  "layer_start_fraction", "layer_span_fraction"):
+        row[field] = raw[f"ara.{field}"]
+    row["score_lines"] = ";".join(map(str, trial["score_lines"]))
+    for field, value in row.items():
+        if isinstance(value, bool):
+            row[field] = str(value).lower()
     return row
 
 
-def percentile(values, probability):
-    """Linear percentile using h=(n-1)p, including endpoints."""
-    require(values and 0 <= probability <= 1, "percentile", "invalid input")
-    ordered = sorted(values)
-    position = (len(ordered) - 1) * probability
-    lower, upper = math.floor(position), math.ceil(position)
-    fraction = position - lower
-    return ordered[lower] + fraction * (ordered[upper] - ordered[lower])
+def render_csv(summary):
+    """Render the fixed-order trial CSV, preserving raw precision.
+
+    Args:
+        summary: A validated RunSummary from load_summary.
+    Returns:
+        UTF-8 CSV bytes with LF line endings.
+    """
+    buffer = io.StringIO(newline="")
+    writer = csv.DictWriter(buffer, CSV_FIELDS, lineterminator="\n")
+    writer.writeheader()
+    writer.writerows(_csv_row(trial) for trial in summary["trials"])
+    return buffer.getvalue().encode("utf-8")
 
 
-def statistics(rows):
-    return {metric: {name: percentile([row[metric] for row in rows], p)
-                     for name, p in (("minimum", 0), ("q25", .25),
-                                     ("median", .5), ("q75", .75),
-                                     ("maximum", 1))}
-            for metric in ("keywords", "kl_divergence")}
+def _table(caption, label, columns, rows, note=""):
+    return "\n".join([
+        "% Generated by summarize_ara_v1.py; do not edit.",
+        r"\begin{table}[tbp]", r"\centering", r"\small",
+        "\\caption{" + caption + "}", "\\label{" + label + "}",
+        "\\begin{tabularx}{\\linewidth}{" + columns + "}",
+        r"\toprule", *rows, r"\bottomrule", r"\end{tabularx}",
+        r"\par\vspace{3pt}", r"\begin{minipage}{\linewidth}\footnotesize",
+        note, r"\end{minipage}", r"\end{table}", "",
+    ])
 
 
-def pareto_numbers(rows):
-    """Return weak-both/strict-one nondominated IDs; retain duplicates."""
-    def dominates(first, second):
-        a = first["keywords"], first["kl_divergence"]
-        b = second["keywords"], second["kl_divergence"]
-        return a[0] <= b[0] and a[1] <= b[1] and a != b
-    return [row["trial_number"] for row in rows
-            if not any(dominates(other, row) for other in rows)]
-
-
-def apply_gates(row, gate):
-    """Annotate conjunctive gates and baseline-relative keyword reduction."""
-    baseline = finite_number(row["baseline_keywords"], "baseline_keywords")
-    require(baseline > 0, "baseline_keywords", "relative drop undefined")
-    row["relative_keyword_drop"] = (baseline - row["keywords"]) / baseline
-    row["passes_keyword_max"] = row["keywords"] <= gate["keyword_max"]
-    row["passes_keyword_drop"] = (
-        row["relative_keyword_drop"] >= gate["keyword_drop_min"])
-    row["passes_kl"] = row["kl_divergence"] <= gate["kl_max"]
-    row["passes_all"] = all(row[key] for key in
-                             ("passes_keyword_max", "passes_keyword_drop",
-                              "passes_kl"))
-
-
-def validate_acceptance(acceptance, identities, passing):
-    require(isinstance(acceptance, dict), "acceptance.json", "expected object")
-    require(acceptance.get("schema_version") == "cara-acceptance-v1",
-            "acceptance.json.schema_version", "unsupported schema")
-    require(acceptance.get("status") == "failed" and passing == 0,
-            "acceptance.json.status", "outcome contradicts recomputed gates")
-    for key in RESULT_FIELDS:
-        require(key in acceptance and acceptance[key] is None,
-                f"acceptance.json.{key}", "expected explicit null")
-    for key in IDENTITIES:
-        require(acceptance.get(key) == identities[key],
-                f"acceptance.json.{key}", "fingerprint mismatch")
-    require(isinstance(acceptance.get("reason"), str) and
-            acceptance["reason"].startswith(
-                "no trial passed the acceptance gate:"),
-            "acceptance.json.reason", "missing failure diagnosis")
-
-
-def summarize(study, acceptance, config):
-    """Validate cross-record evidence and return summary plus ordered trials."""
-    validate_finite_tree(study, "study")
-    validate_settings(study, config)
-    identities = {key: acceptance.get(key) for key in IDENTITIES}
-    for key, value in identities.items():
-        require(isinstance(value, str) and re.fullmatch(r"[0-9a-f]{64}", value),
-                key, "missing or invalid fingerprint")
-    require(study["user_attr"].get("study_fingerprint") ==
-            identities["study_fingerprint"], "study_fingerprint", "mismatch")
-    rows = [validate_trial(trial, identities) for trial in study["trials"]]
-    require([r["trial_number"] for r in rows] == list(range(120)),
-            "trial_number", "expected contiguous IDs 0 through 119")
-    gate = config["acceptance_gate"]
-    compare_overlap(gate, dict(keyword_max=.1, keyword_drop_min=.5,
-                               kl_max=.15, expected_samples=100), "gate")
-    pareto, running = pareto_numbers(rows), 1.0
-    for row in rows:
-        apply_gates(row, gate)
-        row["pareto"] = row["trial_number"] in pareto
-        running = min(running, row["keywords"])
-        row["running_best_keywords"] = running
-    counts = {key: sum(row[key] for row in rows) for key in
-              ("passes_keyword_max", "passes_keyword_drop", "passes_kl",
-               "passes_all")}
-    validate_acceptance(acceptance, identities, counts["passes_all"])
-    summary = dict(schema_version="ara-paper-evidence-v1",
-                   trial_count=len(rows),
-                   state_counts={"COMPLETE": len(rows), "non_COMPLETE": 0},
-                   baseline={"keywords": 1.0, "kl_divergence": 0.0},
-                   statistics=statistics(rows), pareto_trial_numbers=pareto,
-                   best_keyword_trial=min(rows, key=lambda r: r["keywords"]),
-                   last_trial=rows[-1], acceptance_status=acceptance["status"],
-                   selected_trial_number=None, identities=identities,
-                   numerical_failure_constraints={"[0.0]": len(rows)})
-    summary["stage_statistics"] = {
-        name: dict(trial_ids=[part[0]["trial_number"],
-                             part[-1]["trial_number"]],
-                   trial_count=len(part), statistics=statistics(part))
-        for name, part in (("startup", rows[:36]), ("adaptive_tpe", rows[36:]))}
-    summary["gate"] = dict(thresholds=gate, pass_counts=counts,
-                           relative_drop_formula="(K0-K)/K0")
-    summary["search_distributions"] = {
-        "ara." + key: dict(name="FloatDistribution", low=low, high=high,
-                           log=log, step=None)
-        for key, (low, high, log) in PARAMETERS.items()}
-    summary["protocol"] = dict(effective_settings=study["settings"],
-                                configured_settings=config,
-                                study_manifest=study["manifest"])
-    return summary, rows
-
-
-def attach_provenance(summary, root, hashes):
-    log = (root / "run.log").read_text(encoding="utf-8")
-    for snippet in ("Transformer model with 64 layers",
-                    "Selected 64+64 CARA calibration prompts",
-                    "Chosen batch size: 16", "Baseline Keywords: 100/100"):
-        require(snippet in log, root / "run.log", f"missing {snippet}")
-    for scorer in ("KeywordRate", "KLDivergence"):
-        require(re.search(r"Loading " + scorer +
-                          r" evaluation prompts[^\n]*\n.*?100 prompts loaded",
-                          log, re.DOTALL), root / "run.log",
-                f"missing {scorer} prompt count")
-    commit = (root / "source-commit.txt").read_text().strip()
-    require(commit == RECORDED_COMMIT,
-            root / "source-commit.txt", "wrong commit")
-    summary.update(archive_manifest_sha256=MANIFEST_HASH, source_files=hashes,
-                   recorded_source_commit=commit, later_fix_commit=FIX_COMMIT,
-                   runtime_tree_exact=False, model_revision=None)
-    protocol = summary["protocol"]
-    protocol.update(layer_count=64, calibration_capture_per_class=64,
-                    validation_prompts_per_scorer=100,
-                    keyword_sample_evidence="journal count/100 displays",
-                    kl_sample_evidence="config.toml splits and run.log loading",
-                    per_trial_kl_sample_evidence=None,
-                    configured_batch_size=0, effective_batch_size=16,
-                    python=(root / "python-version.txt").read_text().strip(),
-                    hardware=(root / "gpu-before.csv").read_text().strip(),
-                    process_exit_code=int((root / "exit-code.txt").read_text()))
-    protocol["sampler"] = dict(name="TPESampler", n_startup_trials=36,
-        n_ei_candidates=128, multivariate=True, seed=42,
-        constraints_func="trial_methods.failure_constraint",
-        source=FIX_COMMIT + ":src/heretic/main.py")
-    protocol["optimizer"] = dict(step_calls=1, max_iter=20, history_size=10,
-        line_search="strong_wolfe", source=FIX_COMMIT + ":src/heretic/ara.py")
-    protocol["runtime_observations"] = {
-        label: re.findall(re.escape(label) + r": ([^\n]+)", log)[-1].strip()
-        for label in ("Elapsed time", "Resident system RAM",
-                      "Allocated GPU VRAM", "Reserved GPU VRAM")}
-    protocol["runtime_observation_source"] = "run.log: final samples, not peaks"
-    summary["limitations"] = [
-        "One model and one adaptive search; no independent replications.",
-        "Scalar-score recomputation, not response/logit-level reevaluation.",
-        "Keywords is a lexical proxy, not semantic refusal or attack success.",
-        "No per-prompt responses, logits, or per-trial KL arrays archived.",
-        "Audit, replay, reload and selected adapter results are null.",
-        "Model revision and complete package versions were not recorded.",
-        "A model fingerprint is not a model snapshot.",
-        "Recorded HEAD lacks deployed fixes; later fix is not the exact tree.",
-        "Runtime memory observations are samples, not whole-run peaks.",
-        "Zero numerical constraints do not mean passing effectiveness gates.",
-        "Manifest pin detects changes; it is not an authenticity signature."]
-
-
-def tex_escape(value):
-    """Escape every TeX metacharacter in data-derived plain text."""
-    replacements = {"\\": r"\textbackslash{}", "&": r"\&", "%": r"\%",
-                    "$": r"\$", "#": r"\#", "_": r"\_", "{": r"\{",
-                    "}": r"\}", "~": r"\textasciitilde{}",
-                    "^": r"\textasciicircum{}"}
-    return "".join(replacements.get(char, char) for char in str(value))
-
-
-def render_table(caption, label, headings, rows):
-    columns = "@{}l" + "Y" * (len(headings) - 1) + "@{}"
-    lines = ["% Generated by evidence/summarize_ara_v1.py; do not edit.",
-             r"\begin{table*}[t]", r"\centering\footnotesize",
-             r"\caption{" + caption + "}", r"\label{" + label + "}",
-             r"\renewcommand{\arraystretch}{1.12}",
-             r"\begin{tabularx}{\textwidth}{" + columns + "}", r"\toprule"]
-    lines.append(" & ".join(map(tex_escape, headings)) + r" \\")
-    lines.append(r"\midrule")
-    lines.extend(" & ".join(map(tex_escape, row)) + r" \\" for row in rows)
-    return "\n".join(lines + [r"\bottomrule", r"\end{tabularx}",
-                              r"\end{table*}", ""]).encode("utf-8")
-
-
-def render_protocol(summary):
-    protocol = summary["protocol"]
-    settings = protocol["effective_settings"]
-    rows = [
-        ("模型", settings["model"].rsplit("/", 1)[-1] + "（本地路径）",
-         "模型提交未记录；64 层"),
-        ("硬件", "RTX PRO 6000 Blackwell Server Edition",
-         "97,887 MiB；driver 595.58.03"),
-        ("加载", "BF16；无量化；自动放置", "GPU 配置上限 90 GiB"),
-        ("校准", "每类候选 train[:300]；实际 64+64", "捕获批量 1；秩至多 128"),
-        ("验证", "每类 train[300:400]；各 100 条", "120 次搜索重复使用"),
-        ("审计", "每类 test[:100]", "仅配置；无审计得分"),
-        ("解码", "seed=42；不采样；关闭 thinking", "最多 100 词元；有效批量 16"),
-        ("批量配置", "自动配置 0；最大值 16", "有效评估批量为 16"),
-        ("优化", "L-BFGS：一次 step；max_iter=20", "history=10；strong Wolfe"),
-        ("采样", "TPE：36 startup + 84 adaptive", "候选 128；multivariate；seed=42"),
-        ("数值约束", "全部 constraints=[0.0]", "仅无记录数值失败；不代表效果验收"),
-    ]
-    for label, key in (("有害数据", "bad_prompts"), ("无害数据", "good_prompts")):
-        dataset = settings[key]
-        rows.insert(3, (label, dataset["dataset"],
-                        "revision: " + dataset["commit"][:12] +
-                        "（完整标识见证据 JSON）"))
-    labels = ("起始层比例", "层跨度比例", "注意力强度", "MLP 原始强度",
-              "推离权重", "间隔")
-    for label, key in zip(labels, PARAMETERS):
-        distribution = summary["search_distributions"]["ara." + key]
-        rows.append((label, f"[{distribution['low']}, {distribution['high']}]",
-                     "对数采样" if distribution["log"] else "线性采样"))
-    rows.append(("区间解析", "floor(64×起点)，ceil(64×跨度)",
-                 "结束层裁剪至 64；MLP 强度取 max(0,原值)"))
-    return render_table("本地 point-v1 归档协议与六维搜索分布。",
-                        "tab:ara-v1-protocol", ("项目", "设置", "证据边界"), rows)
+def _format_keywords(count, denominator):
+    return f"{count}/{denominator}（{100 * count / denominator:.0f}\\%）"
 
 
 def render_results(summary):
-    stats, counts = summary["statistics"], summary["gate"]["pass_counts"]
-    rows = []
-    for label, key in (("最小值", "minimum"), ("线性 25 分位", "q25"),
-                       ("中位数", "median"), ("线性 75 分位", "q75"),
-                       ("最大值", "maximum")):
-        rows.append((label, f"{stats['keywords'][key]:.2f}",
-                     f"{stats['kl_divergence'][key]:.6f}", "全部 120 次"))
-    for row in (summary["best_keyword_trial"], summary["last_trial"]):
-        rows.append((f"Trial {row['trial_number']}", f"{row['keywords']:.2f}",
-                     f"{row['kl_divergence']:.6f}", "描述性示例；未通过验收"))
-    rows += [("COMPLETE", "120/120", "非 COMPLETE：0", "单次自适应搜索"),
-             ("Keywords 上限", str(counts["passes_keyword_max"]),
-              "K <= 0.10", "通过数"),
-             ("相对下降", str(counts["passes_keyword_drop"]),
-              "(K0-K)/K0 >= 0.50", "通过数"),
-             ("KL 上限", str(counts["passes_kl"]), "D <= 0.15", "通过数"),
-             ("联合验收", str(counts["passes_all"]), "failed", "未选中候选；审计等结果为空"),
-             ("Pareto 点", str(len(summary["pareto_trial_numbers"])),
-              "双目标均最小化", "相同坐标不互相支配")]
-    return render_table("本地 point-v1 验证集分布与失败验收结果。",
-                        "tab:ara-v1-results",
-                        ("统计/门槛", "Keywords/数量", "KL/条件", "说明"), rows)
+    """Render the baseline, validation candidates and explicit missing rows.
+
+    Args:
+        summary: A validated RunSummary from load_summary.
+    Returns:
+        UTF-8 LaTeX table bytes, with fixed display precision.
+    """
+    baseline, count = summary["baseline"], summary["baseline"]["sample_count"]
+    base_display = _format_keywords(round(baseline["keywords"] * count), count)
+    rows = [r"对象 & Keywords & 首 token KL & 证据定位 \\", r"\midrule",
+            f"未修改基座 & {base_display} & 0（定义） & 同次运行基线" + r" \\",
+            r"Heretic 方向消融 & — & — & 无同协议归档结果 \\"]
+    selected = [(summary["best_keyword_trial"], "最低 Keywords"),
+                (summary["last_trial"], "最后候选"),
+                (summary["min_kl_trial"], "最低 KL")]
+    for number, meaning in selected:
+        trial = summary["trials"][number]
+        keywords = _format_keywords(
+            trial["keyword_count"], trial["sample_count"],
+        )
+        rows.append(f"ARA point-v1，{number} & {keywords} & {trial['kl']:.6f} & "
+                    + meaning + r"；未通过验收 \\")
+    rows.append(r"ARA trajectory-v2 & — & — & 当前代码适配；无本归档实测 \\")
+    note = ("注：基座不是 Heretic 干预结果；“—”表示无数据。编号为从 0 起始的 "
+            "trial number；trial 66 来自反复使用的验证集，不是独立测试最优或已导出模型。")
+    return _table("同次基座与 ARA 验证候选结果", "tab:results",
+                  "@{}lrrX@{}", rows, note).encode("utf-8")
 
 
-def render(summary, trials):
-    """Return four deterministic UTF-8/LF streams without filesystem writes."""
-    buffer = io.StringIO(newline="")
-    writer = csv.DictWriter(buffer, fieldnames=CSV_COLUMNS, lineterminator="\n")
-    writer.writeheader()
-    for trial in trials:
-        writer.writerow({key: int(value) if isinstance(value, bool) else value
-                         for key, value in trial.items()})
-    return dict(zip(OUTPUTS, [
-        (json.dumps(summary, ensure_ascii=False, sort_keys=True,
-                    indent=2, allow_nan=False) + "\n").encode("utf-8"),
-        buffer.getvalue().encode("utf-8"), render_protocol(summary),
-        render_results(summary)]))
+def render_distribution(summary):
+    """Render candidate quantiles, threshold counts, Pareto and phase stats.
+
+    Args:
+        summary: A validated RunSummary from load_summary.
+    Returns:
+        UTF-8 LaTeX table bytes, with two tabular blocks in one float.
+    """
+    quantiles, trials = summary["quantiles"], summary["trials"]
+    keywords = " & ".join(f"{value:.2f}" for value in quantiles["keywords"])
+    kl = " & ".join(f"{value:.6f}" for value in quantiles["kl"])
+    rows = [r"指标 & 最小 & 25\% & 中位数 & 75\% & 最大 \\",
+            r"\midrule", "Keywords & " + keywords + r" \\",
+            "KL & " + kl + r" \\", r"\midrule"]
+    gate, total = summary["gate_thresholds"], summary["trial_count"]
+    counts = [("COMPLETE", summary["state_counts"]["COMPLETE"]),
+              (r"Keywords $\leq 0.10$",
+               sum(t["keywords"] <= gate["keyword_max"] for t in trials)),
+              (r"KL $\leq 0.15$",
+               sum(t["kl"] <= gate["kl_max"] for t in trials)),
+              ("数值联合通过", summary["numerical_gate_count"])]
+    for name, value in counts:
+        rows.append(f"\\multicolumn{{3}}{{l}}{{{name}}} & "
+                    + f"\\multicolumn{{3}}{{r}}{{{value}/{total}}}" + r" \\")
+    rows.append(r"\multicolumn{3}{l}{Pareto 候选数} & "
+                + "\\multicolumn{3}{r}{"
+                + str(len(summary["pareto_trial_numbers"])) + r"} \\")
+    text = _table("120 个验证候选的搜索分布", "tab:distribution",
+                  "@{}lXXXXX@{}", rows,
+                  "注：分位数采用线性插值；数值门槛不代替完整 acceptance。"
+                  "这些统计描述同次搜索的候选分布，不构成独立重复实验。")
+    phase_rows = [r"trial 区间 & 候选数 & 最低 Keywords & 中位数 & 均值 \\",
+                  r"\midrule"]
+    for phase in summary["phase_statistics"]:
+        phase_rows.append(
+            f"{phase['first_trial']}--{phase['last_trial']} & "
+            f"{phase['count']} & "
+            f"{phase['minimum']:.3f} & {phase['median']:.3f} & "
+            f"{phase['mean']:.3f}" + r" \\",
+        )
+    # Both tabular blocks share a single caption and float identity.
+    phase_text = "\n".join([r"\par\vspace{8pt}",
+        r"\begin{tabularx}{\linewidth}{@{}lrrrr@{}}", r"\toprule",
+        *phase_rows, r"\bottomrule", r"\end{tabularx}", ""])
+    return text.replace(r"\end{table}", phase_text + r"\end{table}").encode()
 
 
-def output_destinations(paper, archive):
-    """Validate roots and destinations before any directory creation."""
-    paper, archive = paper.resolve(), archive.resolve()
-    for root in (paper, archive):
-        require(root.is_relative_to(WORKSPACE), root, "outside workspace")
-    require(not paper.is_relative_to(archive) and
-            not archive.is_relative_to(paper), paper, "output/archive overlap")
-    destinations = {name: safe_relative(paper, name) for name in OUTPUTS}
-    require(len(set(destinations.values())) == len(OUTPUTS), paper,
-            "output destinations alias each other")
-    return destinations
+def render_protocol(summary):
+    """Render point-v1 archive versus current v2 template settings.
+
+    Args:
+        summary: Validated RunSummary including the current v2 template.
+    Returns:
+        UTF-8 LaTeX protocol table bytes.
+    """
+    first, second = summary["effective_settings"], summary["v2_template"]
+    first_split = first["scorer"]["KeywordRate"]["prompts"]["split"]
+    second_split = second["scorer"]["KeywordRate"]["prompts"]["split"]
+    anchors = len(second["ara_seed_trials"])
+    random = second["n_startup_trials"]
+    tpe = second["n_trials"] - anchors - random
+    protocol = [
+        ("模型 revision", "未固定", "模板固定；本归档无测量"),
+        ("精度／量化", "BF16／none", "BF16／none"),
+        ("LoRA 秩上界", str(first["ara_lora_rank"]),
+         str(second["ara_lora_rank"])),
+        ("校准规模（每类）", str(first["ara_calibration_size"]),
+         str(second["ara_calibration_size"])),
+        ("采集位置／批量", "单个预测位置／1",
+         f"至多 {second['ara_trajectory_tokens']} 个预测位置／1"),
+        ("验证切分（每类）", first_split, second_split),
+        ("独立 audit", "配置 test[:100]；无分数", "锁定后新进程一次消费"),
+        ("生成", "seed 42，greedy，最多 100 token", "同左（模板）"),
+        ("评估 batch size", f"自动 0，实际 {first['batch_size']}",
+         str(second["batch_size"])),
+        ("搜索维度", "6；MLP 负 strength 截断至 0",
+         f"{len(second['ara_search_space'])}；另有两类 deployment gain"),
+        ("搜索预算", f"startup {first['n_startup_trials']} + "
+         f"后续 {first['n_trials'] - first['n_startup_trials']}",
+         f"anchors {anchors} + random {random} + TPE {tpe}"),
+        ("优化指标", "Keywords、首 token KL", "Refusal log-odds、首 token KL"),
+        ("关键词集合", "显式增加 9 个中文 markers", "未覆盖；沿用源码默认值"),
+        ("增量检查", "数值规范化与候选 gate",
+         f"good delta 比率 $\\leq {second['ara_max_good_delta_rms']:.2f}$；"
+         f"最大奇异值 $\\leq {second['ara_max_singular_value']:.1f}$"),
+        ("结果状态", "120 个候选完成；验收失败", "实现／模板；无本归档实测"),
+    ]
+    rows = [r"项目 & point-v1 本次实测 & trajectory-v2 当前模板 \\",
+            r"\midrule", *(" & ".join(row) + r" \\" for row in protocol)]
+    return _table("point-v1 归档协议与 trajectory-v2 模板", "tab:protocol",
+                  "@{}p{27mm}XX@{}", rows,
+                  "注：模板参数不代表已经执行；验证切分、markers 和目标不同，"
+                  "不能直接横比效果。采集 batch 与评估 batch 分开记录。"
+                  ).encode("utf-8")
 
 
-def write_outputs(streams, destinations):
-    """Stage all bytes first, then atomically replace each individual file."""
-    staged = []
-    affected = None
+def render_outputs(summary):
+    """Render all deterministic text artifacts.
+
+    Args:
+        summary: A validated RunSummary from load_summary.
+    Returns:
+        A map from paper-relative paths to UTF-8 artifact bytes.
+    """
+    return dict(zip(TEXT_OUTPUTS, (
+        json_bytes(summary), render_csv(summary), render_protocol(summary),
+        render_results(summary), render_distribution(summary),
+    ), strict=True))
+
+
+def _figure_inputs(paper_dir, rendered):
+    inputs = {(paper_dir / name).relative_to(REPO_ROOT).as_posix(): sha256(
+        rendered[name]) for name in TEXT_OUTPUTS[:2]}
+    for name in ("ara_v1_data.py", "summarize_ara_v1.py"):
+        path = Path(__file__).resolve().parent / name
+        relative = path.relative_to(REPO_ROOT).as_posix()
+        inputs[relative] = sha256(path.read_bytes())
+    return inputs
+
+
+def _figure_manifest(paper_dir, rendered, artifacts):
+    return {
+        "schema_version": "heretic-ara-figures-v1",
+        "input_hashes": _figure_inputs(paper_dir, rendered),
+        "plot_config": PLOT_CONFIG,
+        "tool_versions": {
+            "matplotlib": importlib.metadata.version("matplotlib"),
+        },
+        "artifact_hashes": {
+            (paper_dir / name).relative_to(REPO_ROOT).as_posix():
+            sha256(payload)
+            for name, payload in artifacts.items()
+        },
+    }
+
+
+def _plot_candidates(axis, trials):
+    config = PLOT_CONFIG
+    phases = zip(config["phase_names"], config["phase_labels"],
+                 config["phase_colors"], strict=True)
+    for phase, label, color in phases:
+        points = [trial for trial in trials if trial["phase"] == phase]
+        axis.scatter([t["kl"] for t in points], [t["keywords"] for t in points],
+                     s=config["scatter_size"], color=color,
+                     alpha=config["scatter_alpha"], label=label)
+    _plot_pareto(axis, trials)
+    for number, offset in zip(config["annotated_trials"],
+                              config["annotation_offsets"], strict=True):
+        trial = trials[number]
+        axis.annotate(f"Trial {number}", (trial["kl"], trial["keywords"]),
+                      xytext=offset, textcoords="offset points", fontsize=9,
+                      arrowprops={"arrowstyle": "-", "lw": 0.65})
+
+
+def _plot_pareto(axis, trials):
+    config = PLOT_CONFIG
+    points = [trial for trial in trials if trial["pareto"]]
+    axis.scatter([t["kl"] for t in points], [t["keywords"] for t in points],
+                 facecolors="none", edgecolors=config["pareto_color"],
+                 s=config["pareto_size"], marker=config["pareto_marker"],
+                 linewidth=0.9, label=f"Pareto candidates ({len(points)})")
+
+
+def _render_figures(summary, staging):
+    config = PLOT_CONFIG
+    os.environ["MPLCONFIGDIR"] = str(staging / "matplotlib")
+    import matplotlib
+    matplotlib.use("Agg")
+    import matplotlib.pyplot as pyplot
+
+    with pyplot.rc_context({"font.family": config["font_family"],
+                            "font.size": config["font_size"]}):
+        figure, axis = pyplot.subplots(figsize=config["figure_inches"],
+                                       layout=config["layout"])
+        _plot_candidates(axis, _read_plot_csv(render_csv(summary)))
+        axis.axvline(config["gate_kl"], color=config["gate_color"], ls="--",
+                     lw=1, label="Numerical gate boundaries")
+        axis.axhline(config["gate_keywords"], color=config["gate_color"],
+                     ls="--", lw=1)
+        axis.set(xlim=config["xlim"], ylim=config["ylim"],
+                 xlabel=config["xlabel"], ylabel=config["ylabel"])
+        axis.grid(alpha=config["grid_alpha"])
+        axis.legend(loc=config["legend_location"], fontsize=9, framealpha=0.95)
+        artifacts = {}
+        for name in FIGURE_OUTPUTS:
+            path = staging / Path(name).name
+            figure.savefig(path, dpi=config["dpi"])
+            artifacts[name] = path.read_bytes()
+        pyplot.close(figure)
+        return artifacts
+
+
+def _read_plot_csv(payload):
+    rows = csv.DictReader(io.StringIO(payload.decode("utf-8")))
+    return [{"trial_number": int(row["trial_number"]),
+             "keywords": float(row["keywords"]), "kl": float(row["kl"]),
+             "pareto": row["pareto"] == "true", "phase": row["phase"]}
+            for row in rows]
+
+
+def check_outputs(summary, paper_dir):
+    """Check all derived bytes without writes/re-render; raise OutputError.
+
+    Args:
+        summary: Freshly recomputed RunSummary.
+        paper_dir: Existing paper directory.
+    Returns:
+        None on success, including verified actual PDF/PNG hashes.
+    Raises:
+        OutputError: Derived text or figure inputs/bytes do not match.
+    """
+    paper_dir = Path(paper_dir).resolve()
+    rendered = render_outputs(summary)
     try:
-        for name, payload in streams.items():
-            affected = destinations[name]
-            affected.parent.mkdir(parents=True, exist_ok=True)
-            with tempfile.NamedTemporaryFile(
-                    dir=affected.parent, prefix=affected.name + ".",
-                    suffix=".tmp", delete=False) as handle:
-                staged.append((Path(handle.name), affected))
-                handle.write(payload)
-        for temporary, affected in staged:
-            os.replace(temporary, affected)
-    except OSError as error:
-        raise EvidenceError(f"{affected}: generation failed; full regeneration "
-                            f"required before use: {error}") from error
-    finally:
-        for temporary, _ in staged:
-            temporary.unlink(missing_ok=True)
+        for name, expected in rendered.items():
+            if (paper_dir / name).read_bytes() != expected:
+                raise OutputError(f"stale derived file: {name}")
+        artifacts = {name: (paper_dir / name).read_bytes()
+                     for name in FIGURE_OUTPUTS}
+        actual = parse_json((paper_dir / MANIFEST).read_bytes(), MANIFEST)
+        expected = _figure_manifest(paper_dir, rendered, artifacts)
+        if actual != expected:
+            raise OutputError("figure manifest/input/artifact hash mismatch")
+    except (OSError, InputError) as error:
+        raise OutputError(f"cannot verify artifacts: {error}") from error
 
 
-def check_outputs(streams, destinations):
-    """Compare all outputs without creating directories or changing bytes."""
-    stale = [str(destinations[name]) for name, payload in streams.items()
-             if not destinations[name].is_file() or
-             destinations[name].read_bytes() != payload]
-    require(not stale, ", ".join(stale), "missing or stale generated evidence")
+def generate_outputs(summary, paper_dir):
+    """Stage then atomically replace each artifact, writing manifest last.
+
+    Args:
+        summary: Fully validated RunSummary.
+        paper_dir: Safe workspace-local destination.
+    Returns:
+        None; the final manifest binds every generated figure byte.
+    Raises:
+        OutputError: An artifact cannot be plotted or atomically replaced.
+    """
+    paper_dir = Path(paper_dir).resolve()
+    build = paper_dir / "build"
+    rendered = render_outputs(summary)
+    try:
+        build.mkdir(parents=True, exist_ok=True)
+        with tempfile.TemporaryDirectory(prefix="evidence-", dir=build) as area:
+            staging = Path(area)
+            artifacts = _render_figures(summary, staging)
+            manifest = _figure_manifest(paper_dir, rendered, artifacts)
+            outputs = rendered | artifacts | {MANIFEST: json_bytes(manifest)}
+            for index, (name, payload) in enumerate(outputs.items()):
+                staged = staging / f"artifact-{index}"
+                staged.write_bytes(payload)
+                target = paper_dir / name
+                target.parent.mkdir(parents=True, exist_ok=True)
+                os.replace(staged, target)
+    except (OSError, RuntimeError, ImportError) as error:
+        raise OutputError(f"artifact generation failed: {error}") from error
 
 
 def main(argv=None):
-    """Run CLI; evidence and I/O failures return 1, usage returns 2."""
+    """Execute the offline generation or check CLI.
+
+    Args:
+        argv: Argument list, or None to use process arguments.
+    Returns:
+        Status 0 on success, 2 for invalid input, 3 for stale/failed output.
+    Raises:
+        SystemExit: argparse rejects invalid command syntax.
+    """
     parser = argparse.ArgumentParser(description=__doc__)
-    parser.add_argument("--archive-dir", type=Path, default=ARCHIVE)
-    parser.add_argument("--paper-dir", type=Path, default=PAPER)
+    parser.add_argument("--source", type=Path, default=DEFAULT_SOURCE)
+    parser.add_argument("--paper-dir", type=Path, default=DEFAULT_PAPER)
     parser.add_argument("--check", action="store_true")
-    arguments = parser.parse_args(argv)
+    args = parser.parse_args(argv)
     try:
-        destinations = output_destinations(
-            arguments.paper_dir, arguments.archive_dir)
-        hashes = validate_archive(arguments.archive_dir)
-        root = arguments.archive_dir
-        study = replay_events(
-            (root / JOURNAL).read_text(encoding="utf-8").splitlines())
-        acceptance = parse_json(
-            (root / "acceptance.json").read_text(encoding="utf-8"),
-            root / "acceptance.json")
-        config = tomllib.loads(
-            (root / "config.toml").read_text(encoding="utf-8"))
-        summary, trials = summarize(study, acceptance, config)
-        attach_provenance(summary, root, hashes)
-        streams = render(summary, trials)
-        if arguments.check:
-            check_outputs(streams, destinations)
-        else:
-            write_outputs(streams, destinations)
-    except (EvidenceError, OSError, UnicodeError, KeyError, TypeError,
-            AttributeError, IndexError, tomllib.TOMLDecodeError) as error:
-        print(f"Evidence error [{arguments.archive_dir}]: {error}",
-              file=sys.stderr)
-        return 1
-    print(f"{'Checked' if arguments.check else 'Generated'} 4 files; "
-          "120/120 COMPLETE; acceptance_status=failed; conjunctive passes=0")
+        source, paper = validate_paths(args.source, args.paper_dir)
+        summary = load_summary(source)
+    except InputError as error:
+        print(f"INPUT ERROR: {error}", file=sys.stderr)
+        return 2
+    try:
+        action = check_outputs if args.check else generate_outputs
+        action(summary, paper)
+    except OutputError as error:
+        print(f"OUTPUT ERROR: {error}", file=sys.stderr)
+        return 3
+    verb = "Checked" if args.check else "Generated"
+    print(f"{verb}: {summary['trial_count']} COMPLETE trials; "
+          f"{summary['numerical_gate_count']} numerical gate passes; "
+          f"acceptance={summary['acceptance_status']}")
     return 0
 
 

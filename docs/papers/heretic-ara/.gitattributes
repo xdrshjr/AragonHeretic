@@ -1,0 +1,3 @@
+# Preserve generated figure bytes under the repository's forced text policy.
+figures/*.png binary
+figures/*.pdf binary

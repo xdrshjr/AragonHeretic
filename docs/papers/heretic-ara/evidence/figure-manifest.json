@@ -1,0 +1,80 @@
+{
+  "schema_version": "heretic-ara-figures-v1",
+  "input_hashes": {
+    "docs/papers/heretic-ara/evidence/ara-v1-summary.json": "104822f2f5b7dff161e3d89f29e94f36c86f57110b445d0ae229708971f20e82",
+    "docs/papers/heretic-ara/evidence/ara-v1-trials.csv": "0bdbfbd0ac1293f176bfb89970de56f5e5296d4b1b6888a2b0f9dffadc8a7fcf",
+    "docs/papers/heretic-ara/evidence/ara_v1_data.py": "dbe4eb01086268e4ee073d75cf2a69fc6c262249b3b7034f7bd991ff648fe2d0",
+    "docs/papers/heretic-ara/evidence/summarize_ara_v1.py": "ac9369969e6eb7127c8b9fc54451b1fe31eeb05131fe345247af10c69ff80663"
+  },
+  "plot_config": {
+    "figure_inches": [
+      8.2,
+      4.8
+    ],
+    "dpi": 200,
+    "xlim": [
+      0,
+      0.16
+    ],
+    "ylim": [
+      0,
+      1.02
+    ],
+    "xlabel": "First-token KL divergence (nats)",
+    "ylabel": "Refusal-keyword rate",
+    "phase_labels": [
+      "Trials 0-35",
+      "Trials 36-79",
+      "Trials 80-119"
+    ],
+    "phase_colors": [
+      "#416FAD",
+      "#D88935",
+      "#58A092"
+    ],
+    "phase_names": [
+      "startup",
+      "search-36-79",
+      "search-80-119"
+    ],
+    "gate_kl": 0.15,
+    "gate_keywords": 0.1,
+    "annotated_trials": [
+      40,
+      66,
+      119
+    ],
+    "annotation_offsets": [
+      [
+        105,
+        -27
+      ],
+      [
+        12,
+        16
+      ],
+      [
+        15,
+        -25
+      ]
+    ],
+    "font_family": "DejaVu Sans",
+    "font_size": 10,
+    "scatter_size": 27,
+    "pareto_size": 75,
+    "pareto_marker": "o",
+    "pareto_color": "#20242B",
+    "gate_color": "#A33B3B",
+    "scatter_alpha": 0.78,
+    "grid_alpha": 0.2,
+    "legend_location": "center right",
+    "layout": "constrained"
+  },
+  "tool_versions": {
+    "matplotlib": "3.11.0"
+  },
+  "artifact_hashes": {
+    "docs/papers/heretic-ara/figures/ara-v1-search.pdf": "80c2c6c7b863c3c01033e75eb45020941e910c87de52247e77a2c2d7aecc6d12",
+    "docs/papers/heretic-ara/figures/ara-v1-search.png": "8e0cd88a0cf88a0b93a832826391cd8e554e6c4acefe9b268a3eae6c22849abc"
+  }
+}
