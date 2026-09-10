@@ -1,0 +1,11 @@
+test_v3_rejects_unregistered_response_prefix (test_config.RefinementConfigurationTests.test_v3_rejects_unregistered_response_prefix) ... ok
+test_restore_failure_still_restores_adapter_flags (test_ara_refinement_capture.CaptureTests.test_restore_failure_still_restores_adapter_flags) ... ok
+test_snapshot_restoration_does_not_allocate_device_copy (test_ara_refinement_capture.CaptureTests.test_snapshot_restoration_does_not_allocate_device_copy) ... ok
+test_member_finalize_recovers_after_promotion_before_aggregate (test_ara_research_acceptance.ResearchAcceptanceTests.test_member_finalize_recovers_after_promotion_before_aggregate) ... ok
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.024s
+
+OK
+
+退出码：0

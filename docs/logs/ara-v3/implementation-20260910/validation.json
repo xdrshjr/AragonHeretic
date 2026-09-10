@@ -1,0 +1,27 @@
+{
+  "阶段": "P0 代码实现与 CPU 验证",
+  "状态": "通过所列检查，待下游代码评审",
+  "完整回归": {
+    "命令": "PYTHONPATH=src python -m unittest discover -s tests -p test_*.py",
+    "通过": 165,
+    "失败": 0,
+    "错误": 0,
+    "用时秒": 1.669,
+    "退出码": 0,
+    "日志": "unittest.log"
+  },
+  "入口验证": {
+    "bash语法": 0,
+    "准备入口帮助": 0,
+    "研究入口帮助": 0,
+    "缺少冻结协议预检": 2,
+    "模型加载": false
+  },
+  "研究状态": "not_run",
+  "GPU实验": false,
+  "真实能力评估": false,
+  "人工语义双评": false,
+  "Git暂存": false,
+  "Git提交": false,
+  "规格补充": "docs/plans/ara-v2-refusal-optimization/spec.md：实施过程发现的方案缺陷"
+}

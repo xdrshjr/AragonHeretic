@@ -41,6 +41,26 @@ DIRECTIONAL = {
 
 
 class ReproductionSchemaTests(unittest.TestCase):
+    def test_v3_reproduce_dispatch_rejects_mixed_schema_fields(self):
+        from heretic.ara_research_runner import paired_parameters
+        from heretic.artifact_schema import parse_reproduce
+
+        value = {
+            "schema": "cara-research-reproduce-v3",
+            "protocol_hash": "p",
+            "candidate_lock_hash": "c",
+            "parameters": paired_parameters(42, 0).envelope(),
+            "acceptance_sha256": "a",
+            "core_hashes": {"adapter.json": "hash"},
+        }
+        self.assertEqual(parse_reproduce(value), value)
+        self.assertEqual(
+            normalize_reproduction_parameters(value), value["parameters"]
+        )
+        value["trajectory_fingerprint"] = "v2"
+        with self.assertRaises(ValueError):
+            parse_reproduce(value)
+
     def test_v3_migrates_to_directional_envelope(self) -> None:
         envelope = normalize_reproduction_parameters(
             {"version": "3", "parameters": DIRECTIONAL}
@@ -55,11 +75,18 @@ class ReproductionSchemaTests(unittest.TestCase):
                 "start_layer_index": 1,
                 "end_layer_index": 3,
                 "components": {
-                    "attn.o_proj": {"strength": 0.1, "push_weight": 0.5, "margin": 1.0}
+                    "attn.o_proj": {
+                        "strength": 0.1,
+                        "push_weight": 0.5,
+                        "margin": 1.0,
+                    }
                 },
             },
         }
-        for envelope in ({"method": "directional", "payload": DIRECTIONAL}, ara):
+        for envelope in (
+            {"method": "directional", "payload": DIRECTIONAL},
+            ara,
+        ):
             self.assertEqual(
                 normalize_reproduction_parameters(
                     {"version": "4", "parameters": envelope}
@@ -69,10 +96,15 @@ class ReproductionSchemaTests(unittest.TestCase):
 
     def test_unknown_version_and_method_are_rejected(self) -> None:
         with self.assertRaisesRegex(ValueError, "version"):
-            normalize_reproduction_parameters({"version": "9", "parameters": {}})
+            normalize_reproduction_parameters(
+                {"version": "9", "parameters": {}}
+            )
         with self.assertRaisesRegex(ValueError, "method"):
             normalize_reproduction_parameters(
-                {"version": "4", "parameters": {"method": "other", "payload": {}}}
+                {
+                    "version": "4",
+                    "parameters": {"method": "other", "payload": {}},
+                }
             )
 
     def test_acceptance_binding_rejects_hash_or_fingerprint_drift(self) -> None:
@@ -138,7 +170,8 @@ class ReproductionSchemaTests(unittest.TestCase):
             )
             with self.assertRaisesRegex(AcceptanceGateError, "loaded model"):
                 validate_reproduction_model(
-                    cast(Model, SimpleNamespace(model_fingerprint="wrong")), loaded
+                    cast(Model, SimpleNamespace(model_fingerprint="wrong")),
+                    loaded,
                 )
             binding["sha256"] = "wrong"
             with self.assertRaisesRegex(AcceptanceGateError, "report hash"):
@@ -148,7 +181,9 @@ class ReproductionSchemaTests(unittest.TestCase):
 
     def test_reload_smoke_prompts_match_committed_fixture(self) -> None:
         fixture = Path(__file__).parent / "qwen38-cara" / "smoke-prompts.txt"
-        expected = tuple(line for line in fixture.read_text().splitlines() if line)
+        expected = tuple(
+            line for line in fixture.read_text().splitlines() if line
+        )
         self.assertEqual(_RELOAD_SMOKE_PROMPTS, expected)
 
     def test_model_card_names_cara_rank_and_gate_status(self) -> None:

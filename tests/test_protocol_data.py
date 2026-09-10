@@ -26,13 +26,58 @@ def spec(split: str, dataset: str = "org/data") -> DatasetSpecification:
 
 
 class ProtocolDataTests(unittest.TestCase):
+    def test_fixed_416_row_revision_rejects_old_validation_before_load(self):
+        metadata = DatasetMetadata(
+            {"train": 416, "test": 104}, frozenset({"text"})
+        )
+        with self.assertRaisesRegex(ProtocolDataError, "416"):
+            preflight_audit_metadata(spec("train[400:500]"), lambda _: metadata)
+        self.assertTrue(
+            preflight_audit_metadata(spec("train[300:400]"), lambda _: metadata)
+        )
+
+    def test_training_role_reader_rejects_audit_without_opening_file(self):
+        from heretic.research_protocol import load_role_body
+        from pathlib import Path
+
+        with self.assertRaisesRegex(ValueError, "禁止读取审计"):
+            load_role_body({}, Path("does-not-exist"), "research-audit.bad")
+
+    def test_cross_role_normalized_content_leak_is_rejected(self):
+        from heretic.research_protocol import _validate_identity_isolation
+
+        rows = []
+        for side in ("good", "bad"):
+            rows.append(
+                {
+                    "prompt_id": side,
+                    "source": side,
+                    "revision": "rev",
+                    "row_index": 0,
+                    "scenario_group_id": side,
+                    "normalized_text_hash": "same-normalized-content",
+                }
+            )
+        with self.assertRaisesRegex(ValueError, "跨角色泄漏"):
+            _validate_identity_isolation(
+                {
+                    "fit.good": {"prompts": rows[:1]},
+                    "development.bad": {"prompts": rows[1:]},
+                }
+            )
+
     def test_only_absolute_finite_slices_are_accepted(self) -> None:
         self.assertEqual(parse_absolute_split("train[400:500]").size, 100)
         for value in ("train", "train[:10%]", "train[10:]", "train[3:3]"):
-            with self.subTest(value=value), self.assertRaises(ProtocolDataError):
+            with (
+                self.subTest(value=value),
+                self.assertRaises(ProtocolDataError),
+            ):
                 parse_absolute_split(value)
 
-    def test_shared_validation_is_allowed_but_cross_role_overlap_is_not(self) -> None:
+    def test_shared_validation_is_allowed_but_cross_role_overlap_is_not(
+        self,
+    ) -> None:
         validation = spec("train[400:500]")
         validate_role_overlaps(
             [

@@ -1,0 +1,78 @@
+ M README.md
+ M config.qwen38-27b-cara-v2.toml
+D  docs/papers/heretic-ara/evidence/ara-v1-revision-provenance.md
+D  docs/papers/heretic-ara/evidence/source-provenance-architecture.md
+D  docs/papers/heretic-ara/evidence/source-provenance-math.md
+D  docs/papers/heretic-ara/evidence/source-provenance-web.md
+D  docs/papers/heretic-ara/figures/ara-pipeline.tex
+D  docs/papers/heretic-ara/figures/ara-v1-search.tex
+D  docs/papers/heretic-ara/figures/method-geometry.tex
+D  docs/papers/heretic-ara/paper-output/analysis/code-index.md
+D  docs/papers/heretic-ara/paper-output/analysis/debate-summary.md
+D  docs/papers/heretic-ara/paper-output/analysis/math-formulation.md
+D  docs/papers/heretic-ara/paper-output/review-logs/ara-v1-revision-review.md
+D  docs/papers/heretic-ara/paper-output/writing-plan/reviewer-strategy.md
+D  docs/papers/heretic-ara/sections/03a-local-adaptation.tex
+D  docs/papers/heretic-ara/sections/04-comparison.tex
+D  docs/papers/heretic-ara/sections/05-evidence-audit.tex
+D  docs/papers/heretic-ara/sections/05a-ara-v1-results.tex
+D  docs/papers/heretic-ara/sections/07-related-work.tex
+D  docs/papers/heretic-ara/sections/08-conclusion.tex
+D  docs/papers/heretic-ara/tables/ara-v1-protocol.tex
+D  docs/papers/heretic-ara/tables/ara-version-comparison.tex
+D  docs/papers/heretic-ara/tables/evidence-boundaries.tex
+D  docs/papers/heretic-ara/tables/source-parameters.tex
+D  docs/plans/heretic-ara-paper-revision/spec.md
+ M src/heretic/acceptance_export.py
+ M src/heretic/ara_runtime.py
+ M src/heretic/artifact_schema.py
+ M src/heretic/config.py
+ M src/heretic/main.py
+ M src/heretic/model.py
+ M src/heretic/protocol_data.py
+ M src/heretic/reproduce.py
+ M src/heretic/trial_methods.py
+ M src/heretic/utils.py
+ M src/heretic/workflow.py
+ M tests/test_acceptance_export.py
+ M tests/test_config.py
+ M tests/test_protocol_data.py
+ M tests/test_reproduce.py
+ M tests/test_trial_methods.py
+?? .agentmesh/
+?? .bug-diagnosis/
+?? .claude-index/
+?? .idea/
+?? .run-log/
+?? CLAUDE.md
+?? config.qwen38-27b-cara-v3-96.toml
+?? docs/logs/ara-v3/
+?? docs/papers/heretic-qwen38/build.ps1
+?? docs/papers/heretic-qwen38/paper.aux
+?? docs/papers/heretic-qwen38/paper.bbl
+?? docs/papers/heretic-qwen38/paper.blg
+?? docs/papers/heretic-qwen38/paper.log
+?? docs/papers/heretic-qwen38/paper.out
+?? docs/papers/heretic-qwen38/paper.pdf
+?? docs/plans/ara-v2-refusal-optimization/
+?? scripts/prepare_ara_research_protocol.py
+?? scripts/run_ara_research_96.sh
+?? src/heretic/ara_refinement.py
+?? src/heretic/ara_refinement_capture.py
+?? src/heretic/ara_refinement_config.py
+?? src/heretic/ara_research_acceptance.py
+?? src/heretic/ara_research_runner.py
+?? src/heretic/ara_research_schema.py
+?? src/heretic/research_audit.py
+?? src/heretic/research_audit_recovery.py
+?? src/heretic/research_budget.py
+?? src/heretic/research_evaluation.py
+?? src/heretic/research_protocol.py
+?? src/heretic/sequence_scores.py
+?? tests/test_ara_refinement.py
+?? tests/test_ara_refinement_capture.py
+?? tests/test_ara_research_acceptance.py
+?? tests/test_ara_research_runner.py
+?? tests/test_research_audit.py
+?? tests/test_research_evaluation.py
+?? tests/test_sequence_scores.py

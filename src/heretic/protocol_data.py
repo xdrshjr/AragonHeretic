@@ -231,14 +231,17 @@ def preflight_audit_metadata(
     specification: DatasetSpecification,
     loader: Callable[[DatasetSpecification], DatasetMetadata] | None = None,
 ) -> str:
-    """Validate audit boundaries and schema without materializing audit rows."""
+    """Validate pinned role boundaries without materializing any prompt rows."""
     identity = dataset_identity(specification)
     metadata = (loader or _load_hugging_face_metadata)(specification)
     split_length = metadata.split_lengths.get(identity["split"])
     if split_length is None:
         raise ProtocolDataError(f"audit split {identity['split']!r} is missing")
     if identity["stop"] > split_length:
-        raise ProtocolDataError("audit split exceeds the dataset row count")
+        raise ProtocolDataError(
+            f"audit/protocol split {specification.split} exceeds the dataset "
+            f"row count {split_length} at revision {specification.commit}"
+        )
     if identity["column"] not in metadata.columns:
         raise ProtocolDataError("audit prompt column is missing")
     return fingerprint_dataset(specification)

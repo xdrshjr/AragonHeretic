@@ -1,0 +1,403 @@
+{
+  "阶段": "代码评审静态与入口验收",
+  "检查": [
+    {
+      "命令": [
+        "ruff",
+        "check",
+        "scripts/prepare_ara_research_protocol.py",
+        "src/heretic/acceptance_export.py",
+        "src/heretic/ara_refinement.py",
+        "src/heretic/ara_refinement_capture.py",
+        "src/heretic/ara_refinement_config.py",
+        "src/heretic/ara_research_acceptance.py",
+        "src/heretic/ara_research_runner.py",
+        "src/heretic/ara_research_schema.py",
+        "src/heretic/ara_runtime.py",
+        "src/heretic/artifact_schema.py",
+        "src/heretic/config.py",
+        "src/heretic/main.py",
+        "src/heretic/model.py",
+        "src/heretic/protocol_data.py",
+        "src/heretic/reproduce.py",
+        "src/heretic/research_audit.py",
+        "src/heretic/research_evaluation.py",
+        "src/heretic/research_protocol.py",
+        "src/heretic/sequence_scores.py",
+        "src/heretic/trial_methods.py",
+        "src/heretic/utils.py",
+        "src/heretic/workflow.py",
+        "tests/test_acceptance_export.py",
+        "tests/test_ara_refinement.py",
+        "tests/test_ara_refinement_capture.py",
+        "tests/test_ara_research_acceptance.py",
+        "tests/test_ara_research_runner.py",
+        "tests/test_config.py",
+        "tests/test_protocol_data.py",
+        "tests/test_reproduce.py",
+        "tests/test_research_audit.py",
+        "tests/test_research_evaluation.py",
+        "tests/test_sequence_scores.py",
+        "tests/test_trial_methods.py",
+        "src/heretic/research_budget.py",
+        "src/heretic/research_audit_recovery.py"
+      ],
+      "退出码": 0,
+      "预期退出码": 0,
+      "通过": true,
+      "输出": "All checks passed!\n"
+    },
+    {
+      "命令": [
+        "ruff",
+        "check",
+        "--select",
+        "C901,E501",
+        "--config",
+        "lint.mccabe.max-complexity=10",
+        "src/heretic/ara_refinement.py",
+        "src/heretic/ara_refinement_capture.py",
+        "src/heretic/ara_refinement_config.py",
+        "src/heretic/ara_research_acceptance.py",
+        "src/heretic/ara_research_runner.py",
+        "src/heretic/ara_research_schema.py",
+        "src/heretic/research_audit.py",
+        "src/heretic/research_evaluation.py",
+        "src/heretic/research_protocol.py",
+        "src/heretic/sequence_scores.py",
+        "src/heretic/research_budget.py",
+        "src/heretic/research_audit_recovery.py"
+      ],
+      "退出码": 0,
+      "预期退出码": 0,
+      "通过": true,
+      "输出": "All checks passed!\n"
+    },
+    {
+      "命令": [
+        "git",
+        "diff",
+        "--check"
+      ],
+      "退出码": 0,
+      "预期退出码": 0,
+      "通过": true,
+      "输出": "warning: in the working copy of 'src/heretic/trial_methods.py', CRLF will be replaced by LF the next time Git touches it\nwarning: in the working copy of 'tests/test_config.py', CRLF will be replaced by LF the next time Git touches it\n"
+    },
+    {
+      "命令": [
+        "C:/Program Files/Git/bin/bash.exe",
+        "-n",
+        "scripts/run_ara_research_96.sh"
+      ],
+      "退出码": 0,
+      "预期退出码": 0,
+      "通过": true,
+      "输出": ""
+    },
+    {
+      "命令": [
+        "D:\\Tools\\Anaconda\\python.exe",
+        "-m",
+        "heretic.ara_research_runner",
+        "--help"
+      ],
+      "退出码": 0,
+      "预期退出码": 0,
+      "通过": true,
+      "输出": "usage: python.exe -m heretic.ara_research_runner [-h] --config CONFIG\n                                                 --run-dir RUN_DIR\n                                                 --phase {preflight,pilot,search,freeze,audit,finalize}\n                                                 [--members MEMBERS]\n                                                 [--evaluation-plan EVALUATION_PLAN]\n                                                 [--labels LABELS]\n\nARA v3 研究阶段执行\n\noptions:\n  -h, --help            show this help message and exit\n  --config CONFIG\n  --run-dir RUN_DIR\n  --phase {preflight,pilot,search,freeze,audit,finalize}\n  --members MEMBERS\n  --evaluation-plan EVALUATION_PLAN\n  --labels LABELS\n"
+    },
+    {
+      "命令": [
+        "D:\\Tools\\Anaconda\\python.exe",
+        "scripts/prepare_ara_research_protocol.py",
+        "--help"
+      ],
+      "退出码": 0,
+      "预期退出码": 0,
+      "通过": true,
+      "输出": "usage: prepare_ara_research_protocol.py [-h] --config CONFIG\n\n独立准备冻结协议；本进程不加载候选模型。\n\noptions:\n  -h, --help       show this help message and exit\n  --config CONFIG  独立准备者提供的 JSON 配置，字段见 spec.md\n"
+    },
+    {
+      "命令": [
+        "D:\\Tools\\Anaconda\\python.exe",
+        "-m",
+        "heretic.ara_research_runner",
+        "--config",
+        "config.qwen38-27b-cara-v3-96.toml",
+        "--run-dir",
+        "docs/logs/ara-v3/review-20260910/preflight",
+        "--phase",
+        "preflight"
+      ],
+      "退出码": 2,
+      "预期退出码": 2,
+      "通过": true,
+      "输出": "{'phase': 'preflight', 'research_status': 'failed', 'reason': '缺少冻结 protocol.json；请先完成独立数据准备'}\n"
+    }
+  ],
+  "文件计划": [
+    {
+      "文件": "src/heretic/ara_refinement_config.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement_capture.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/ara_research_runner.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/research_protocol.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/research_evaluation.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/research_audit.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/sequence_scores.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/ara_research_acceptance.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/ara_research_schema.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/config.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/main.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/trial_methods.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/model.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/ara_runtime.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/protocol_data.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/acceptance_export.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/artifact_schema.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/reproduce.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/workflow.py",
+      "存在": true
+    },
+    {
+      "文件": "src/heretic/utils.py",
+      "存在": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v2.toml",
+      "存在": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v3-96.toml",
+      "存在": true
+    },
+    {
+      "文件": "scripts/run_ara_research_96.sh",
+      "存在": true
+    },
+    {
+      "文件": "scripts/prepare_ara_research_protocol.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_ara_refinement.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_ara_refinement_capture.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_ara_research_runner.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_research_evaluation.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_sequence_scores.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_ara_research_acceptance.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_research_audit.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_protocol_data.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_config.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_trial_methods.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_acceptance_export.py",
+      "存在": true
+    },
+    {
+      "文件": "tests/test_reproduce.py",
+      "存在": true
+    },
+    {
+      "文件": "README.md",
+      "存在": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/<run-id>/",
+      "存在": true
+    }
+  ],
+  "新增源码尺寸": {
+    "src/heretic/ara_refinement.py": {
+      "行数": 631,
+      "最长函数": 49,
+      "最大参数": 5
+    },
+    "src/heretic/ara_refinement_capture.py": {
+      "行数": 463,
+      "最长函数": 37,
+      "最大参数": 4
+    },
+    "src/heretic/ara_refinement_config.py": {
+      "行数": 228,
+      "最长函数": 32,
+      "最大参数": 3
+    },
+    "src/heretic/ara_research_acceptance.py": {
+      "行数": 634,
+      "最长函数": 46,
+      "最大参数": 5
+    },
+    "src/heretic/ara_research_runner.py": {
+      "行数": 770,
+      "最长函数": 42,
+      "最大参数": 5
+    },
+    "src/heretic/ara_research_schema.py": {
+      "行数": 385,
+      "最长函数": 35,
+      "最大参数": 3
+    },
+    "src/heretic/research_audit.py": {
+      "行数": 725,
+      "最长函数": 49,
+      "最大参数": 5
+    },
+    "src/heretic/research_evaluation.py": {
+      "行数": 556,
+      "最长函数": 43,
+      "最大参数": 5
+    },
+    "src/heretic/research_protocol.py": {
+      "行数": 463,
+      "最长函数": 45,
+      "最大参数": 3
+    },
+    "src/heretic/sequence_scores.py": {
+      "行数": 136,
+      "最长函数": 31,
+      "最大参数": 4
+    },
+    "src/heretic/research_budget.py": {
+      "行数": 144,
+      "最长函数": 22,
+      "最大参数": 5
+    },
+    "src/heretic/research_audit_recovery.py": {
+      "行数": 74,
+      "最长函数": 42,
+      "最大参数": 3
+    }
+  },
+  "源码和交付文件摘要": {
+    "README.md": "5c6613edbac1c1143b97febc7ba9814ab33c4bcb881a750de5149811b84eeb91",
+    "config.qwen38-27b-cara-v2.toml": "13fd7fe222642a0ad8f6a1a65426e2f2470628eb42bf88b84e6f73ab7b9aa819",
+    "config.qwen38-27b-cara-v3-96.toml": "bd26bede5746da658468cff269872b960e9708c43cc57d34b5da3ed678ad253c",
+    "docs/plans/ara-v2-refusal-optimization/spec.md": "5aec74a81bbc5cc6349d1f00be19a643c3e54287be1c368bcdfd9b225018d907",
+    "scripts/prepare_ara_research_protocol.py": "455f4ed97bc4e148e8eb8a7cc80fb41dddaaf3ade18efa514ea10b9d5b614bc2",
+    "scripts/run_ara_research_96.sh": "d6b18c331b7cd6071e08c4e2a2f68b93c906fbf935b3e9b95a69eaaccc4ad691",
+    "src/heretic/acceptance_export.py": "0388232fc32bd106b8d24bd802a25644ccf6cc40b2e1d37721789bcc32be46e7",
+    "src/heretic/ara_refinement.py": "6d41f7f29f994391321a01a13834ce1678166696a9fc4cbeed21801ca121ab86",
+    "src/heretic/ara_refinement_capture.py": "f4a540be0109c521a225abdc216f629c32a2ea16389009318c5cf792117044a0",
+    "src/heretic/ara_refinement_config.py": "13897209e0e99b9908648f4ecce1e30bfca806b552bbae9b485bb30f65099239",
+    "src/heretic/ara_research_acceptance.py": "7f6d75d951e3a92069417fd75c3ed17fbbaedd8559c148fe4eb625782e9e9a0f",
+    "src/heretic/ara_research_runner.py": "9b9a59a06000f44481864181fccf02c526577c3416ee073ce010ca2351ec4068",
+    "src/heretic/ara_research_schema.py": "cbe44ac2abbfe2912babc93b89514d898691710c8a1d81f6cf2e1c72872098c2",
+    "src/heretic/ara_runtime.py": "a69d89e0081163f600f6c294369b01762ea086a1776fd29f2619d5e054f4283b",
+    "src/heretic/artifact_schema.py": "bdee3419c91dfa6fea9a124fd6d3a919e9ef245fc182d21870f4a51655c19e9f",
+    "src/heretic/config.py": "937b254db475bbc506f9c24db545f20395227b97a972cd16d8f233fe92ff0647",
+    "src/heretic/main.py": "d696d9ba6eed121c8833de69ca0a4ecbddd9aa372b74785990cd4467cdbe8f44",
+    "src/heretic/model.py": "7050d4103a768320cf32673a245dff1a8f10005c31a9ff8d22f0e1d79761e41f",
+    "src/heretic/protocol_data.py": "0d8808b93a90a6da6c03ee71e4644459474c6f786617b8764eb540f5fe944fa3",
+    "src/heretic/reproduce.py": "b1b5b09066e41aa0d98af52a96f3cadc42ebbf3d58bbea67df30107741830c38",
+    "src/heretic/research_audit.py": "53017ef3112d3c7559dce2dcec927fb5965f4cddb5231b6a0dba988ccfdee27e",
+    "src/heretic/research_evaluation.py": "4d0b5dc6886edcfe735c920f7ac4d2105af927628a4d555ca2d4cfc1e9031c33",
+    "src/heretic/research_protocol.py": "0d6fae5b5eb2730503868c1fb84a6756b4b04f5c474fdce6ba59b45c81e4a4cf",
+    "src/heretic/sequence_scores.py": "194671296c4e1f2ceb4c0fc905f58f667989e0192b98ed4e6440e2d010c1468a",
+    "src/heretic/trial_methods.py": "fdc3f0089093c72193c21ff68154656404a6c85a04169909741458fdc496bef0",
+    "src/heretic/utils.py": "96c82bfaf29422c87e1312814d7ed8b1904b2b9c0392c24af70879caa6f54781",
+    "src/heretic/workflow.py": "e8edc02923b3bf7358c97dbb9502ca609aa492681e9d96614b0c3eb8de3fa96e",
+    "tests/test_acceptance_export.py": "33c5f29d663c320f624afb6c8d32c1c2321337be8755cc21ec393f2f3da9b4ee",
+    "tests/test_ara_refinement.py": "e683f8738fb1460eb169c29cb85d52a40644308559b5aae334cd9fe545f323f6",
+    "tests/test_ara_refinement_capture.py": "28ddaf60edc61af88eda7bf14f86fa312dfb439611c3f237dcb1f004ba42c185",
+    "tests/test_ara_research_acceptance.py": "5f9a5f41bf5f489bf30029e61191453d1df47df9262fe26ae82a4380901687c3",
+    "tests/test_ara_research_runner.py": "9322dddc642fb24de1157b8cdf17c8e93232faaf257457a77eda808e7d7f0270",
+    "tests/test_config.py": "726213ab2e5d15223a857b2c25462bcba15e9eeaf49e106f3bab84ae0b5ffe19",
+    "tests/test_protocol_data.py": "aeed396ad478de6713d0c32fb31a2445ff621ad3b362a9cc1ae05ef2f2af9932",
+    "tests/test_reproduce.py": "a9b1534680cd845135cbac208f91b13fd9a99dfd3050df5ebdf8db2d9bb9e59f",
+    "tests/test_research_audit.py": "2d94f7d9ba40efe8ff32bac774c720cd7945c19ecb08275e53f620c58dfd42fc",
+    "tests/test_research_evaluation.py": "9a776e1fc344d8517c85baa2862c02a5c59be24eb879ec0b902b71d4bef00393",
+    "tests/test_sequence_scores.py": "e3448230b8a9b62adfafc86b173ad9bf6b07a44571ef27f316a695bceb171b48",
+    "tests/test_trial_methods.py": "c44e2149feb48706442dac85c2342fbb74e2611dd31a6e5843763f1eeda966fa",
+    "src/heretic/research_budget.py": "4828b3d51e50a4eb5c9cec90bf420639b93ad4f20f4d3a35cc7e8fc708fb1020",
+    "src/heretic/research_audit_recovery.py": "b8622feaeb4537f969167640fa4279f121d8eb3d60b244e8d5e9afcefbb6e3e2"
+  },
+  "通过": true
+}

@@ -350,6 +350,10 @@ def _preload_protocol(
     )
     validate_role_overlaps(roles)
 
+    # 所有角色先检查元信息，越界时不得先读取开发或审计正文。
+    for role in roles:
+        preflight_audit_metadata(role.specification)
+
     def loader(item: Any) -> list[Any]:
         return load_prompts(settings, item)
 
@@ -567,6 +571,12 @@ def run() -> None:
     if settings.collect_reproducibles is not None:
         collect_reproducibles(settings.collect_reproducibles)
         return
+    if settings.ara_objective_version == "sequential-v3":
+        from .ara_research_runner import run_from_settings
+        phase = (settings.model_extra or {}).get("ara_research_phase", "search")
+        result, code = run_from_settings(settings, phase)
+        print(result)
+        raise SystemExit(code)
     reproduction = _load_reproduction(settings)
     if reproduction is None:
         return

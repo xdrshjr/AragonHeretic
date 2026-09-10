@@ -112,7 +112,9 @@ def trial():
 def write_core(staging: Path) -> list[str]:
     (staging / "adapter_config.json").write_text("{}", encoding="utf-8")
     (staging / "adapter_model.safetensors").write_bytes(b"adapter")
-    (staging / "effective-config.toml").write_text("model='test'", encoding="utf-8")
+    (staging / "effective-config.toml").write_text(
+        "model='test'", encoding="utf-8"
+    )
     (staging / "README.md").write_text("# Adapter", encoding="utf-8")
     (staging / "study.jsonl").write_text("{}\n", encoding="utf-8")
     atomic_write_json(staging / "trajectory-manifest.json", TRAJECTORY_MANIFEST)
@@ -160,6 +162,13 @@ def export_context(
 
 
 class AcceptanceExportTests(unittest.TestCase):
+    def test_v3_cannot_bypass_offline_finalize_via_legacy_export(self):
+        context = SimpleNamespace(
+            settings=SimpleNamespace(ara_objective_version="sequential-v3")
+        )
+        with self.assertRaisesRegex(ValueError, "finalize"):
+            run_save_action(context)
+
     def test_configured_model_action_does_not_construct_prompt(self) -> None:
         with patch(
             "heretic.acceptance_export.questionary.select",
@@ -219,7 +228,9 @@ class AcceptanceExportTests(unittest.TestCase):
                 nonlocal attempts
                 attempts += 1
                 if attempts == 1:
-                    (staging / "partial.txt").write_text("partial", encoding="utf-8")
+                    (staging / "partial.txt").write_text(
+                        "partial", encoding="utf-8"
+                    )
                     raise OSError("temporary storage failure")
                 return write_core(staging) + ["partial.txt"]
 
@@ -233,7 +244,9 @@ class AcceptanceExportTests(unittest.TestCase):
                 passing_audit,
                 lambda: None,
             )
-            context = ExportContext(**{**context.__dict__, "write_core": retrying_core})
+            context = ExportContext(
+                **{**context.__dict__, "write_core": retrying_core}
+            )
             with self.assertRaisesRegex(OSError, "temporary storage"):
                 export_accepted_adapter(
                     context, trial(), replay({"factor": torch.tensor([1.0])})
@@ -305,7 +318,9 @@ class AcceptanceExportTests(unittest.TestCase):
             atomic_write_json(root / "reproduce.json", reproduce)
             verify_artifact_graph(root)
             self.assertEqual(
-                load_bound_acceptance(str(root / "reproduce.json"), reproduce, True),
+                load_bound_acceptance(
+                    str(root / "reproduce.json"), reproduce, True
+                ),
                 acceptance,
             )
             report = json.loads((root / "acceptance.json").read_text())

@@ -1,0 +1,27 @@
+test_failed_audit_writes_offline_summary_and_preserves_pending (test_research_audit.AuditTests.test_failed_audit_writes_offline_summary_and_preserves_pending) ... ERROR
+
+======================================================================
+ERROR: test_failed_audit_writes_offline_summary_and_preserves_pending (test_research_audit.AuditTests.test_failed_audit_writes_offline_summary_and_preserves_pending)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\TAKO-PROJECTS\heretic\tests\test_research_audit.py", line 105, in test_failed_audit_writes_offline_summary_and_preserves_pending
+    result, code = run_audit_phase(args, settings)
+                   ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^
+  File "E:\TAKO-PROJECTS\heretic\src\heretic\research_audit.py", line 599, in run_audit_phase
+    results = _iterate_audit_members(
+        args, settings, plan, (root, ledger_root, evidence_root, budget)
+    )
+  File "D:\Tools\Anaconda\Lib\unittest\mock.py", line 1176, in __call__
+    return self._mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Tools\Anaconda\Lib\unittest\mock.py", line 1180, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "D:\Tools\Anaconda\Lib\unittest\mock.py", line 1241, in _execute_mock_call
+    raise effect
+RuntimeError: worker 失败
+
+----------------------------------------------------------------------
+Ran 1 test in 0.065s
+
+FAILED (errors=1)

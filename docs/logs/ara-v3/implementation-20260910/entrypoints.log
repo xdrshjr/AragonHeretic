@@ -1,0 +1,11 @@
+YAML 加载实现: /home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/site-packages/lm_eval/config/evaluate_config.py
+依赖版本: {'torch': '2.13.0', 'transformers': '5.16.1', 'peft': '0.20.0', 'optuna': '4.9.0', 'lm_eval': '0.4.12'}
+入口: ['bash', '-n', 'scripts/run_ara_research_96.sh'] 退出码: 0
+入口: ['/home/xdrshjr/miniconda3/envs/aragon-heretic/bin/python', 'scripts/prepare_ara_research_protocol.py', '--help'] 退出码: 0
+入口: ['/home/xdrshjr/miniconda3/envs/aragon-heretic/bin/python', '-m', 'heretic.ara_research_runner', '--help'] 退出码: 0
+缺少正式协议预检: 2 {'phase': 'preflight', 'research_status': 'failed', 'reason': '缺少冻结 protocol.json；请先完成独立数据准备'}
+
+入口验证全部通过；无模型加载。
+
+
+remote_exit_code: 0

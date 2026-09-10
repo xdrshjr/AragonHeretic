@@ -1,0 +1,30 @@
+{
+  "检查": "远端CPU测试所读静态夹具与当前工作树逐字节一致",
+  "文件": [
+    {
+      "文件": "config.qwen38-27b-cara.toml",
+      "本地摘要": "b2b7357b4e53f1d1b977fba8f23b791d47f6263244e9d15c6563681adf5db5c0",
+      "远端摘要": "b2b7357b4e53f1d1b977fba8f23b791d47f6263244e9d15c6563681adf5db5c0",
+      "一致": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v2.toml",
+      "本地摘要": "13fd7fe222642a0ad8f6a1a65426e2f2470628eb42bf88b84e6f73ab7b9aa819",
+      "远端摘要": "13fd7fe222642a0ad8f6a1a65426e2f2470628eb42bf88b84e6f73ab7b9aa819",
+      "一致": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v3-96.toml",
+      "本地摘要": "bd26bede5746da658468cff269872b960e9708c43cc57d34b5da3ed678ad253c",
+      "远端摘要": "bd26bede5746da658468cff269872b960e9708c43cc57d34b5da3ed678ad253c",
+      "一致": true
+    },
+    {
+      "文件": "tests/qwen38-cara/smoke-prompts.txt",
+      "本地摘要": "1b6034c3401e65bd05a0f35e998ae71963ef828adfa99120fa20be8fc80ec37d",
+      "远端摘要": "1b6034c3401e65bd05a0f35e998ae71963ef828adfa99120fa20be8fc80ec37d",
+      "一致": true
+    }
+  ],
+  "通过": true
+}

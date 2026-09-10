@@ -27,6 +27,51 @@ def make_settings(values: dict) -> Settings:
         return Settings.model_validate(values)
 
 
+class RefinementConfigurationTests(unittest.TestCase):
+    def test_v3_rejects_unregistered_response_prefix(self):
+        path = Path(__file__).resolve().parents[1]
+        values = tomllib.loads(
+            (path / "config.qwen38-27b-cara-v3-96.toml").read_text(
+                encoding="utf-8"
+            )
+        )
+        with self.assertRaisesRegex(ValidationError, "response_prefix"):
+            make_settings({**values, "response_prefix": "预填回答"})
+
+    def test_dual_gpu_template_uses_independent_budget(self):
+        path = (
+            Path(__file__).resolve().parents[1]
+            / "config.qwen38-27b-cara-v3-96.toml"
+        )
+        settings = make_settings(
+            tomllib.loads(path.read_text(encoding="utf-8"))
+        )
+        self.assertEqual(settings.ara_v3.method_id, "S2")
+        self.assertEqual(settings.n_trials, 24)
+        self.assertIsNone(settings.acceptance_gate)
+        self.assertEqual(
+            settings.ara_runtime_guard.required_target_devices,
+            ["cuda:0", "cuda:1"],
+        )
+
+    def test_method_mapping_rejects_ambiguous_variant(self):
+        from heretic.ara_refinement_config import (
+            METHODS,
+            METHOD_FIELDS,
+            RefinementConfig,
+        )
+
+        for method, combination in METHODS.items():
+            config = RefinementConfig(
+                protocol_manifest="protocol.json",
+                parent_candidate_lock_hash="parent",
+                **dict(zip(METHOD_FIELDS, combination)),
+            )
+            self.assertEqual(config.method_id, method)
+        with self.assertRaises(ValidationError):
+            RefinementConfig(protocol_manifest="protocol.json", sweeps=1)
+
+
 class ScorerConfigTests(unittest.TestCase):
     def test_accepts_slug_like_instance_name(self) -> None:
         config = ScorerConfig(
@@ -68,7 +113,9 @@ class ScorerConfigTests(unittest.TestCase):
 class CARAConfigTests(unittest.TestCase):
     def test_default_method_remains_directional(self) -> None:
         settings = make_settings({"model": "org/model"})
-        self.assertEqual(settings.abliteration_method, AbliterationMethod.DIRECTIONAL)
+        self.assertEqual(
+            settings.abliteration_method, AbliterationMethod.DIRECTIONAL
+        )
 
     def test_ara_rejects_row_normalization_and_reserved_kwargs(self) -> None:
         with self.assertRaisesRegex(ValidationError, "row_normalization"):
@@ -84,7 +131,9 @@ class CARAConfigTests(unittest.TestCase):
                 {"model": "org/model", "generation_kwargs": {"input_ids": []}}
             )
 
-    def test_components_are_deduplicated_and_unknown_values_rejected(self) -> None:
+    def test_components_are_deduplicated_and_unknown_values_rejected(
+        self,
+    ) -> None:
         settings = make_settings(
             {
                 "model": "org/model",
@@ -93,7 +142,9 @@ class CARAConfigTests(unittest.TestCase):
         )
         self.assertEqual(settings.target_components, ["attn.o_proj"])
         with self.assertRaisesRegex(ValidationError, "unsupported target"):
-            make_settings({"model": "org/model", "target_components": ["other"]})
+            make_settings(
+                {"model": "org/model", "target_components": ["other"]}
+            )
 
     def test_runtime_ranges_and_template_keys_are_validated(self) -> None:
         for values in (
@@ -103,7 +154,10 @@ class CARAConfigTests(unittest.TestCase):
             {"ara_search_space": {"layer_span": [0.0, 0.5]}},
             {"chat_template_kwargs": {"tokenize": False}},
         ):
-            with self.subTest(values=values), self.assertRaises(ValidationError):
+            with (
+                self.subTest(values=values),
+                self.assertRaises(ValidationError),
+            ):
                 make_settings({"model": "org/model", **values})
         settings = make_settings(
             {
@@ -154,14 +208,18 @@ class CARAConfigTests(unittest.TestCase):
         self.assertEqual(
             settings.max_memory, {"0": "22GiB", "1": "22GiB", "cpu": "80GiB"}
         )
-        self.assertEqual((settings.n_trials, settings.n_startup_trials), (120, 36))
+        self.assertEqual(
+            (settings.n_trials, settings.n_startup_trials), (120, 36)
+        )
         self.assertEqual(settings.ara_capture_batch_size, 1)
         self.assertEqual(settings.export_strategy.value, "adapter")
         self.assertIsNone(settings.response_prefix)
         self.assertFalse(settings.chat_template_kwargs["enable_thinking"])
         self.assertFalse(settings.generation_kwargs["do_sample"])
         assert settings.model_extra is not None
-        markers = settings.model_extra["scorer"]["KeywordRate"]["keyword_markers"]
+        markers = settings.model_extra["scorer"]["KeywordRate"][
+            "keyword_markers"
+        ]
         self.assertTrue({"抱歉", "我不能", "不便提供"}.issubset(markers))
         with self.assertRaisesRegex(ValidationError, "only supported for ARA"):
             make_settings({**values, "abliteration_method": "directional"})
@@ -174,10 +232,14 @@ class CARAConfigTests(unittest.TestCase):
         settings = make_settings(values)
         self.assertEqual(settings.ara_objective_version, "trajectory-v2")
         self.assertEqual(len(settings.ara_seed_trials), 8)
-        self.assertEqual((settings.n_startup_trials, settings.n_trials), (24, 120))
+        self.assertEqual(
+            (settings.n_startup_trials, settings.n_trials), (24, 120)
+        )
         self.assertEqual(settings.ara_runtime_guard.expected_target_total, 128)
         with self.assertRaisesRegex(ValidationError, "8 anchors"):
-            make_settings({**values, "ara_seed_trials": values["ara_seed_trials"][:-1]})
+            make_settings(
+                {**values, "ara_seed_trials": values["ara_seed_trials"][:-1]}
+            )
         named = [dict(item) for item in values["scorers"]]
         named[0]["instance_name"] = "alternate"
         with self.assertRaisesRegex(ValidationError, "objectives are fixed"):
@@ -187,7 +249,9 @@ class CARAConfigTests(unittest.TestCase):
         with self.assertRaisesRegex(ValidationError, "objectives are fixed"):
             make_settings({**values, "scorers": extra})
 
-    def test_acceptance_gate_requires_deterministic_pinned_disjoint_data(self) -> None:
+    def test_acceptance_gate_requires_deterministic_pinned_disjoint_data(
+        self,
+    ) -> None:
         path = Path(__file__).parents[1] / "config.qwen38-27b-cara.toml"
         values = tomllib.loads(path.read_text(encoding="utf-8"))
         with self.assertRaisesRegex(ValidationError, "do_sample=false"):
@@ -200,7 +264,9 @@ class CARAConfigTests(unittest.TestCase):
 
         values = tomllib.loads(path.read_text(encoding="utf-8"))
         values["scorer"]["KeywordRate"].pop("prompts")
-        with self.assertRaisesRegex(ValidationError, "explicitly configure prompts"):
+        with self.assertRaisesRegex(
+            ValidationError, "explicitly configure prompts"
+        ):
             make_settings(values)
 
         values = tomllib.loads(path.read_text(encoding="utf-8"))

@@ -1,0 +1,85 @@
+# 双 RTX 3090 的独立 NF4 研究模板；缓存路径须在预检中实测。
+# protocol.json 必须由独立准备阶段生成，缺失时禁止分配模型。
+model = "/home/xdrshjr/models/Qwen3.8-27B"
+model_commit = "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
+abliteration_method = "ara"
+ara_objective_version = "sequential-v3"
+row_normalization = "none"
+dtypes = ["bfloat16"]
+quantization = "bnb_4bit"
+device_map = "balanced"
+max_memory = { "0" = "22GiB", "1" = "22GiB", cpu = "64GiB" }
+batch_size = 1
+max_batch_size = 1
+max_response_length = 100
+offload_outputs_to_cpu = true
+chat_template_kwargs = { enable_thinking = false }
+generation_kwargs = { do_sample = false, num_beams = 1 }
+response_prefix = ""
+seed = 42
+n_trials = 24
+n_startup_trials = 8
+ara_lora_rank = 128
+ara_calibration_size = 96
+ara_capture_batch_size = 1
+ara_trajectory_tokens = 8
+ara_trajectory_decay = 0.85
+ara_softmin_temperature = 0.10
+ara_lbfgs_max_iter = 20
+ara_lbfgs_history_size = 10
+ara_max_good_delta_rms = 0.60
+ara_max_singular_value = 8.0
+target_components = ["attn.o_proj", "mlp.down_proj"]
+study_checkpoint_dir = "docs/logs/ara-v3/S2-42"
+export_strategy = "adapter"
+model_action = "save"
+
+[ara_v3]
+variant = "sequential-refresh"
+sweeps = 2
+trajectory_policy = "refresh-each-sweep"
+keep_reference = "base-anchored"
+capture_mode = "sequential"
+protocol_manifest = "docs/logs/ara-v3/protocol/protocol.json"
+required_level = "statistical_extreme"
+trial_budget = 24
+monitor_samples = 64
+gpu_hours_checkpoints = [4.0, 8.0, 12.0, 16.0]
+max_cpu_rss_gib = 64.0
+
+[good_prompts]
+dataset = "mlabonne/harmless_alpaca"
+commit = "02c6a92cfcf11bb0c387334f8146d149d65b587f"
+split = "train[:192]"
+column = "text"
+
+[bad_prompts]
+dataset = "mlabonne/harmful_behaviors"
+commit = "01cead01398926d81f7c52bdb790ee8cf77ebba7"
+split = "train[:192]"
+column = "text"
+
+[ara_runtime_guard]
+expected_target_total = 128
+required_target_devices = ["cuda:0", "cuda:1"]
+min_free_cuda_gib_after_load = 1.5
+max_capture_cpu_gib = 32.0
+max_cuda_allocated_gib = 22.0
+
+[[ara_runtime_guard.targets]]
+name_pattern = "*.self_attn.o_proj"
+count = 16
+in_features = 6144
+out_features = 5120
+
+[[ara_runtime_guard.targets]]
+name_pattern = "*.linear_attn.out_proj"
+count = 48
+in_features = 6144
+out_features = 5120
+
+[[ara_runtime_guard.targets]]
+name_pattern = "*.mlp.down_proj"
+count = 64
+in_features = 17408
+out_features = 5120

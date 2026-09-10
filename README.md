@@ -242,6 +242,85 @@ Silh = Mean silhouette coefficient of residuals for good/bad clusters
 
 ### Experimental CARA trajectory-v2 protocol
 
+历史提醒：该 v2 模板的固定 harmful revision 只有 416 条 train 数据，
+原 `train[400:500]` 不满足 100 条验证要求，预检会明确拒绝。
+已有 v1 归档的最佳 Keywords 为 0.54，不能作为方法成功的证据。
+
+### ARA sequential-v3 研究协议
+
+`sequential-v3` 在每个层组更新前重新捕获当前输入，并使用同一 token
+序列上的全基座输出作为保持参考。组内因子按绝对值替换，真实联合前向与
+monitor 同时通过后才接受。默认 directional 及既有 point-v1/trajectory-v2
+数值求解路径保留。
+
+双 3090 模板为 `config.qwen38-27b-cara-v3-96.toml`，使用 NF4、每卡
+22 GiB 加载预算以及独立的 4+8+12 搜索。模板中的模型缓存路径需实测。
+运行前必须准备不可变的数据、源码、模型及 tokenizer 身份清单，并冻结
+生成设置、独立审计历史、能力任务和阶段预算；缺项会在模型分配前报错。
+外部研究审计题目和人工评审资源须由独立准备者提供。
+
+```sh
+python scripts/prepare_ara_research_protocol.py --config preparation.json
+bash scripts/run_ara_research_96.sh --config config.qwen38-27b-cara-v3-96.toml --run-dir docs/logs/ara-v3/S2-42 --phase preflight
+bash scripts/run_ara_research_96.sh --config config.qwen38-27b-cara-v3-96.toml --run-dir docs/logs/ara-v3/S2-42 --phase search
+```
+
+准备 JSON 的结构见 [v3 规格](docs/plans/ara-v2-refusal-optimization/spec.md)。
+每份角色源文件包含 `rows` 数组；每题固定 `prompt_id`、`scenario_group_id`、
+`primary_in_group`、`source`、`revision`、`row_index`、`language`、`category`、
+`system` 与 `text`，源文件配置包含 `path`、`sha256` 和已核对的 `license`。
+HF 源另提供 `dataset_spec` 和逐题 `split`。`source_files` 映射实际源码
+相对路径到 SHA-256，`source_tree_hash` 为该映射规范 JSON 的 SHA-256。
+`package_versions` 必须包含 torch、transformers、peft、optuna、lm_eval
+等实际运行版本；训练与审计预检会逐项核对。
+fit 全池 192 条中按 seed 选择 96 条；monitor/机制开发/development
+分别为每侧 64/44/100 条，审计正文不会由训练加载器读取。
+
+正式搜索须先通过单独 pilot；pilot 使用另一份 `pilot=true` 协议，fit 和
+monitor 每侧各 8 条，且禁止正式提升。`phase_budgets.search.pilot_evidence`
+绑定真实 pilot 汇总的 `path`/`sha256`，汇总包含 `status` 和
+`predicted_slowest_study_seconds`，加 25% 余量后不得超过 8 小时。
+pilot、ablation、audit 的预算包含 `max_wallclock_seconds`、`max_gpu_hours`
+及 `members`；audit 还固定 `annotation_deadline`、
+`member_budgets.<member_id>.max_wallclock_seconds` 及
+`annotations.roles`/`annotations.record_count`。恢复、开发语义评估和重放
+共享累计预算，硬超时留下中断证据并退出。
+
+每个 search 产生锁定候选或失败对照的 `member.json`。所有方法和 seed
+完成后，汇总到包含 `members` 数组的集合文件；没有可用结果的成员必须
+显式记录 `availability=unavailable` 和原因。加入 B0 共享基座后执行：
+
+```sh
+bash scripts/run_ara_research_96.sh --config config.qwen38-27b-cara-v3-96.toml --run-dir docs/logs/ara-v3/evaluation --phase freeze --members members.json
+bash scripts/run_ara_research_96.sh --config config.qwen38-27b-cara-v3-96.toml --run-dir docs/logs/ara-v3/evaluation --phase audit --evaluation-plan docs/logs/ara-v3/evaluation/evaluation-plan.json
+bash scripts/run_ara_research_96.sh --config config.qwen38-27b-cara-v3-96.toml --run-dir docs/logs/ara-v3/evaluation --phase finalize --evaluation-plan docs/logs/ara-v3/evaluation/evaluation-plan.json --labels labels.json
+```
+
+`labels.json` 按成员 ID、good/bad 侧保存与响应 hash 绑定的双人独立标注；
+分歧须有第三人裁决。开发自动判定器在 `judge_identity.development` 中固定
+命令、源码 hash 与超时，不能替代审计人工双评。能力任务采用冻结的
+MMLU/GSM8K/IFEval 题目、文档 hash 和逐题二元正确性，分组配对 bootstrap。
+缺标注或统计前提不足返回 `inconclusive`，比较制品永久没有正式提升资格。
+
+`generation_profiles` 固定 `fit=8`、`keywords=100`、`semantic=256`、
+`sequence_kl=32`，其中 `chat_template_kwargs` 和 `generation_kwargs`
+须与运行 TOML 完全一致。能力 `task_config_path` 指向实际执行的 YAML，
+`task_config_hash` 校验该文件；`task_id` 是返回逐题 samples 的单一任务名。
+MMLU 多学科题目须在准备阶段冻结为该清单；不能用组名代替逐题身份。
+配置引用的模板/判断器也须加入冻结源码清单，运行版本记入协议。
+
+A1/A2/F1 在 `ara_v3.parent_candidate_lock_path` 与对应 hash 中指定
+S2/S1 父候选，仅应用父参数并执行机制开发对照，使用单独消融预算。
+v3 复现须使用匹配的 v3 TOML 和正式目录内的 `reproduce.json`；
+该路径校验完整产物链、重载绝对因子并运行非审计探针，不启动新搜索。
+
+退出码：0 为所请求阶段完成；2 为协议/身份错误；3 为运行或预算失败；
+4 为目标明确失败；5 为证据不足。只有 `finalize` 的 0 表示预注册研究目标
+通过。代码测试通过不表示新方法已经达到极低拒答率；真实 27B pilot、
+完整矩阵和独立审计的结论须以运行归档为准。
+
+### trajectory-v2 原协议说明
+
 `config.qwen38-27b-cara-v2.toml` defines the pre-registered, single-worker
 trajectory-v2 experiment for Qwen3.8-27B. The protocol captures the base
 model's first eight continuation positions, optimizes step-aligned local CARA

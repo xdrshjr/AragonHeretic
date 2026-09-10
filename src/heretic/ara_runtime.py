@@ -536,7 +536,7 @@ def capture_named_adapter_state(
 
 
 def adapter_state_identity(state: Mapping[str, torch.Tensor]) -> str:
-    """Hash normalized FP32 adapter tensors without serializing them."""
+    """Hash shared v2/v3 named FP32 factors without serializing them."""
     digest = hashlib.sha256()
     for name in sorted(state):
         tensor = state[name].detach().cpu().to(torch.float32).contiguous()

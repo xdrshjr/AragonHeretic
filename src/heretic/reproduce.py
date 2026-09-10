@@ -125,7 +125,11 @@ def load_reproduction_information(path: str) -> dict[str, Any]:
         # The path is (assumed to be) a local file system path.
         json_str = Path(path).read_text(encoding="utf-8")
 
-    return json.loads(json_str)
+    information = json.loads(json_str)
+    if information.get("schema") == "cara-research-reproduce-v3":
+        from .artifact_schema import parse_reproduce
+        parse_reproduce(information)
+    return information
 
 
 class MismatchSeverity(IntEnum):

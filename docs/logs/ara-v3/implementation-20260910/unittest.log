@@ -1,0 +1,71 @@
+Model saved to /home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tmp/tmpo142q_ci.
+
+....................................................../home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py:269: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = optuna.samplers.TPESampler(
+[I 2026-09-10 21:05:20,977] A new study created in memory with name: no-name-2abfc570-f507-46a9-9af1-0e86284a512a
+[I 2026-09-10 21:05:20,985] A new study created in memory with name: no-name-c58a2e3c-a7df-4a45-be16-31cc8424be62
+[I 2026-09-10 21:05:20,991] A new study created in memory with name: no-name-cdd6c0d6-6610-42e4-947e-52470bd3b1aa
+[I 2026-09-10 21:05:20,998] A new study created in memory with name: no-name-2d1df8e8-b07d-4c3d-b7f1-8d2845f81d5a
+[I 2026-09-10 21:05:21,006] A new study created in memory with name: no-name-c2fc95f5-e809-44b8-aaf8-bbca2fd2f8e5
+[I 2026-09-10 21:05:21,014] A new study created in memory with name: no-name-cd52bde3-de4d-40b5-a3e8-411c38bd0114
+[I 2026-09-10 21:05:21,021] A new study created in memory with name: no-name-139c1e35-f1b1-4e98-a33d-81dc8c90996a
+[I 2026-09-10 21:05:21,027] A new study created in memory with name: no-name-a6fe830d-4ff6-4179-a34e-b5c5c233f08e
+[I 2026-09-10 21:05:21,034] A new study created in memory with name: no-name-9cd10a8c-3665-47b5-b092-b6ef3956c995
+[I 2026-09-10 21:05:21,041] A new study created in memory with name: no-name-4a20a205-7af2-4dcb-93a9-6a37ec7a3e5d
+[I 2026-09-10 21:05:21,049] A new study created in memory with name: no-name-914346d6-12c8-486a-b385-0de8fccd97cf
+[I 2026-09-10 21:05:21,056] A new study created in memory with name: no-name-7b792e24-1c44-4a70-81b9-035cf0ab7716
+..[I 2026-09-10 21:05:21,070] A new study created in memory with name: no-name-b8c8040f-063d-45cd-9b4b-3370ab1be227
+.....[I 2026-09-10 21:05:21,072] A new study created in memory with name: no-name-4d216773-f118-4ece-9644-ed78c6331e42
+.[I 2026-09-10 21:05:21,075] A new study created in memory with name: no-name-7cd7fa2c-b585-425c-83c8-da1dcaba9138
+...[I 2026-09-10 21:05:21,076] A new study created in memory with name: no-name-d6dfde68-f91e-4808-92e1-567cf56047b7
+..................................................................................[I 2026-09-10 21:05:21,800] A new study created in memory with name: no-name-444c2ff8-cab2-4cc6-a18e-1aa220c63d0f
+....../home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_trial_methods.py:116: ExperimentalWarning: Argument ``multivariate`` is an experimental feature. The interface can change in the future.
+  sampler = TPESampler(
+/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_trial_methods.py:116: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = TPESampler(
+[I 2026-09-10 21:05:21,802] A new study created in memory with name: no-name-bbfd6c79-345c-4deb-9e6c-cdbad6d403f4
+[I 2026-09-10 21:05:21,802] Trial 0 pruned. 
+[I 2026-09-10 21:05:21,802] Trial 1 pruned. 
+[I 2026-09-10 21:05:21,802] Trial 2 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 3 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 4 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 5 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 6 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 7 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 8 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 9 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 10 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 11 pruned. 
+[I 2026-09-10 21:05:21,803] Trial 12 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 13 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 14 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 15 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 16 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 17 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 18 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 19 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 20 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 21 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 22 pruned. 
+[I 2026-09-10 21:05:21,804] Trial 23 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 24 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 25 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 26 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 27 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 28 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 29 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 30 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 31 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 32 pruned. 
+[I 2026-09-10 21:05:21,805] Trial 33 pruned. 
+[I 2026-09-10 21:05:21,806] Trial 34 pruned. 
+[I 2026-09-10 21:05:21,806] Trial 35 pruned. 
+[I 2026-09-10 21:05:21,806] Trial 36 pruned. 
+..[I 2026-09-10 21:05:21,808] A new study created in memory with name: no-name-bf7229e4-9f31-48cb-a4b3-c7d22342bc2b
+..........
+----------------------------------------------------------------------
+Ran 165 tests in 1.669s
+
+OK
+
+remote_exit_code: 0

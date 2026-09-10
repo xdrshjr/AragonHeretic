@@ -556,6 +556,11 @@ def generate_reproduce_json(
     include_system_information: bool,
 ) -> str:
     """Generate the machine-readable reproduction identity document."""
+    if settings.ara_objective_version == "sequential-v3":
+        from .ara_research_acceptance import verify_research_artifact_graph
+        root = Path(settings.save_directory or "adapter")
+        verify_research_artifact_graph(root)
+        return (root / "reproduce.json").read_text(encoding="utf-8")
     data = _reproduce_base_data(settings, trial, timestamp, uploaded_model_hashes)
     if settings.ara_objective_version == "trajectory-v2":
         _add_trajectory_identity(data, settings, trial)

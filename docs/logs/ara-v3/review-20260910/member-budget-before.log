@@ -1,0 +1,22 @@
+test_complete_member_recovers_before_exhausted_budget_admission (test_research_audit.AuditTests.test_complete_member_recovers_before_exhausted_budget_admission) ... ERROR
+
+======================================================================
+ERROR: test_complete_member_recovers_before_exhausted_budget_admission (test_research_audit.AuditTests.test_complete_member_recovers_before_exhausted_budget_admission)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "E:\TAKO-PROJECTS\heretic\tests\test_research_audit.py", line 102, in test_complete_member_recovers_before_exhausted_budget_admission
+    output = _evaluate_member_roles(
+        None, None, plan, member,
+        (root, root / "ledgers", root / "outputs", {}),
+    )
+  File "E:\TAKO-PROJECTS\heretic\src\heretic\research_audit.py", line 663, in _evaluate_member_roles
+    with StudyBudget(path, limit) as budget:
+         ~~~~~~~~~~~^^^^^^^^^^^^^
+  File "E:\TAKO-PROJECTS\heretic\src\heretic\research_budget.py", line 89, in __enter__
+    raise ResearchBudgetExceeded("累计 study 墙钟预算已用尽")
+heretic.research_budget.ResearchBudgetExceeded: 累计 study 墙钟预算已用尽
+
+----------------------------------------------------------------------
+Ran 1 test in 0.039s
+
+FAILED (errors=1)

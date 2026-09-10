@@ -29,12 +29,15 @@ from .ara import (
     optimize_ara_module,
     restore_adapter_state,
 )
+from .ara_research_schema import (
+    RefinementParameters,
+    serialize_method_parameters as parameter_envelope,
+    parse_method_parameters as parse_parameter_envelope,
+)
 from .ara_search import (
     ARASamplingContext,
     ARATrajectoryParameters,
     SEARCH_SPACE_VERSION as TRAJECTORY_SEARCH_SPACE_VERSION,
-    parameter_envelope as trajectory_parameter_envelope,
-    parse_parameter_envelope as parse_trajectory_parameter_envelope,
     sample_v2_parameters,
 )
 from .ara_trajectory import (
@@ -101,6 +104,7 @@ class MethodApplicationSummary:
 
     method: AbliterationMethod
     ara: ARAOptimizationSummary | None = None
+    research: dict[str, Any] | None = None
 
 
 @dataclass(frozen=True)
@@ -145,7 +149,10 @@ class AcceptanceReport:
         return asdict(self)
 
 
-MethodParameters = DirectionalParameters | ARAParameters | ARATrajectoryParameters
+MethodParameters = (
+    DirectionalParameters | ARAParameters | ARATrajectoryParameters
+    | RefinementParameters
+)
 MethodArtifacts = DirectionalArtifacts | ARAArtifacts | TrajectoryArtifacts
 
 
@@ -219,7 +226,10 @@ def sample_method_parameters(trial: Trial, context: MethodContext) -> MethodPara
     """Sample all dimensions for the configured method without conditional ranges."""
 
     if context.settings.abliteration_method == AbliterationMethod.ARA:
-        if context.settings.ara_objective_version == "trajectory-v2":
+        if context.settings.ara_objective_version == "sequential-v3":
+            from .ara_research_runner import sample_v3_parameters
+            parameters = sample_v3_parameters(trial)
+        elif context.settings.ara_objective_version == "trajectory-v2":
             parameters = sample_v2_parameters(
                 trial,
                 ARASamplingContext(context.layer_count),
@@ -233,39 +243,15 @@ def sample_method_parameters(trial: Trial, context: MethodContext) -> MethodPara
     return parameters
 
 
-def _ara_payload(parameters: ARAParameters) -> dict[str, Any]:
-    return {
-        "start_layer_index": parameters.start_layer_index,
-        "end_layer_index": parameters.end_layer_index,
-        "components": {
-            name: asdict(component) for name, component in parameters.components.items()
-        },
-    }
-
-
-def parameter_envelope(parameters: MethodParameters) -> dict[str, Any]:
-    """Serialize resolved method parameters using the reproduce-v4 envelope."""
-
-    if isinstance(parameters, ARAParameters):
-        return {"method": "ara", "payload": _ara_payload(parameters)}
-    if isinstance(parameters, ARATrajectoryParameters):
-        return trajectory_parameter_envelope(parameters)
-    return {
-        "method": "directional",
-        "payload": {
-            "direction_index": parameters.direction_index,
-            "abliteration_parameters": {
-                name: asdict(component)
-                for name, component in parameters.components.items()
-            },
-        },
-    }
-
-
 def store_method_parameters(trial: Trial, parameters: MethodParameters) -> None:
     """Store resolved parameters while preserving directional legacy attributes."""
 
     envelope = parameter_envelope(parameters)
+    if isinstance(parameters, RefinementParameters):
+        trial.set_user_attr("method", "ara")
+        trial.set_user_attr("objective_version", "sequential-v3")
+        trial.set_user_attr("ara_parameters", envelope)
+        return
     trial.set_user_attr("method", envelope["method"])
     if isinstance(parameters, ARAParameters):
         trial.set_user_attr("search_space_version", SEARCH_SPACE_VERSION)
@@ -286,52 +272,13 @@ def store_method_parameters(trial: Trial, parameters: MethodParameters) -> None:
     )
 
 
-def parse_parameter_envelope(envelope: Mapping[str, Any]) -> MethodParameters:
-    """Validate and deserialize a reproduce-v4 method envelope."""
-
-    if envelope.get("objective_version") == "trajectory-v2":
-        return parse_trajectory_parameter_envelope(envelope)
-    method = envelope.get("method")
-    payload = envelope.get("payload")
-    if not isinstance(payload, Mapping):
-        raise ValueError("method parameter payload must be an object")
-    if method == "directional":
-        raw_components = cast(
-            Mapping[str, Mapping[str, Any]], payload.get("abliteration_parameters")
-        )
-        if not isinstance(raw_components, Mapping):
-            raise ValueError("directional payload has no abliteration_parameters")
-        return DirectionalParameters(
-            direction_index=cast(float | None, payload.get("direction_index")),
-            components={
-                name: AbliterationParameters(**value)
-                for name, value in raw_components.items()
-            },
-        )
-    if method == "ara":
-        raw_components = cast(
-            Mapping[str, Mapping[str, Any]], payload.get("components")
-        )
-        if not isinstance(raw_components, Mapping):
-            raise ValueError("ARA payload has no components")
-        return ARAParameters(
-            start_layer_index=int(payload["start_layer_index"]),
-            end_layer_index=int(payload["end_layer_index"]),
-            components={
-                name: ARAComponentParameters(**value)
-                for name, value in raw_components.items()
-            },
-        )
-    raise ValueError(f"unsupported abliteration method: {method}")
-
-
 def parameters_from_trial(trial: Trial | FrozenTrial) -> MethodParameters:
     """Deserialize resolved parameters from a current or legacy Optuna trial."""
 
     method = trial.user_attrs.get("method", "directional")
     if method == "ara":
         raw_envelope = trial.user_attrs["ara_parameters"]
-        if trial.user_attrs.get("objective_version") == "trajectory-v2":
+        if trial.user_attrs.get("objective_version") in {"trajectory-v2", "sequential-v3"}:
             return parse_parameter_envelope(raw_envelope)
         return parse_parameter_envelope({"method": "ara", "payload": raw_envelope})
     return parse_parameter_envelope(
@@ -352,7 +299,7 @@ def normalize_reproduction_parameters(information: Mapping[str, Any]) -> dict[st
     raw = information.get("parameters")
     if not isinstance(raw, Mapping):
         raise ValueError("reproduction information has no parameter object")
-    if information.get("schema") == "cara-reproduce-v2":
+    if information.get("schema") in {"cara-reproduce-v2", "cara-research-reproduce-v3"}:
         from .artifact_schema import parse_reproduce
 
         parse_reproduce(information)
@@ -596,6 +543,9 @@ def apply_trial(
 ) -> MethodApplicationSummary:
     """Reset and apply either method using only resolved immutable parameters."""
 
+    if isinstance(parameters, RefinementParameters):
+        from .ara_research_runner import apply_v3_method
+        return apply_v3_method(model, artifacts, parameters)
     model.reset_model()
     if isinstance(parameters, DirectionalParameters):
         if not isinstance(artifacts, DirectionalArtifacts):
@@ -644,6 +594,9 @@ def build_study_manifest(settings: Settings) -> dict[str, Any]:
 
     dumped = settings.model_dump(mode="json")
     manifest = {name: dumped[name] for name in sorted(_STUDY_FIELDS)}
+    if settings.ara_objective_version == "sequential-v3":
+        return {**manifest, "ara_v3": dumped["ara_v3"],
+                "schema_version": "cara-research-study-v3"}
     scorer_tables = dumped.get("scorer")
     if scorer_tables is not None:
         manifest["scorer_settings"] = scorer_tables

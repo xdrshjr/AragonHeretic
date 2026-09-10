@@ -1,4 +1,7 @@
 # Pre-registered single-GPU Qwen3.8-27B CARA trajectory-v2 experiment.
+# 历史配置：固定 harmful revision 的 train 只有 416 行。
+# train[400:500] 不满足 100 条验证契约，预检必须明确拒绝。
+# 新研究使用独立 v3-96 配置；禁止降低 expected_samples 掩盖越界。
 model = "/root/autodl-fs/models/Qwen3.8-27B"
 model_commit = "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0"
 abliteration_method = "ara"

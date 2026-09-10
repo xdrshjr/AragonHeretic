@@ -701,6 +701,8 @@ def _verify_local_reproduction(
 
 def run_save_action(context: SaveActionContext) -> bool:
     """Run local export and return whether the enclosing menu should close."""
+    if getattr(context.settings, "ara_objective_version", None) == "sequential-v3":
+        raise ValueError("v3 仅允许通过冻结集合的离线 finalize 提升制品")
     from .workflow import obtain_export_strategy
 
     selected = context.settings.save_directory

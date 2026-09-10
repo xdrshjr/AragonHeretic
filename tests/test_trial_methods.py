@@ -94,7 +94,25 @@ def trial(
 
 
 class TrialMethodTests(unittest.TestCase):
-    def test_tpe_handles_only_pruned_multiobjective_startup_trials(self) -> None:
+    def test_v3_parameter_envelope_uses_independent_dispatch(self):
+        from heretic.ara_research_runner import paired_parameters
+        from heretic.trial_methods import (
+            parameters_from_trial,
+            store_method_parameters,
+        )
+
+        parameters = paired_parameters(42, 0)
+        envelope = parameter_envelope(parameters)
+        self.assertEqual(envelope["objective_version"], "sequential-v3")
+        self.assertEqual(parse_parameter_envelope(envelope), parameters)
+        study = optuna.create_study()
+        trial = study.ask()
+        store_method_parameters(trial, parameters)
+        self.assertEqual(parameters_from_trial(trial), parameters)
+
+    def test_tpe_handles_only_pruned_multiobjective_startup_trials(
+        self,
+    ) -> None:
         sampler = TPESampler(
             n_startup_trials=36,
             multivariate=True,
@@ -113,7 +131,9 @@ class TrialMethodTests(unittest.TestCase):
         study.optimize(objective, n_trials=37)
 
         self.assertEqual(len(study.trials), 37)
-        self.assertTrue(all(item.state == TrialState.PRUNED for item in study.trials))
+        self.assertTrue(
+            all(item.state == TrialState.PRUNED for item in study.trials)
+        )
 
     def test_ara_parameter_envelope_round_trip(self) -> None:
         original = ARAParameters(
@@ -167,7 +187,10 @@ class TrialMethodTests(unittest.TestCase):
 
     def test_gate_rejects_scores_outside_unit_interval(self) -> None:
         for item in (trial(keyword=-0.1), trial(divergence=-0.1)):
-            with self.subTest(item=item), self.assertRaises(AcceptanceGateError):
+            with (
+                self.subTest(item=item),
+                self.assertRaises(AcceptanceGateError),
+            ):
                 select_accepted_trial([item], gate(), "study")
 
     def test_gate_rejects_missing_and_duplicate_score_names(self) -> None:
@@ -176,7 +199,10 @@ class TrialMethodTests(unittest.TestCase):
         duplicate = trial()
         duplicate.user_attrs["scores"].append(duplicate.user_attrs["scores"][0])
         for item in (missing, duplicate):
-            with self.subTest(item=item), self.assertRaises(AcceptanceGateError):
+            with (
+                self.subTest(item=item),
+                self.assertRaises(AcceptanceGateError),
+            ):
                 select_accepted_trial([item], gate(), "study")
 
     def test_qwen_gate_requires_full_preregistered_trial_count(self) -> None:
@@ -222,7 +248,9 @@ class TrialMethodTests(unittest.TestCase):
             ),
         )
         self.assertEqual(set(fixed.params), set(raw))
-        self.assertEqual((result.start_layer_index, result.end_layer_index), (25, 45))
+        self.assertEqual(
+            (result.start_layer_index, result.end_layer_index), (25, 45)
+        )
         self.assertEqual(result.components["mlp.down_proj"].strength, 0.0)
 
     def test_directional_cleanup_resets_model(self) -> None:
@@ -239,13 +267,19 @@ class TrialMethodTests(unittest.TestCase):
     def test_fingerprint_tracks_semantics_not_output_path(self) -> None:
         with patch.object(sys, "argv", ["test"]):
             base = Settings(model="org/model", seed=4)
-            output_change = base.model_copy(update={"save_directory": "elsewhere"})
-            semantic_change = base.model_copy(update={"system_prompt": "different"})
+            output_change = base.model_copy(
+                update={"save_directory": "elsewhere"}
+            )
+            semantic_change = base.model_copy(
+                update={"system_prompt": "different"}
+            )
         self.assertEqual(
-            build_study_fingerprint(base), build_study_fingerprint(output_change)
+            build_study_fingerprint(base),
+            build_study_fingerprint(output_change),
         )
         self.assertNotEqual(
-            build_study_fingerprint(base), build_study_fingerprint(semantic_change)
+            build_study_fingerprint(base),
+            build_study_fingerprint(semantic_change),
         )
         first_gate = gate()
         second_gate = first_gate.model_copy(update={"keyword_max": 0.05})
@@ -255,7 +289,9 @@ class TrialMethodTests(unittest.TestCase):
             build_study_fingerprint(first), build_study_fingerprint(second)
         )
 
-    def test_failed_v2_acceptance_requires_machine_failure_evidence(self) -> None:
+    def test_failed_v2_acceptance_requires_machine_failure_evidence(
+        self,
+    ) -> None:
         payload = {
             "schema": ACCEPTANCE_SCHEMA,
             "status": "failed",

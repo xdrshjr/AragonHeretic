@@ -451,6 +451,16 @@ class Model:
         """Capture trajectory-v2 module I/O through the shared model facade."""
         return capture_model_trajectory(self, prompts)
 
+    def capture_ara_reference_pair(self, request: Any) -> Any:
+        """按冻结 token 捕获 v3 当前/基座参考，并恢复 adapter。"""
+        from .ara_refinement_capture import capture_reference_pair
+        return capture_reference_pair(self, request)
+
+    def score_ara_sequence_kl(self, bundle: Any) -> Any:
+        """计算同一角色固定基座序列的逐题 KL。"""
+        from .sequence_scores import score_sequence_kl
+        return score_sequence_kl(self, bundle)
+
     def _model_manifest(self) -> dict[str, Any]:
         return create_model_manifest(self)
 

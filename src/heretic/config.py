@@ -33,6 +33,7 @@ from .ara_config import (
     dataset_specs_overlap,
     validate_seed_trials,
 )
+from .ara_refinement_config import RefinementConfig, validate_refinement_settings
 
 # Settings with privacy implications must use ``exclude=True``.
 
@@ -371,10 +372,14 @@ class Settings(BaseSettings):
         description="LoRA rank used for Calibrated Arbitrary-Rank Ablation.",
     )
 
-    ara_objective_version: Literal["point-v1", "trajectory-v2"] = Field(
+    ara_objective_version: Literal[
+        "point-v1", "trajectory-v2", "sequential-v3"
+    ] = Field(
         default="point-v1",
         description="Versioned CARA capture, objective, and study protocol.",
     )
+
+    ara_v3: RefinementConfig | None = None
 
     ara_trajectory_tokens: int = Field(
         default=8,
@@ -751,6 +756,7 @@ class Settings(BaseSettings):
             raise ValueError('row_normalization must be "none" for ARA')
         self._validate_acceptance_settings()
         self._validate_trajectory_settings()
+        validate_refinement_settings(self)
         return self
 
     # Extra keys hold plugin configuration such as `[scorer.KeywordRate]`.

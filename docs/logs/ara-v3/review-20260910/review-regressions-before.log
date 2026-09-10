@@ -1,0 +1,68 @@
+test_v3_rejects_unregistered_response_prefix (test_config.RefinementConfigurationTests.test_v3_rejects_unregistered_response_prefix) ... FAIL
+test_restore_failure_still_restores_adapter_flags (test_ara_refinement_capture.CaptureTests.test_restore_failure_still_restores_adapter_flags) ... FAIL
+test_snapshot_restoration_does_not_allocate_device_copy (test_ara_refinement_capture.CaptureTests.test_snapshot_restoration_does_not_allocate_device_copy) ... ERROR
+test_member_finalize_recovers_after_promotion_before_aggregate (test_ara_research_acceptance.ResearchAcceptanceTests.test_member_finalize_recovers_after_promotion_before_aggregate) ... ERROR
+
+======================================================================
+ERROR: test_snapshot_restoration_does_not_allocate_device_copy (test_ara_refinement_capture.CaptureTests.test_snapshot_restoration_does_not_allocate_device_copy)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_refinement_capture.py", line 104, in test_snapshot_restoration_does_not_allocate_device_copy
+    torch.allclose(
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_refinement_capture.py", line 117, in apply_snapshot
+    factor.copy_(value.to(factor.device))
+                 ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/unittest/mock.py", line 1139, in __call__
+    return self._mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/unittest/mock.py", line 1143, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/unittest/mock.py", line 1198, in _execute_mock_call
+    raise effect
+RuntimeError
+
+======================================================================
+ERROR: test_member_finalize_recovers_after_promotion_before_aggregate (test_ara_research_acceptance.ResearchAcceptanceTests.test_member_finalize_recovers_after_promotion_before_aggregate)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_research_acceptance.py", line 52, in test_member_finalize_recovers_after_promotion_before_aggregate
+    "core_hashes": {
+             ^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_acceptance.py", line 496, in _finalize_member
+    staging, stage = _verify_staging(member)
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/research_audit.py", line 311, in _verify_staging
+    if file_digest(root / "staging.json") != member["staging_manifest_hash"]:
+       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_schema.py", line 121, in file_digest
+    with Path(path).open("rb") as stream:
+         ^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/pathlib.py", line 1013, in open
+    return io.open(self, mode, buffering, encoding, errors, newline)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+FileNotFoundError: [Errno 2] No such file or directory: '/tmp/tmpj_w7pcdu/staging/staging.json'
+
+======================================================================
+FAIL: test_v3_rejects_unregistered_response_prefix (test_config.RefinementConfigurationTests.test_v3_rejects_unregistered_response_prefix)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_config.py", line 38, in test_v3_rejects_unregistered_response_prefix
+    )
+      
+AssertionError: ValidationError not raised
+
+======================================================================
+FAIL: test_restore_failure_still_restores_adapter_flags (test_ara_refinement_capture.CaptureTests.test_restore_failure_still_restores_adapter_flags)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_refinement_capture.py", line 96, in test_restore_failure_still_restores_adapter_flags
+    current = capture_reference_pair(model, request)
+AssertionError: True is not false
+
+----------------------------------------------------------------------
+Ran 4 tests in 0.024s
+
+FAILED (failures=2, errors=2)
+
+退出码：1

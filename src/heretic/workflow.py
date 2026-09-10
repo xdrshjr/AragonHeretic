@@ -129,6 +129,10 @@ def load_reproduction_acceptance(
 
 def validate_reproduction_model(model: Model, report: Mapping[str, Any] | None) -> None:
     """Reject a loaded base model that differs from its acceptance report."""
+    if report and report.get("schema_version") == "cara-research-acceptance-v3":
+        from .ara_research_runner import validate_research_model
+        validate_research_model(model, report)
+        return
     if (
         report is not None
         and report.get("model_fingerprint") != model.model_fingerprint

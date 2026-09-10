@@ -319,6 +319,10 @@ def validate_reproduce_v2(payload: Mapping[str, Any]) -> None:
 
 def parse_reproduce(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     """Dispatch legacy reproduce v3/v4 or strict trajectory-v2 envelopes."""
+    if payload.get("schema") == "cara-research-reproduce-v3":
+        from .ara_research_schema import validate_research_reproduce
+        validate_research_reproduce(dict(payload))
+        return payload
     if payload.get("schema") == REPRODUCE_SCHEMA:
         validate_reproduce_v2(payload)
         return payload
@@ -332,6 +336,10 @@ def validate_acceptance_reproduce_binding(
     reproduce: Mapping[str, Any],
 ) -> None:
     """Validate the immutable cross-file identity fields without disk access."""
+    if reproduce.get("schema") == "cara-research-reproduce-v3":
+        from .ara_research_acceptance import validate_research_binding
+        validate_research_binding(dict(acceptance), dict(reproduce))
+        return
     validate_acceptance_v2(acceptance)
     validate_reproduce_v2(reproduce)
     if acceptance["status"] != "passed":
@@ -368,7 +376,9 @@ def load_bound_acceptance(
     required: bool,
 ) -> dict[str, Any] | None:
     """Load and validate the acceptance report bound to a reproduction file."""
-    is_v2 = reproduction.get("schema") == REPRODUCE_SCHEMA
+    is_v2 = reproduction.get("schema") in {
+        REPRODUCE_SCHEMA, "cara-research-reproduce-v3"
+    }
     binding = reproduction.get("acceptance")
     if is_v2:
         name = "acceptance.json"
@@ -498,6 +508,10 @@ def verify_artifact_graph(root: str | Path) -> None:
     reproduce_path = base / "reproduce.json"
     acceptance = json.loads(acceptance_path.read_text(encoding="utf-8"))
     reproduce = json.loads(reproduce_path.read_text(encoding="utf-8"))
+    if reproduce.get("schema") == "cara-research-reproduce-v3":
+        from .ara_research_acceptance import verify_research_artifact_graph
+        verify_research_artifact_graph(base)
+        return
     validate_acceptance_v2(acceptance)
     validate_reproduce_v2(reproduce)
     validate_acceptance_reproduce_binding(acceptance, reproduce)
