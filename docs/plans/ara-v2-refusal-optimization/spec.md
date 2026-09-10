@@ -581,3 +581,96 @@ File plan 中逐文件展开后的 **39 个路径项全部存在并符合预期�
 | ARA-DESIGN-009 | 真实双 3090 pilot、独立审计来源/抽样前提、跨模型复验及双评资源尚待落实 | 研究执行节点；相应实验阶段前 |
 
 上述 P2 不阻断当前代码精确提交，但阻断对应机制、成本或效果声明。默认统计目标、审计一次性约束和历史 v1 失败结论没有降低。
+
+## 第 1+1 轮提交记录
+
+记录日期：2026-09-10。提交节点 #5 已完成自验、精确提交及提交后核对。
+
+**代码检查点 SHA：`edb1de486590b9984f6361858a0c5c6364bec17e`。** 提交主题：`feat: 实现 ARA sequential-v3 研究流程并固化评审验证`。父提交：`0ee873054094ac2eaa8aa29326de75f65400c4ff`。
+
+已执行 `git rev-parse --is-inside-work-tree`，结果为 true。依据评审的 41 项交付摘要展开本轮源码、配置、测试、规格与实现/评审/复验证据，对 66 个明确文件分别执行 `git add <具体路径>`，再以 `git commit --only` 限定路径提交。未使用整体暂存或跳过 hooks 的选项。已逐项核对 `git log -1 --stat`、全部提交路径和对应 Git 对象，文件与本轮范围完全一致。进入节点前的 23 项暂存删除保持字节一致，运行时目录、IDE/索引及其他论文产物未混入提交。
+
+### 自验结论
+
+184 项不同测试通过：开发服务器既有 Python 环境加载当前内存源码运行 183 项 CPU 回归（1.781 秒），本地运行 1 项真实子进程预算测试（1.368 秒）。36 个任务 Python 文件语法编译、Ruff、12 个新增模块复杂度与行宽、Linux wrapper 语法及两类 CLI 帮助通过；缺少冻结协议时 preflight 退出 2，未创建 study。41 项评审交付摘要一致；4 项远端静态夹具与当前工作树逐字节一致。
+
+源码、测试、脚本、配置的暂存空白检查通过。完整暂存检查退出 2，仅报告 6 份原始 Optuna 日志行尾空格和本规格的 Markdown 换行空格；保留证据原文，不改写历史日志，也不将该检查标记通过。Git 沿用现有规则规范化文本换行；原始字节 SHA256 与提交 Git 对象的用途见核对报告。
+
+本节点未新增或修改源码，未发现新的 P0/P1；延续上节 5 项实现 P2 及研究资源门槛。没有执行 GPU 实验、正式搜索、真实能力审计、人工双评或模型 checksum 流程，自验不构成研究效果通过。
+
+证据：[提交验收说明](../../logs/ara-v3/commit-20260910/SUMMARY.md)、[本地复验](../../logs/ara-v3/commit-20260910/local-validation.json)、[CPU 回归](../../logs/ara-v3/commit-20260910/cpu-unittest.log)、[逐文件核对](../../logs/ara-v3/commit-20260910/checkpoint-verification.json)。本节及验收说明、逐文件核对另作一次仅记账的 `feat:` 提交，记录指向已存在的代码检查点，避免留下本轮文档改动未提交。
+
+### 代码检查点文件清单（66 项）
+
+- `README.md`
+- `config.qwen38-27b-cara-v2.toml`
+- `config.qwen38-27b-cara-v3-96.toml`
+- `docs/logs/ara-v3/commit-20260910/commit-plan.json`
+- `docs/logs/ara-v3/commit-20260910/cpu-unittest.log`
+- `docs/logs/ara-v3/commit-20260910/fixture-identity.json`
+- `docs/logs/ara-v3/commit-20260910/local-validation.json`
+- `docs/logs/ara-v3/implementation-20260910/SUMMARY.md`
+- `docs/logs/ara-v3/implementation-20260910/entrypoints.log`
+- `docs/logs/ara-v3/implementation-20260910/static-validation.json`
+- `docs/logs/ara-v3/implementation-20260910/unittest.log`
+- `docs/logs/ara-v3/implementation-20260910/validation.json`
+- `docs/logs/ara-v3/review-20260910/00-scan-report.md`
+- `docs/logs/ara-v3/review-20260910/SHA256SUMS`
+- `docs/logs/ara-v3/review-20260910/audit-recovery-before.log`
+- `docs/logs/ara-v3/review-20260910/baseline-unittest.log`
+- `docs/logs/ara-v3/review-20260910/final-unittest-verified.log`
+- `docs/logs/ara-v3/review-20260910/final-unittest.log`
+- `docs/logs/ara-v3/review-20260910/git-status.txt`
+- `docs/logs/ara-v3/review-20260910/identity-recovery-after.log`
+- `docs/logs/ara-v3/review-20260910/identity-recovery-verified.log`
+- `docs/logs/ara-v3/review-20260910/identity-regressions-before.log`
+- `docs/logs/ara-v3/review-20260910/member-budget-before.log`
+- `docs/logs/ara-v3/review-20260910/preflight/preflight-result.json`
+- `docs/logs/ara-v3/review-20260910/process-budget-verified.log`
+- `docs/logs/ara-v3/review-20260910/review-regressions-after.log`
+- `docs/logs/ara-v3/review-20260910/review-regressions-before.log`
+- `docs/logs/ara-v3/review-20260910/static-validation.json`
+- `docs/plans/ara-v2-refusal-optimization/spec.md`
+- `scripts/prepare_ara_research_protocol.py`
+- `scripts/run_ara_research_96.sh`
+- `src/heretic/acceptance_export.py`
+- `src/heretic/ara_refinement.py`
+- `src/heretic/ara_refinement_capture.py`
+- `src/heretic/ara_refinement_config.py`
+- `src/heretic/ara_research_acceptance.py`
+- `src/heretic/ara_research_runner.py`
+- `src/heretic/ara_research_schema.py`
+- `src/heretic/ara_runtime.py`
+- `src/heretic/artifact_schema.py`
+- `src/heretic/config.py`
+- `src/heretic/main.py`
+- `src/heretic/model.py`
+- `src/heretic/protocol_data.py`
+- `src/heretic/reproduce.py`
+- `src/heretic/research_audit.py`
+- `src/heretic/research_audit_recovery.py`
+- `src/heretic/research_budget.py`
+- `src/heretic/research_evaluation.py`
+- `src/heretic/research_protocol.py`
+- `src/heretic/sequence_scores.py`
+- `src/heretic/trial_methods.py`
+- `src/heretic/utils.py`
+- `src/heretic/workflow.py`
+- `tests/test_acceptance_export.py`
+- `tests/test_ara_refinement.py`
+- `tests/test_ara_refinement_capture.py`
+- `tests/test_ara_research_acceptance.py`
+- `tests/test_ara_research_runner.py`
+- `tests/test_config.py`
+- `tests/test_protocol_data.py`
+- `tests/test_reproduce.py`
+- `tests/test_research_audit.py`
+- `tests/test_research_evaluation.py`
+- `tests/test_sequence_scores.py`
+- `tests/test_trial_methods.py`
+
+### 随后的记账文件清单（3 项）
+
+- `docs/plans/ara-v2-refusal-optimization/spec.md`（追加本节）
+- `docs/logs/ara-v3/commit-20260910/SUMMARY.md`
+- `docs/logs/ara-v3/commit-20260910/checkpoint-verification.json`

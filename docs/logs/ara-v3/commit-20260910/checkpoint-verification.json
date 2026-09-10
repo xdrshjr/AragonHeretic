@@ -1,0 +1,342 @@
+{
+  "检查点": "edb1de486590b9984f6361858a0c5c6364bec17e",
+  "父提交": "0ee873054094ac2eaa8aa29326de75f65400c4ff",
+  "提交主题": "feat: 实现 ARA sequential-v3 研究流程并固化评审验证",
+  "文件数": 66,
+  "逐项路径与Git对象核对": [
+    {
+      "文件": "README.md",
+      "Git对象": "725b03451a3d9c87fd3c0901780b9ff250583f30",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v2.toml",
+      "Git对象": "ce766000740e7d17520e14a052091a9ad744158a",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v3-96.toml",
+      "Git对象": "88621f96a9deaa3ee3caf9054e3606bd9635c190",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260910/commit-plan.json",
+      "Git对象": "9270ce8bdc3e0dd12d639f7762477655e7285cd0",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260910/cpu-unittest.log",
+      "Git对象": "26b5b9ee8a46319e9e562cee04037167937853b3",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260910/fixture-identity.json",
+      "Git对象": "08b903c7e2b083fd1de3c4838851b7b13567d5e7",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260910/local-validation.json",
+      "Git对象": "e9c973a044580646926625cceaaf9ed0b5e1b76f",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260910/SUMMARY.md",
+      "Git对象": "bbfce7162a6ee7dbfa4384c878ed8100a09e9aab",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260910/entrypoints.log",
+      "Git对象": "07f7b8f2a30544715d3c18381b63afa8bcfed8f8",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260910/static-validation.json",
+      "Git对象": "01bed879e1ac6ef5502489a6ec238d9ee21af63a",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260910/unittest.log",
+      "Git对象": "fac387c8d5427b0f01b3e44c8c25ced96929c12f",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260910/validation.json",
+      "Git对象": "d768dfb6102dea24f81f38dd5a16b898f9bb91a0",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/00-scan-report.md",
+      "Git对象": "356eaeec5f980c4eea794973493978bb4af3d90b",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/SHA256SUMS",
+      "Git对象": "edc04e04dc5fb30785cce93ff55606cd08038808",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/audit-recovery-before.log",
+      "Git对象": "0b5f03deaf0c4c444d1275f106bdfde7955318c1",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/baseline-unittest.log",
+      "Git对象": "a078948347b5e3f360d2c759c8c0e76e0660c292",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/final-unittest-verified.log",
+      "Git对象": "cf6358b9cce808701faeacbbec9ab5a75ca0337f",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/final-unittest.log",
+      "Git对象": "c6d0d39ec37c23df0043334cf1bc0e438f5ec225",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/git-status.txt",
+      "Git对象": "98ef5f7d7a3baf30038a24e4e6451227d9a07d0d",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/identity-recovery-after.log",
+      "Git对象": "6a59aa54c69f1b1bb5311811868cdadebeda3ca9",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/identity-recovery-verified.log",
+      "Git对象": "f2268acc065b4d529faeeef17bb38911c3b88466",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/identity-regressions-before.log",
+      "Git对象": "a7ea40dc4bf10110a714627cc2169fc509e91acb",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/member-budget-before.log",
+      "Git对象": "c74be4329ac83d3f801864cb51ccbe3b4a3c5be0",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/preflight/preflight-result.json",
+      "Git对象": "b7a14256d8fe0ab02a81b1b18141a1ba1505740f",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/process-budget-verified.log",
+      "Git对象": "c8bc6b573d67fed6bcf3e32cb5711bd307b5c90b",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/review-regressions-after.log",
+      "Git对象": "2b8e783a1cfc482fb5b679dec6aaf6f179cc9eef",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/review-regressions-before.log",
+      "Git对象": "65740db446f3bbc4acf5b780c95bd9e15e592ac6",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260910/static-validation.json",
+      "Git对象": "a48c9b33c1cd0cc964dfe0c5d4f7bf69077794b7",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "docs/plans/ara-v2-refusal-optimization/spec.md",
+      "Git对象": "0ff109e07a20932c0897d32604f021a4cfa53dac",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "scripts/prepare_ara_research_protocol.py",
+      "Git对象": "5a9aab2569a6a8174a355bd7f7307f6caf5f9a54",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "scripts/run_ara_research_96.sh",
+      "Git对象": "37fe733762ca68f177505fcf37952e98e2a1ee36",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/acceptance_export.py",
+      "Git对象": "b1c2cc3e49ded6079bda19bf36e8c84e16ff3536",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement.py",
+      "Git对象": "373b40a1c8b5202fdf96781f62f685ea315097ec",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement_capture.py",
+      "Git对象": "a2aabe6520d1e01dcadfcff7b8ff093fcb65757d",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement_config.py",
+      "Git对象": "332032bf664490fe132d9d5864868ae9092ef788",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/ara_research_acceptance.py",
+      "Git对象": "989fe8f95220a6fb61131ce938a5e0af83b0a85b",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/ara_research_runner.py",
+      "Git对象": "3fc0ca2ee620ead2e8ea62479f822f781f620ab3",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/ara_research_schema.py",
+      "Git对象": "c69f40da0a44ddba6ddb1f895b86d715e5651d07",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/ara_runtime.py",
+      "Git对象": "e21b7346f5d0bfc58f3675ae4edee71a56d4ac7a",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/artifact_schema.py",
+      "Git对象": "99c6099c1b96a470af1e1dff0c9819dbbe4a790b",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/config.py",
+      "Git对象": "1c32b79228939f3e963b435910948b2a46498ea2",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/main.py",
+      "Git对象": "9aadea844a199ec9140bdc0e5835862a4003d5ae",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/model.py",
+      "Git对象": "de4e7d666e816bed0285f8619dcd1b4c9d9257e5",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/protocol_data.py",
+      "Git对象": "8b69dd3ae65fc3219656df6d92db23fb8ce3a24a",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/reproduce.py",
+      "Git对象": "8be5dd99f35625087b62b16edbfb207d585babc4",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/research_audit.py",
+      "Git对象": "df2c4f5f952cbf8c04da111f9d3fa31745f02dc4",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/research_audit_recovery.py",
+      "Git对象": "e863a0785f336906ad4de9b37e5a08b01b2cff3e",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/research_budget.py",
+      "Git对象": "0eba8e97a75855b61792bf540a8f9dc72e865093",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/research_evaluation.py",
+      "Git对象": "8e4c91e28cba936be52de4c3c75a383f6d3dd743",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/research_protocol.py",
+      "Git对象": "e90b52e6fce4ceefede72431d3c503cd4a37a870",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/sequence_scores.py",
+      "Git对象": "78b304dc2175971955c85249b82623ba93e37e34",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/trial_methods.py",
+      "Git对象": "1b0279b8e7921bffbdd9d9d4b93d92ff7071157c",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/utils.py",
+      "Git对象": "eb120e5bdfa6b3cf0519dd1097818aeb157cb9ea",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "src/heretic/workflow.py",
+      "Git对象": "4856d8471026d37fdefb14f5a123de0686fe1d1d",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_acceptance_export.py",
+      "Git对象": "30500128b15045d8699351d33e4ac6faed65a217",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_ara_refinement.py",
+      "Git对象": "b372150d2df6b408bb72f1f7ddfb87392eb331a4",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_ara_refinement_capture.py",
+      "Git对象": "25c3f0c58d9bf88fbd36775893f7aba7ea8a4680",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_ara_research_acceptance.py",
+      "Git对象": "f6ddba6115a7f9e96612f4c05e2d9a37baabfd23",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_ara_research_runner.py",
+      "Git对象": "dde49296369eb82e002a44dcfafebb51be865869",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_config.py",
+      "Git对象": "2dd3425f0b70cafa87a28c644bf84ec6b5f098c5",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_protocol_data.py",
+      "Git对象": "4cafca0a03b94e9d0204cb1c19b68b3dfaaa3718",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_reproduce.py",
+      "Git对象": "36cc490f95c1fd1b53007e4a140056377565894c",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_research_audit.py",
+      "Git对象": "fd968117c0766c750b48d92ecdd6c938c46ed4c5",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_research_evaluation.py",
+      "Git对象": "f05be3f66c73d398f1b2c369a19c631e50f1c818",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_sequence_scores.py",
+      "Git对象": "a5b1958f49501e9d70608de561c75517eae04fc5",
+      "当前工作树经Git过滤后相同": true
+    },
+    {
+      "文件": "tests/test_trial_methods.py",
+      "Git对象": "b67f573724fbff17a90124af5b3e19bee9359457",
+      "当前工作树经Git过滤后相同": true
+    }
+  ],
+  "原有23项暂存删除保持一致": true,
+  "本节点未修改源码": true,
+  "验证通过": true,
+  "摘要说明": "评审及复验中的SHA256是当时Windows工作树原始字节摘要；Git按现有规则将文本CRLF规范化为LF。此处Git对象绑定实际提交内容，比较经过相同Git过滤的工作树。"
+}
