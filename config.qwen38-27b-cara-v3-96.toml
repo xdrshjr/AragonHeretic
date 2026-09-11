@@ -67,19 +67,19 @@ max_capture_cpu_gib = 32.0
 max_cuda_allocated_gib = 22.0
 
 [[ara_runtime_guard.targets]]
-name_pattern = "*.self_attn.o_proj"
+name_pattern = "self_attn.o_proj"
 count = 16
 in_features = 6144
 out_features = 5120
 
 [[ara_runtime_guard.targets]]
-name_pattern = "*.linear_attn.out_proj"
+name_pattern = "linear_attn.out_proj"
 count = 48
 in_features = 6144
 out_features = 5120
 
 [[ara_runtime_guard.targets]]
-name_pattern = "*.mlp.down_proj"
+name_pattern = "mlp.down_proj"
 count = 64
 in_features = 17408
 out_features = 5120

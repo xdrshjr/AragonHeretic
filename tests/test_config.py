@@ -28,6 +28,36 @@ def make_settings(values: dict) -> Settings:
 
 
 class RefinementConfigurationTests(unittest.TestCase):
+    def test_v3_template_matches_real_qwen_projection_names(self):
+        from torch import nn
+
+        from heretic.ara import ModuleKey, TargetModule
+        from heretic.ara_runtime import _match_target
+
+        path = Path(__file__).resolve().parents[1]
+        settings = make_settings(tomllib.loads(
+            (path / "config.qwen38-27b-cara-v3-96.toml").read_text(
+                encoding="utf-8"
+            )
+        ))
+        projections = (
+            ("self_attn.o_proj", "attn.o_proj", 6144),
+            ("linear_attn.out_proj", "attn.o_proj", 6144),
+            ("mlp.down_proj", "mlp.down_proj", 17408),
+        )
+        for name, component, in_features in projections:
+            with self.subTest(projection=name):
+                target = TargetModule(
+                    ModuleKey(0, component, 0),
+                    f"base_model.model.model.language_model.layers.0.{name}",
+                    nn.Identity(),
+                    in_features,
+                    5120,
+                )
+                self.assertEqual(
+                    _match_target(target, settings.ara_runtime_guard), name
+                )
+
     def test_v3_rejects_unregistered_response_prefix(self):
         path = Path(__file__).resolve().parents[1]
         values = tomllib.loads(
