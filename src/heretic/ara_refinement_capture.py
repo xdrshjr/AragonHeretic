@@ -410,7 +410,7 @@ def bind_evaluation_state(bank: ReferenceBank, state_hash: str):
     )
 
 
-def preflight_snapshot_storage(model, root):
+def preflight_snapshot_storage(model, root, *, snapshots=32):
     """按实际 shape 预留全部 trial、重放及 staging 快照和 20% 余量。"""
     import shutil
 
@@ -419,7 +419,9 @@ def preflight_snapshot_storage(model, root):
         for target in model.ara_targets
         for factor in get_lora_factors(target)
     )
-    required = math.ceil(factor_bytes * 32 * 1.2)
+    if type(snapshots) is not int or snapshots < 1:
+        raise ValueError("快照预留数量必须为正整数")
+    required = math.ceil(factor_bytes * snapshots * 1.2)
     available = shutil.disk_usage(root).free
     if available < required:
         raise RuntimeError(

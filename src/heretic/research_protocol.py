@@ -294,7 +294,7 @@ def _protocol_payload(config, roles, access):
     return payload
 
 
-def prepare_protocol(config, metadata_loader=None) -> dict:
+def prepare_protocol(config, metadata_loader=None, *, experiment=False) -> dict:
     """模型加载前校验冻结身份和开发正文；从不打开审计正文。"""
     path = Path(config.ara_v3.protocol_manifest)
     if not path.is_file():
@@ -306,6 +306,11 @@ def prepare_protocol(config, metadata_loader=None) -> dict:
     if digest(protocol) != expected:
         raise ValueError("冻结协议 hash 不匹配")
     protocol["protocol_hash"] = expected
+    scope = protocol.get("execution_scope")
+    if scope and not experiment:
+        raise ValueError("独立实验协议必须使用对应实验入口，禁止研究提升")
+    if experiment and scope != "pro6000-experiment-v1":
+        raise ValueError("Pro 6000 实验协议范围不匹配")
     if REQUIRED_ROLES - protocol["roles"].keys():
         raise ValueError("训练协议缺少必需的开发角色")
     if protocol["required_level"] != config.ara_v3.required_level:

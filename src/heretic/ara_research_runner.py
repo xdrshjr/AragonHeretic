@@ -235,7 +235,7 @@ def _sample_attempt(history, seed, attempt):
     }
 
 
-def run_search(context: dict) -> dict:
+def run_search(context: dict, *, finalize=None) -> dict:
     """独占锁下恢复 attempt 边界；孤立 RUNNING 占用原预算。"""
     path = Path(context["run_dir"]) / "study.json"
     identity = context["identity"]
@@ -263,7 +263,7 @@ def run_search(context: dict) -> dict:
         for attempt in range(len(study["trials"]), 24):
             budget.check()
             _run_attempt(context, study, path, attempt)
-        _select_and_lock(context, study, path)
+        (finalize or _select_and_lock)(context, study, path)
         return study
 
 
@@ -287,10 +287,12 @@ def _run_attempt(context, study, path, attempt):
         from .ara_refinement_capture import SnapshotRestoreError
 
         row.update(state="FAIL", failure_category=type(error).__name__)
+        row["failure_reason"] = str(error)
         if isinstance(error, (ResearchBudgetExceeded, SnapshotRestoreError)):
             write_json(path, study)
             raise
-    row["completed_gpu_hours"] = context["budget"].elapsed() * 2 / 3600
+    devices = getattr(context["budget"], "devices", 2)
+    row["completed_gpu_hours"] = context["budget"].elapsed() * devices / 3600
     _write_checkpoints(study, row["completed_gpu_hours"])
     write_json(path, study)
 
@@ -447,7 +449,7 @@ def _role_prompts(protocol, protocol_root, role):
 
 
 class _ResearchSession:
-    def __init__(self, settings, protocol, root, budget):
+    def __init__(self, settings, protocol, root, budget, *, snapshots=32):
         import torch
         import numpy as np
         from .model import Model
@@ -462,7 +464,7 @@ class _ResearchSession:
         self.root, self.budget = root, budget
         self.model = Model(settings)
         self.model.model.eval()
-        preflight_snapshot_storage(self.model, root)
+        preflight_snapshot_storage(self.model, root, snapshots=snapshots)
         protocol_root = Path(settings.ara_v3.protocol_manifest).parent
         self.fit, self.fit_ids = fit_selection(
             settings, protocol, protocol_root
