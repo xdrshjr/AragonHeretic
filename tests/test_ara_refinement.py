@@ -9,8 +9,11 @@ import torch
 
 from heretic.ara_refinement import (
     BlockProposal,
+    RefinementNumericalError,
     SolverOptions,
     _block_transaction,
+    _canonical_factors,
+    _check_effective_update,
     monitor_accepts,
     refinement_loss,
     solve_refinement_block,
@@ -37,6 +40,34 @@ def monitor_score(keywords=0.5, odds=0.0):
 
 
 class RefinementTests(unittest.TestCase):
+    def test_high_rank_canonicalization_preserves_effective_update(self):
+        devices = ["cpu"] + (["cuda"] if torch.cuda.is_available() else [])
+        for device in devices:
+            with self.subTest(device=device):
+                generator = torch.Generator(device=device).manual_seed(42)
+                a = torch.randn(128, 512, generator=generator, device=device)
+                b = torch.randn(512, 128, generator=generator, device=device)
+                a, b = a / 512**0.5, b * 0.1
+                ca, cb, singular = _canonical_factors(a, b)
+                _check_effective_update((a, b), (ca, cb))
+                self.assertEqual(ca.dtype, a.dtype)
+                self.assertEqual(ca.device, a.device)
+                reference = b.double() @ a.double()
+                actual = cb.double() @ ca.double()
+                relative = torch.linalg.vector_norm(actual - reference)
+                relative /= torch.linalg.vector_norm(reference)
+                self.assertLess(float(relative), 1e-7)
+                self.assertTrue(torch.isfinite(singular).all())
+
+    def test_effective_update_check_rejects_changed_or_nonfinite_factors(self):
+        a, b = torch.eye(4), torch.eye(4)
+        for value in (1.01, float("nan"), float("inf")):
+            with self.subTest(value=value):
+                changed = b.clone()
+                changed[0, 0] = value
+                with self.assertRaises(RefinementNumericalError):
+                    _check_effective_update((a, b), (a, changed))
+
     def test_anchor_keep_accounts_for_upstream_drift(self):
         model = tiny_model()
         model.model.layers[0].lora_B["default"].weight.data.fill_(0.2)

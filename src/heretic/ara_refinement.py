@@ -12,7 +12,12 @@ from typing import Callable
 import torch
 from torch import Tensor
 
-from .ara import BALANCE_WEIGHT, get_lora_factors, snapshot_adapter_state
+from .ara import (
+    BALANCE_WEIGHT,
+    _canonical_factors,
+    get_lora_factors,
+    snapshot_adapter_state,
+)
 from .ara_refinement_capture import (
     CaptureRequest,
     PairedObservation,
@@ -27,7 +32,7 @@ from .ara_refinement_capture import (
     tensor_identity,
 )
 from .ara_research_schema import digest, file_digest, write_json
-from .ara_trajectory import _canonical_factors, _soft_nearest
+from .ara_trajectory import _soft_nearest
 
 
 class RefinementNumericalError(RuntimeError):
@@ -380,6 +385,11 @@ def _run_sweeps(model, context, parameters):
         accepted = 0
         for index, targets in enumerate(blocks):
             resources_before = context.check_budget()
+            print(
+                f"ARA v3 sweep={sweep} block={index}/{len(blocks)} "
+                f"modules={len(targets)}: 开始求解",
+                flush=True,
+            )
             request = _request(context, targets, sequences)
             event = _block_transaction(
                 model, context, request, parameters, frozen.get(index)
@@ -390,6 +400,12 @@ def _run_sweeps(model, context, parameters):
                 "after": context.check_budget(),
             }
             events.append(event)
+            print(
+                f"ARA v3 sweep={sweep} block={index}: "
+                f"accepted={event['accepted']} "
+                f"reason={event['rejection_reason']}",
+                flush=True,
+            )
             accepted += int(event["accepted"])
             context.check_budget()
         if not accepted:
