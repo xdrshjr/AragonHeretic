@@ -1,6 +1,9 @@
 # ARA v3 单卡小样本启动验证
 
-状态：小样本启动验证通过；完整 pilot 继续在后台运行。正式研究状态仍为 `not_run`。
+最终状态：小样本启动验证通过，但完整 pilot 随后在 development 评估阶段发生 CUDA OOM，退出码 3，本轮结果为 `failed`，进程已经停止。正式搜索和研究验收尚未开展。
+
+2026-09-11 03:48:48 UTC，本轮结束；原生预算记录的运行时长约 40 分 46 秒。5 个层组全部完成求解并按部署门槛回滚，接受数为 0，随后评估时显存耗尽：当时 PyTorch 已分配约 44.95 GiB，额外申请 546 MiB 失败。尚无足够堆栈证据区分具体评估子步骤，不能仅凭 OOM 提示认定是碎片化。没有生成成功的 trial 或最终快照，GPU 已释放。
+最终证据见 [completion-status.json](completion-status.json) 和 [retry3-pilot-result.json](retry3-pilot-result.json)。下面保留此前的启动检查时间点，不能把历史 `running` 状态当作当前状态。
 
 2026-09-11 03:31 UTC 检查时，原生脚本已完成前两个层组（32 个真实模块）的求解和有效更新检查，候选因部署门槛被正常拒绝、回滚，并继续处理第三组。此前的 canonicalization 异常未复现。证据见 [startup-summary.json](startup-summary.json)。
 这里的 `proposal_rejected` 是候选未被接受，不是进程故障；本记录只确认方法能够正常启动和执行，不宣称获得有效改进。
@@ -38,9 +41,9 @@ cat /root/autodl-tmp/ara-v3-smoke-20260911/pilot-retry3/pilot-result.json
 cat "$record/bootstrap-retry3.exit"
 ```
 
-运行中的结果文件、退出码文件可能尚不存在。完成后后台汇总器会核验真实退出码、trial 状态及快照 SHA-256，输出 `pilot-summary.json`、`layer-group-events.json`；其日志为 `finalize-retry3.log`。
+本轮结果和退出码文件已存在，退出码为 3。后台汇总器因此拒绝输出表示通过的 `pilot-summary.json` 和 `layer-group-events.json`；失败日志为 `finalize-retry3.log`。
 
-本轮实际调用的原生入口如下（已有任务运行时不要重复启动）：
+本轮实际调用的原生入口如下（仅作运行记录，失败目录不能直接当作新运行复用）：
 
 ```bash
 cd /root/autodl-fs/AragonHeretic-v3

@@ -1,0 +1,29 @@
+{
+  "status": "failed",
+  "phase": "pilot",
+  "attempt": "retry3",
+  "failure_category": "OutOfMemoryError",
+  "exit_code": 3,
+  "completed_layer_groups": 5,
+  "accepted_layer_groups": 0,
+  "progress": [
+    "ARA v3 sweep=0 block=0/5 modules=16: 开始求解",
+    "ARA v3 sweep=0 block=0: accepted=False reason=proposal_rejected",
+    "ARA v3 sweep=0 block=1/5 modules=16: 开始求解",
+    "ARA v3 sweep=0 block=1: accepted=False reason=proposal_rejected",
+    "ARA v3 sweep=0 block=2/5 modules=16: 开始求解",
+    "ARA v3 sweep=0 block=2: accepted=False reason=proposal_rejected",
+    "ARA v3 sweep=0 block=3/5 modules=16: 开始求解",
+    "ARA v3 sweep=0 block=3: accepted=False reason=proposal_rejected",
+    "ARA v3 sweep=0 block=4/5 modules=8: 开始求解",
+    "ARA v3 sweep=0 block=4: accepted=False reason=proposal_rejected"
+  ],
+  "wallclock_seconds": 2445.5908455848694,
+  "finished_at_utc": "2026-09-11T03:48:48.120397+00:00",
+  "protocol_hash": "5bcbab3eb87687d695b18e15b8aafc980bc7fe991faf369364631c942bc37d5a",
+  "tested_code_commit": "685e26cabc305ffc7449a79e44652467b823d12c",
+  "trial_file_exists": false,
+  "snapshot_file_exists": false,
+  "gpu_at_check": "1 MiB, 0 %",
+  "scope": "层组求解与回滚完成，development 评估 OOM；没有完整 pilot 通过或方法有效性结论"
+}
