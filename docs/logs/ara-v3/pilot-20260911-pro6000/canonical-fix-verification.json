@@ -1,0 +1,17 @@
+{
+  "scope": "真实失败因子的数值回放",
+  "rtol": 1e-06,
+  "atol": 1e-07,
+  "results": [
+    {
+      "device": "cpu",
+      "saved_factors_pass": true,
+      "changed_factors_rejected": true
+    },
+    {
+      "device": "cuda",
+      "saved_factors_pass": true,
+      "changed_factors_rejected": true
+    }
+  ]
+}

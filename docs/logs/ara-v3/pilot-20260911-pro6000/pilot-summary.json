@@ -1,0 +1,109 @@
+{
+  "status": "passed",
+  "scope": "单卡真实模型小样本工程 pilot",
+  "research_status": "not_run",
+  "research_effectiveness_validated": false,
+  "attempt": "run2",
+  "exit_code": 0,
+  "bootstrap_exit_code": 0,
+  "source_revision": "a6af663762f2fa6a543110f78ec3c74ea4bce227",
+  "source_tree_hash": "dbf84918ce1fb19cc7a5536d01ee7d33f8cebefe59a9af17371fc390b6812645",
+  "tested_code_commit": "a6af663762f2fa6a543110f78ec3c74ea4bce227",
+  "checkout_commit_at_export": "a6af663762f2fa6a543110f78ec3c74ea4bce227",
+  "source_revision_note": "Pro 6000 在同步最新提交后冻结独立协议，源码与运行配置均按文件摘要绑定",
+  "protocol_hash": "0f8a57e633de47dd4b406cd4ecc38f8d4f95d55fb0d6dd92373a61f61f8d32fd",
+  "protocol_file_sha256": "173b545fe5b3fae5677b2e22dba71f8cfd1cc5a7e3f719dfa9cf3a4fde8af43f",
+  "working_tree_changes": [],
+  "model": "Qwen/Qwen3.8-27B",
+  "model_revision": "1d4bf0f2ff6012fd82039f2fa52739d0dd7c60c0",
+  "package_versions": {
+    "accelerate": "1.14.0",
+    "bitsandbytes": "0.50.1",
+    "datasets": "4.8.5",
+    "lm_eval": "0.4.12",
+    "numpy": "2.5.2",
+    "optuna": "4.9.0",
+    "peft": "0.20.0",
+    "pydantic-settings": "2.15.0",
+    "scipy": "1.18.1",
+    "torch": "2.13.0",
+    "transformers": "5.15.1"
+  },
+  "quantization": "bnb_4bit",
+  "hardware": {
+    "hostname": "autodl-container-f7964f8eb7-61323a17",
+    "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition, 97887 MiB, 580.82.09"
+  },
+  "sample_counts": {
+    "development.bad": 100,
+    "development.good": 100,
+    "fit.bad": 8,
+    "fit.good": 8,
+    "mechanism-development.bad": 44,
+    "mechanism-development.good": 44,
+    "monitor.bad": 8,
+    "monitor.good": 8
+  },
+  "trial_state": "COMPLETE",
+  "layer_group_event_count": 5,
+  "accepted_layer_groups": 0,
+  "sweeps_executed": 1,
+  "rejection_reasons": {
+    "proposal_rejected": 5
+  },
+  "pilot_budget_wallclock_seconds": 2597.669895172119,
+  "actual_single_gpu_hours_from_wallclock": 0.7215749708811442,
+  "native_budget_gpu_hours": 1.4431499417622884,
+  "budget_note": "原预算器默认按两卡记账；另列本次单卡墙钟折算值，不将保守预算记账视为实测利用率",
+  "trial_wallclock_seconds": 1328.4114124774933,
+  "scores": {
+    "baseline_keywords": 1.0,
+    "data_identity": "c5868cff958987cd4d659a703116e70fd8713cfb1f960db9665b9700cf99259f",
+    "first_token_kl": 0.0,
+    "keywords": 1.0,
+    "log_odds": 4.967287063598633,
+    "sample_count": 100,
+    "sequence_kl": 0.0
+  },
+  "final_resources": {
+    "cpu_rss_gib": 8.444450378417969,
+    "cuda": {
+      "cuda:0": {
+        "allocated_gib": 51.313255310058594,
+        "free_gib": 30.5799560546875,
+        "reserved_gib": 89.052734375,
+        "total_gib": 94.97076416015625
+      }
+    },
+    "system_available_gib": 917.0625686645508
+  },
+  "observed_cpu_peak_gib": 52.39670944213867,
+  "observed_gpu_peak_mib": 91903,
+  "snapshot": {
+    "path": "/root/autodl-tmp/ara-v3-pro6000-smoke-20260911/pilot-run2/pilot/0/factors.pt",
+    "bytes": 1107384703,
+    "sha256": "9145166d55f2593b54ae3d1c1d4f64f07c0eda51fb2d63d6004a59d2f77a01ac",
+    "hash_verified": true,
+    "factor_identity": "5c7a5c3571a40cda90c92cdee6d09eacf139106eb0d8ca803d4df1787f611ae5",
+    "archive_path": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-smoke-20260911/artifacts/pilot-run2/factors.pt",
+    "archive_hash_verified": true
+  },
+  "paths": {
+    "project": "/root/autodl-fs/AragonHeretic-v3",
+    "record": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-smoke-20260911",
+    "run": "/root/autodl-tmp/ara-v3-pro6000-smoke-20260911/pilot-run2"
+  },
+  "limitations": [
+    "没有执行正式搜索、独立审计或能力审计",
+    "没有完成语义双评",
+    "工程通过不表示达到低拒答或极低拒答目标"
+  ],
+  "local_solver": {
+    "module_proposals": 72,
+    "cumulative_ratio_violations": 0,
+    "singular_value_violations": 72,
+    "max_local_cumulative_ratio": 0.24457204341888428,
+    "max_singular_value": 27.27432632446289,
+    "note": "同一模块可能同时超过两种门槛；计数是模块提案数，不是层组数"
+  }
+}

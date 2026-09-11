@@ -1,0 +1,28 @@
+{
+  "scope": "真实 fit 数值诊断，未执行 monitor/development 评分",
+  "module": 13,
+  "shape": [
+    [
+      128,
+      6144
+    ],
+    [
+      5120,
+      128
+    ]
+  ],
+  "precision": "highest",
+  "tf32": false,
+  "errors": {
+    "torch.float32": {
+      "max_absolute_error": 1.4901161193847656e-07,
+      "max_error_over_tolerance": 1.1172717809677124,
+      "failing_elements": 1
+    },
+    "torch.float64": {
+      "max_absolute_error": 1.2106763286334754e-08,
+      "max_error_over_tolerance": 0.057103655251043675,
+      "failing_elements": 0
+    }
+  }
+}
