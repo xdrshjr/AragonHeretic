@@ -59,9 +59,19 @@ class RefinementTests(unittest.TestCase):
                 self.assertLess(float(relative), 1e-7)
                 self.assertTrue(torch.isfinite(singular).all())
 
+    def test_effective_update_check_preserves_cancelling_factor_permutation(self):
+        devices = ["cpu"] + (["cuda"] if torch.cuda.is_available() else [])
+        for device in devices:
+            with self.subTest(device=device):
+                # 重排秩维度不改变 BA；FP32 累加却可能丢失中间的 1。
+                a = torch.tensor([[1e8], [1.0], [-1e8]], device=device)
+                b = torch.ones(1, 3, device=device)
+                order = [0, 2, 1]
+                _check_effective_update((a, b), (a[order], b[:, order]))
+
     def test_effective_update_check_rejects_changed_or_nonfinite_factors(self):
         a, b = torch.eye(4), torch.eye(4)
-        for value in (1.01, float("nan"), float("inf")):
+        for value in (1.00001, 1.01, float("nan"), float("inf")):
             with self.subTest(value=value):
                 changed = b.clone()
                 changed[0, 0] = value

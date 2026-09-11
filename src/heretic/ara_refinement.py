@@ -154,9 +154,11 @@ def weighted_output_ratio(actual, reference, weights) -> float:
 def _check_effective_update(original, canonical):
     old_a, old_b = original
     new_a, new_b = canonical
+    # 检查部署因子的数学更新，避免 FP32 累加舍入制造不等价。
+    old_a, new_a = old_a.detach().double(), new_a.detach().double()
     for start in range(0, old_b.shape[0], 128):
-        before = old_b[start : start + 128] @ old_a
-        after = new_b[start : start + 128] @ new_a
+        before = old_b[start : start + 128].detach().double() @ old_a
+        after = new_b[start : start + 128].detach().double() @ new_a
         if not torch.allclose(before, after, rtol=1e-6, atol=1e-7):
             raise RefinementNumericalError("canonicalization 改变有效更新")
 
