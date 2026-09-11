@@ -81,6 +81,11 @@ The community has created and published
 models with Heretic.
 
 
+## 栀夏界面截图
+
+![栀夏聊天界面截图](docs/images/zhixia-chat-screenshot.png)
+
+
 ## Usage
 
 Prepare a Python 3.10+ environment with PyTorch 2.2+ installed as appropriate
