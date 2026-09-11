@@ -1,0 +1,13 @@
+{
+  "status": "prepared",
+  "source_revision": "c8f49cefb0ca2d44c969ef61ce86ba1aa6f3236f",
+  "model_file_count": 30,
+  "config": "/root/autodl-fs/AragonHeretic-v3/config.qwen38-27b-cara-v3-single-gpu-pilot.toml",
+  "wallclock_seconds": 168.22812843322754,
+  "role_counts": {
+    "fit": 8,
+    "monitor": 8,
+    "mechanism-development": 44,
+    "development": 100
+  }
+}

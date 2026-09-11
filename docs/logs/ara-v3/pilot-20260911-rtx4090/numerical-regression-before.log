@@ -1,0 +1,28 @@
+test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) ...
+  test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) (device='cpu') ... ERROR
+  test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) (device='cuda') ... ERROR
+
+======================================================================
+ERROR: test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) (device='cpu')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/autodl-fs/data/AragonHeretic-v3/tests/test_ara_refinement.py", line 52, in test_high_rank_canonicalization_preserves_effective_update
+    _check_effective_update((a, b), (ca, cb))
+  File "/autodl-fs/data/AragonHeretic-v3/src/heretic/ara_refinement.py", line 156, in _check_effective_update
+    raise RefinementNumericalError("canonicalization 改变有效更新")
+heretic.ara_refinement.RefinementNumericalError: canonicalization 改变有效更新
+
+======================================================================
+ERROR: test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) (device='cuda')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/autodl-fs/data/AragonHeretic-v3/tests/test_ara_refinement.py", line 52, in test_high_rank_canonicalization_preserves_effective_update
+    _check_effective_update((a, b), (ca, cb))
+  File "/autodl-fs/data/AragonHeretic-v3/src/heretic/ara_refinement.py", line 156, in _check_effective_update
+    raise RefinementNumericalError("canonicalization 改变有效更新")
+heretic.ara_refinement.RefinementNumericalError: canonicalization 改变有效更新
+
+----------------------------------------------------------------------
+Ran 1 test in 1.509s
+
+FAILED (errors=2)

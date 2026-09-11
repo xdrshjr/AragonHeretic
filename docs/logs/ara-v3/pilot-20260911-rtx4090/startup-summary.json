@@ -1,0 +1,46 @@
+{
+  "status": "startup_verified",
+  "pilot_status": "running",
+  "scope": "真实模型加载、目标识别、基线计算及至少一个完整层组求解已完成",
+  "research_status": "not_run",
+  "full_pilot_verified": false,
+  "code_commit": "685e26cabc305ffc7449a79e44652467b823d12c",
+  "protocol_hash": "5bcbab3eb87687d695b18e15b8aafc980bc7fe991faf369364631c942bc37d5a",
+  "attempt": "retry3",
+  "worker_pid": 4157,
+  "checked_at_unix": 1789097495.3529088,
+  "completed_layer_groups": 2,
+  "progress": [
+    "ARA v3 sweep=0 block=0/5 modules=16: 开始求解",
+    "ARA v3 sweep=0 block=0: accepted=False reason=proposal_rejected",
+    "ARA v3 sweep=0 block=1/5 modules=16: 开始求解",
+    "ARA v3 sweep=0 block=1: accepted=False reason=proposal_rejected",
+    "ARA v3 sweep=0 block=2/5 modules=16: 开始求解"
+  ],
+  "sample_counts": {
+    "development.bad": 100,
+    "development.good": 100,
+    "fit.bad": 8,
+    "fit.good": 8,
+    "mechanism-development.bad": 44,
+    "mechanism-development.good": 44,
+    "monitor.bad": 8,
+    "monitor.good": 8
+  },
+  "observed_cpu_peak_gib": 52.358970642089844,
+  "observed_gpu_peak_mib": 45770,
+  "last_telemetry": {
+    "time": 1789097481.795362,
+    "pid": 4157,
+    "VmHWM_KiB": 54902360,
+    "VmRSS_KiB": 8604380,
+    "gpu_memory_MiB": 45770,
+    "gpu_utilization": 43
+  },
+  "log_sha256_at_check": "fc57444f3fb96b88be7d140f9357265e27ba80d6a53d241d158cdca725ec2c9b",
+  "working_tree_changes": [],
+  "limitations": [
+    "启动通过不等于完整 pilot 通过",
+    "尚未验证正式搜索、审计和方法效果"
+  ]
+}

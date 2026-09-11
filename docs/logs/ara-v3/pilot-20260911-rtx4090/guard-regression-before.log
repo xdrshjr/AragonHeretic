@@ -1,0 +1,38 @@
+EEE
+======================================================================
+ERROR: test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='self_attn.o_proj')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/autodl-fs/data/AragonHeretic-v3/tests/test_config.py", line 56, in test_v3_template_matches_real_qwen_projection_names
+    _match_target(target, settings.ara_runtime_guard), name
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/autodl-fs/data/AragonHeretic-v3/src/heretic/ara_runtime.py", line 123, in _match_target
+    raise TrajectoryRuntimeGuardError(
+heretic.ara_trajectory.TrajectoryRuntimeGuardError: target 'base_model.model.model.language_model.layers.0.self_attn.o_proj' matches 0 guard patterns
+
+======================================================================
+ERROR: test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='linear_attn.out_proj')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/autodl-fs/data/AragonHeretic-v3/tests/test_config.py", line 56, in test_v3_template_matches_real_qwen_projection_names
+    _match_target(target, settings.ara_runtime_guard), name
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/autodl-fs/data/AragonHeretic-v3/src/heretic/ara_runtime.py", line 123, in _match_target
+    raise TrajectoryRuntimeGuardError(
+heretic.ara_trajectory.TrajectoryRuntimeGuardError: target 'base_model.model.model.language_model.layers.0.linear_attn.out_proj' matches 0 guard patterns
+
+======================================================================
+ERROR: test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='mlp.down_proj')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/autodl-fs/data/AragonHeretic-v3/tests/test_config.py", line 56, in test_v3_template_matches_real_qwen_projection_names
+    _match_target(target, settings.ara_runtime_guard), name
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/autodl-fs/data/AragonHeretic-v3/src/heretic/ara_runtime.py", line 123, in _match_target
+    raise TrajectoryRuntimeGuardError(
+heretic.ara_trajectory.TrajectoryRuntimeGuardError: target 'base_model.model.model.language_model.layers.0.mlp.down_proj' matches 0 guard patterns
+
+----------------------------------------------------------------------
+Ran 1 test in 15.035s
+
+FAILED (errors=3)

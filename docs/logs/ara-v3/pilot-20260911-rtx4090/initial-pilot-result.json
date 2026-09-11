@@ -1,0 +1,1 @@
+{"failure_category":"TrajectoryRuntimeGuardError","phase":"pilot","reason":"target 'base_model.model.model.language_model.layers.0.linear_attn.out_proj' matches 0 guard patterns","research_status":"failed"}
