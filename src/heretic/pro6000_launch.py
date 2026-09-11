@@ -172,8 +172,10 @@ def start_worker(root, prepare_only):
 
 
 def print_start(root, run, pid, prepare_only):
-    script = Path(__file__).resolve().parents[2] / "scripts" / (
-        "run_qwen38_27b_ara_v3_pro6000.sh"
+    script = (
+        Path(__file__).resolve().parents[2]
+        / "scripts"
+        / ("run_qwen38_27b_ara_v3_pro6000.sh")
     )
     print(f"已后台启动，PID：{pid}")
     print(f"模式：{'只准备和预检' if prepare_only else '全量 S2 / 24 次搜索'}")

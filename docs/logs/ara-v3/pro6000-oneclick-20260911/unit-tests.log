@@ -1,0 +1,97 @@
+test_budget_and_seed_cannot_change_on_resume (test_pro6000_experiment.PreparationTests.test_budget_and_seed_cannot_change_on_resume) ... ok
+test_changed_source_or_insufficient_unique_data_fails (test_pro6000_experiment.PreparationTests.test_changed_source_or_insufficient_unique_data_fails) ... ok
+test_experiment_protocol_cannot_enter_formal_research (test_pro6000_experiment.PreparationTests.test_experiment_protocol_cannot_enter_formal_research) ... ok
+test_full_roles_preserve_original_prompts_and_never_overlap (test_pro6000_experiment.PreparationTests.test_full_roles_preserve_original_prompts_and_never_overlap) ... ok
+test_original_cross_role_duplicate_fails (test_pro6000_experiment.PreparationTests.test_original_cross_role_duplicate_fails) ... ok
+test_wrong_or_busy_gpu_fails_before_loading (test_pro6000_experiment.PreparationTests.test_wrong_or_busy_gpu_fails_before_loading) ... ok
+test_competing_worker_cannot_overwrite_status (test_pro6000_experiment.RecoveryTests.test_competing_worker_cannot_overwrite_status) ... 启动失败：运行目录已被其他进程锁定：/tmp/tmp568ldbcn/worker.lock
+ok
+test_finished_export_is_verified_without_loading_model (test_pro6000_experiment.RecoveryTests.test_finished_export_is_verified_without_loading_model) ... ok
+test_freeze_uses_committed_content_even_after_worktree_changes (test_pro6000_experiment.RecoveryTests.test_freeze_uses_committed_content_even_after_worktree_changes) ... ok
+test_native_24_trial_search_and_resume_need_no_semantic_judge (test_pro6000_experiment.SearchTests.test_native_24_trial_search_and_resume_need_no_semantic_judge) ... /root/autodl-fs/conda-envs/heretic-dsv4/lib/python3.12/site-packages/optuna/_experimental.py:33: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  optuna_warn(
+[I 2026-09-11 16:49:07,680] A new study created in memory with name: no-name-92e44876-5087-4c0a-a891-027011158fdb
+[I 2026-09-11 16:49:07,755] A new study created in memory with name: no-name-e59ac641-8d2d-47d9-b24c-cf602dfacf1a
+[I 2026-09-11 16:49:07,765] A new study created in memory with name: no-name-3493a29c-2176-4157-b1cc-5faf02c35666
+[I 2026-09-11 16:49:07,774] A new study created in memory with name: no-name-84b6fec3-387f-4aa2-894f-ad4dbb6d0f5c
+[I 2026-09-11 16:49:07,784] A new study created in memory with name: no-name-e8edec82-4d5c-4b15-adb0-2763a5233cae
+[I 2026-09-11 16:49:07,794] A new study created in memory with name: no-name-7d5ac2d3-3c73-4cef-ac95-a618e6fe0a14
+[I 2026-09-11 16:49:07,804] A new study created in memory with name: no-name-c6de5c82-50bf-4b64-934c-c3e540cf87dd
+[I 2026-09-11 16:49:07,815] A new study created in memory with name: no-name-e02e5c31-a003-4b27-a98c-e2141d3dd28b
+[I 2026-09-11 16:49:07,826] A new study created in memory with name: no-name-f77b4ca3-6b51-4077-93b2-b9200aa2c467
+[I 2026-09-11 16:49:07,837] A new study created in memory with name: no-name-7fbf42c8-dac1-423f-8988-8ecfe33b9370
+[I 2026-09-11 16:49:07,847] A new study created in memory with name: no-name-b19e34bc-2b59-4959-b3b3-bb3e85f9862f
+[I 2026-09-11 16:49:07,858] A new study created in memory with name: no-name-337094b6-8a69-44c6-8e89-4863b1674a53
+ok
+test_numeric_gate_precedes_keyword_ranking (test_pro6000_experiment.SearchTests.test_numeric_gate_precedes_keyword_ranking) ... ok
+test_remaining_snapshot_reserve_keeps_formal_default (test_pro6000_experiment.SearchTests.test_remaining_snapshot_reserve_keeps_formal_default) ... ok
+test_single_gpu_checkpoint_accounting (test_pro6000_experiment.SearchTests.test_single_gpu_checkpoint_accounting) ... ok
+test_anchors_are_distinct_and_random_stage_is_deterministic (test_ara_research_runner.RunnerTests.test_anchors_are_distinct_and_random_stage_is_deterministic) ... ok
+test_budget_charges_across_multiple_launches (test_ara_research_runner.RunnerTests.test_budget_charges_across_multiple_launches) ... ok
+test_exhausted_resume_finalizes_orphan_before_loading_model (test_ara_research_runner.RunnerTests.test_exhausted_resume_finalizes_orphan_before_loading_model) ... ok
+test_finalize_error_does_not_overwrite_frozen_phase_result (test_ara_research_runner.RunnerTests.test_finalize_error_does_not_overwrite_frozen_phase_result) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '冻结标注已改变'}
+ok
+test_initial_finalize_error_allows_corrected_request (test_ara_research_runner.RunnerTests.test_initial_finalize_error_allows_corrected_request) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '缺少标签文件'}
+{'phase': 'finalize', 'research_status': 'passed', 'inputs_hash': 'frozen-inputs'}
+ok
+test_nested_budget_keeps_outer_deadline_and_kills_only_descendants (test_ara_research_runner.RunnerTests.test_nested_budget_keeps_outer_deadline_and_kills_only_descendants) ... ok
+test_pilot_and_ablation_reject_unregistered_member (test_ara_research_runner.RunnerTests.test_pilot_and_ablation_reject_unregistered_member) ... ok
+test_pilot_budget_is_shared_across_run_directories (test_ara_research_runner.RunnerTests.test_pilot_budget_is_shared_across_run_directories) ... ok
+test_replay_resume_reuses_complete_evidence_and_latches_failure (test_ara_research_runner.RunnerTests.test_replay_resume_reuses_complete_evidence_and_latches_failure) ... ok
+test_search_has_exact_24_terminal_attempts_and_resumes_lock (test_ara_research_runner.RunnerTests.test_search_has_exact_24_terminal_attempts_and_resumes_lock) ... [I 2026-09-11 16:49:09,887] A new study created in memory with name: no-name-60818a51-8ca7-48ac-88ee-c9721f4f020d
+[I 2026-09-11 16:49:09,897] A new study created in memory with name: no-name-b77296bd-f7ae-4e12-b4fe-56e078221d0c
+[I 2026-09-11 16:49:09,908] A new study created in memory with name: no-name-c98fa9dc-614d-4c68-93e7-e42d8414db11
+[I 2026-09-11 16:49:09,918] A new study created in memory with name: no-name-fa345436-d545-4b7b-aa23-ef89fcfdf482
+[I 2026-09-11 16:49:09,928] A new study created in memory with name: no-name-880f2b9f-b9b4-4d2c-97f7-7dd77ad49b40
+[I 2026-09-11 16:49:09,938] A new study created in memory with name: no-name-100ca127-28b2-4a29-a6fe-e0f6474d96b0
+[I 2026-09-11 16:49:09,948] A new study created in memory with name: no-name-39b78361-7e00-48e1-a296-a9a96e76b302
+[I 2026-09-11 16:49:09,958] A new study created in memory with name: no-name-f1d2e108-0f49-4447-a4d8-144828f2b94b
+[I 2026-09-11 16:49:09,968] A new study created in memory with name: no-name-aa0b6560-809a-421c-a248-37b36376ed88
+[I 2026-09-11 16:49:09,979] A new study created in memory with name: no-name-3d14ccdb-de9d-4072-aa82-3017a3fe8509
+[I 2026-09-11 16:49:09,990] A new study created in memory with name: no-name-3f7a041b-6702-48c1-b3d6-c4acc59c935e
+[I 2026-09-11 16:49:10,000] A new study created in memory with name: no-name-e56b643b-20c2-46f8-bd2e-2297a4a0e6a6
+ok
+test_shortlist_filters_hard_constraints_before_top_three (test_ara_research_runner.RunnerTests.test_shortlist_filters_hard_constraints_before_top_three) ... ok
+test_snapshot_restore_failure_stops_search_after_terminal_record (test_ara_research_runner.RunnerTests.test_snapshot_restore_failure_stops_search_after_terminal_record) ... ok
+test_subprocess_failures_write_phase_result_and_exit_three (test_ara_research_runner.RunnerTests.test_subprocess_failures_write_phase_result_and_exit_three) ... {'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+ok
+test_absolute_snapshot_does_not_accumulate (test_ara_refinement_capture.CaptureTests.test_absolute_snapshot_does_not_accumulate) ... ok
+test_context_restores_all_factors_and_flags_on_exception (test_ara_refinement_capture.CaptureTests.test_context_restores_all_factors_and_flags_on_exception) ... ok
+test_left_and_right_padding_use_same_unpadded_positions (test_ara_refinement_capture.CaptureTests.test_left_and_right_padding_use_same_unpadded_positions) ... ok
+test_recapture_matches_true_linear_downstream_input (test_ara_refinement_capture.CaptureTests.test_recapture_matches_true_linear_downstream_input) ... ok
+test_restore_failure_still_restores_adapter_flags (test_ara_refinement_capture.CaptureTests.test_restore_failure_still_restores_adapter_flags) ... ok
+test_sequential_cache_rejects_other_states (test_ara_refinement_capture.CaptureTests.test_sequential_cache_rejects_other_states) ... ok
+test_short_steps_drop_on_both_sides_and_renormalize (test_ara_refinement_capture.CaptureTests.test_short_steps_drop_on_both_sides_and_renormalize) ... ok
+test_snapshot_restoration_does_not_allocate_device_copy (test_ara_refinement_capture.CaptureTests.test_snapshot_restoration_does_not_allocate_device_copy) ... ok
+test_anchor_keep_accounts_for_upstream_drift (test_ara_refinement.RefinementTests.test_anchor_keep_accounts_for_upstream_drift) ... ok
+test_block_rolls_back_all_factors_when_monitor_raises (test_ara_refinement.RefinementTests.test_block_rolls_back_all_factors_when_monitor_raises) ... ok
+test_effective_update_check_preserves_cancelling_factor_permutation (test_ara_refinement.RefinementTests.test_effective_update_check_preserves_cancelling_factor_permutation) ... ok
+test_effective_update_check_rejects_changed_or_nonfinite_factors (test_ara_refinement.RefinementTests.test_effective_update_check_rejects_changed_or_nonfinite_factors) ... ok
+test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) ... ok
+test_monitor_nan_is_attempt_failure (test_ara_refinement.RefinementTests.test_monitor_nan_is_attempt_failure) ... ok
+test_monitor_requires_nonincrease_and_real_improvement (test_ara_refinement.RefinementTests.test_monitor_requires_nonincrease_and_real_improvement) ... ok
+test_solver_operates_on_clones (test_ara_refinement.RefinementTests.test_solver_operates_on_clones) ... ok
+test_24_attempt_gate_rejects_legacy_120_trial_budget (test_ara_research_acceptance.ResearchAcceptanceTests.test_24_attempt_gate_rejects_legacy_120_trial_budget) ... ok
+test_comparison_only_and_inconclusive_cannot_promote (test_ara_research_acceptance.ResearchAcceptanceTests.test_comparison_only_and_inconclusive_cannot_promote) ... ok
+test_empty_gate_is_not_vacuously_passed (test_ara_research_acceptance.ResearchAcceptanceTests.test_empty_gate_is_not_vacuously_passed) ... ok
+test_failure_precedes_missing_evidence (test_ara_research_acceptance.ResearchAcceptanceTests.test_failure_precedes_missing_evidence) ... ok
+test_finalize_accepts_complete_bound_ledger_evidence (test_ara_research_acceptance.ResearchAcceptanceTests.test_finalize_accepts_complete_bound_ledger_evidence) ... ok
+test_finalize_rejects_missing_ledger_roles (test_ara_research_acceptance.ResearchAcceptanceTests.test_finalize_rejects_missing_ledger_roles) ... ok
+test_finalize_requires_complete_consumption_for_each_evidence (test_ara_research_acceptance.ResearchAcceptanceTests.test_finalize_requires_complete_consumption_for_each_evidence) ... ok
+test_immutable_report_is_idempotent_but_rejects_changed_labels (test_ara_research_acceptance.ResearchAcceptanceTests.test_immutable_report_is_idempotent_but_rejects_changed_labels) ... ok
+test_known_failure_precedes_missing_semantic_labels (test_ara_research_acceptance.ResearchAcceptanceTests.test_known_failure_precedes_missing_semantic_labels) ... ok
+test_member_finalize_recovers_after_promotion_before_aggregate (test_ara_research_acceptance.ResearchAcceptanceTests.test_member_finalize_recovers_after_promotion_before_aggregate) ... ok
+test_offline_finalize_does_not_load_model_and_reports_missing_audit (test_ara_research_acceptance.ResearchAcceptanceTests.test_offline_finalize_does_not_load_model_and_reports_missing_audit) ... /root/autodl-fs/conda-envs/heretic-dsv4/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+ok
+test_v3_artifact_chain_rejects_parameter_and_core_tampering (test_ara_research_acceptance.ResearchAcceptanceTests.test_v3_artifact_chain_rejects_parameter_and_core_tampering) ... ok
+test_v3_parameter_version_is_strict (test_ara_research_acceptance.ResearchAcceptanceTests.test_v3_parameter_version_is_strict) ... ok
+test_zero_baseline_does_not_pass_relative_drop (test_ara_research_acceptance.ResearchAcceptanceTests.test_zero_baseline_does_not_pass_relative_drop) ... ok
+
+----------------------------------------------------------------------
+Ran 56 tests in 145.418s
+
+OK

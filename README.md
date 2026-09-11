@@ -96,8 +96,8 @@ models with Heretic.
 bash /root/autodl-fs/AragonHeretic-v3/scripts/run_qwen38_27b_ara_v3_pro6000.sh
 ```
 
-入口自动准备数据与冻结配置，后台执行 **24 次搜索（4 个锚点 + 8 次随机
-+ 12 次 TPE）**，并保存快照、指标和最佳开发集候选的 LoRA 适配器。
+入口自动准备数据与冻结配置，后台执行 **24 次搜索（4 个锚点、8 次随机、12 次 TPE）**，
+并保存快照、指标和最佳开发集候选的 LoRA 适配器。
 默认 Qwen3.8-27B、NF4、rank 128、seed 42、S2 顺序刷新、最多 2 轮；
 每侧从 192 条 fit 候选中选 96 条，monitor 64 条，development 100 条。
 默认累计单卡时间上限为 48 小时，可在新实验启动时用 `--hours` 调整；
@@ -107,6 +107,8 @@ bash /root/autodl-fs/AragonHeretic-v3/scripts/run_qwen38_27b_ara_v3_pro6000.sh
 用 `--resume <运行目录>` 继续已准备或中断的实验。
 完整说明见 [Pro 6000 实验操作手册](docs/operations/pro6000-experiments.md)。
 本入口记录开发集实验结果；论文所需的独立审计与语义评审仍需另行完成。
+
+### 通用安装与运行
 
 Prepare a Python 3.10+ environment with PyTorch 2.2+ installed as appropriate
 for your hardware. Then run:

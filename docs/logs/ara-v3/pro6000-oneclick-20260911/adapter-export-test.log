@@ -1,0 +1,10 @@
+test_exported_adapter_reloads_selected_factors_and_restores_base (test_pro6000_export.ExportTests.test_exported_adapter_reloads_selected_factors_and_restores_base) ... /root/autodl-fs/conda-envs/heretic-dsv4/lib/python3.12/site-packages/torch/jit/_script.py:365: DeprecationWarning: `torch.jit.script_method` is deprecated. Please switch to `torch.compile` or `torch.export`.
+  warnings.warn(
+/root/autodl-fs/conda-envs/heretic-dsv4/lib/python3.12/site-packages/peft/utils/save_and_load.py:438: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+ok
+
+----------------------------------------------------------------------
+Ran 1 test in 55.962s
+
+OK
