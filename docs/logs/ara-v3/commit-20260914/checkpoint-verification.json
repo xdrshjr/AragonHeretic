@@ -1,0 +1,728 @@
+{
+  "结论": "代码检查点逐文件核对通过",
+  "代码检查点": "e8f094885b356414602ce227de98e773974cf15e",
+  "父提交": "0ab032c8acdee8a0f197d4ffba8bec1bad93caad",
+  "提交文件数": 118,
+  "文件": [
+    {
+      "文件": "README.md",
+      "Git对象": "9d3fb35881b0f32c1d516c07fa7aa8389212b353",
+      "原始字节SHA256": "37ed3203ac5c32432ca347b7472051b25494c5e780eb12c3022f0cc13a81678f",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v3-96.toml",
+      "Git对象": "8cab52171022362e648f33f95b601621c25e91f5",
+      "原始字节SHA256": "26e577645d2c9b564cacd3d215615642086818e723622afc4402bea869dabbdb",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/baseline.json",
+      "Git对象": "54914260f0e3516b1b8ffe2e98301ffd672a793f",
+      "原始字节SHA256": "0217c1eb99d74e2a38871c4cace95d74cc044e893cde58232925a06ca7116983",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/commit-plan.json",
+      "Git对象": "9d4cbf4df0f0ce31ea4698df7535b2092cb57f0e",
+      "原始字节SHA256": "e51fc4d3c5468ca05dd0178d1889c16f7ef69b1bb2c09ae60e0fb087f11efbf7",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/cpu-unittest.log",
+      "Git对象": "3cee2ca68595dbebca5a5b5c0fbefb833ee8640b",
+      "原始字节SHA256": "457c3011152185d7331d113c1aa0458064c89d371b6a8d921f3e7adc90517a3f",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/delivery-check.json",
+      "Git对象": "757f3c5839f0006c837c6915a49b823e349c0555",
+      "原始字节SHA256": "6187984702b2b97d3927215ed94a05cfc2b129feff9d9f99bcf6361837528651",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/entrypoints.log",
+      "Git对象": "00a9d8be6745f24c4bac6ae5dc851e7d0874931d",
+      "原始字节SHA256": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/file-plan.md",
+      "Git对象": "82488167067f601e61074ac91b283510ade5201a",
+      "原始字节SHA256": "e55e1d5b61c25fddf9587f52d60ed6075afc2d4b02f42d66d435b93469673fe9",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/fixture-identity.json",
+      "Git对象": "5904ef1618e66b5b6bcc4073d530fcba8912e22b",
+      "原始字节SHA256": "0595c490cd0509cb8e4cf821b2e883ab77851669639ae6925ddcb171c2299b47",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/git-status.txt",
+      "Git对象": "eb242dacfc0f12f14569c8d27620e7e6951899e0",
+      "原始字节SHA256": "fde7218eb86c672be17c02ae616ccfbfd7c34b7d48d4d1a21dc64d1d254f913e",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/local-budget.log",
+      "Git对象": "7cffa0800fee3ec6ce83910b251fca55b20aa37d",
+      "原始字节SHA256": "db39a915f1b865b63edc009e8782c36fd1c993722cd8a4c0b41d522408598ce8",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/preflight-validation.json",
+      "Git对象": "e998f089cbeff6a40ce2e5879ee45a29493c35d2",
+      "原始字节SHA256": "e285a755e42b965b136bf3aefdd2537470cc59714565cd88daadf771d64c4414",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/preflight.log",
+      "Git对象": "bf8718dcf9c99a014f72b57c43c4e73b34b4fc67",
+      "原始字节SHA256": "5fa6791d9247559043a07ce81bb4826fba4411f8ad8ca926e9a906f8b4765a13",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/staged-validation.json",
+      "Git对象": "76ec42edd7487a22a015475a1f770085f907a12d",
+      "原始字节SHA256": "ebe81354020b7cb289c9205d39cd807bb64f63c6d416331120fe31cc9e5ae9b2",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/static-validation.json",
+      "Git对象": "6cf719d90f260b0abe5b61c324cf426474165973",
+      "原始字节SHA256": "7aade58056f442ba0e7f5979f1b0e17f374933e13168b29b542df9ae091ff697",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/tested-inputs.json",
+      "Git对象": "60877e42af1c92a9adb2ab31f9f13c98ad6e0ea3",
+      "原始字节SHA256": "2b3134fc43650c19a878273c7169bd1ca1f0eb2ea53f2896704d427220317f02",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/commit-20260914/verification.json",
+      "Git对象": "c19123a4990cf7e274987200970d6b89826cdf6d",
+      "原始字节SHA256": "e3a67af971c86ac3aa7976423d9678c01a4905cc7b7ae39b0d8eb3189740dc79",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/RUNBOOK.md",
+      "Git对象": "178f42ef1c082a2c2d07f5d1a509f00ca4e0480f",
+      "原始字节SHA256": "30ef318f6c9b62b75ae8e0ece8a596c9e4ce8caf07fb0a0631713bcbccca56f3",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/SHA256SUMS",
+      "Git对象": "da5495d5caeae0c5932384638fc6aed95088f9fb",
+      "原始字节SHA256": "457e779df8207eb02e8b9301b3fe057a26e041ab5b4e8e7982dbfb29f2fa0670",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/SUMMARY.md",
+      "Git对象": "0238a901a84236c5082e24730c9acae3a82d0760",
+      "原始字节SHA256": "a4cf0e4581bb033e744f812561b199e317f2f017db4168fd12aaf85415eb2814",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/entrypoints-final.log",
+      "Git对象": "00a9d8be6745f24c4bac6ae5dc851e7d0874931d",
+      "原始字节SHA256": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/entrypoints.log",
+      "Git对象": "14cf9aff945e23ecd7550a57cd4d9cd95432fa29",
+      "原始字节SHA256": "bf7b84f8c687308958581035b1b3d9116550b92e1b88de83cf5211ca1158f4b0",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/file-plan.md",
+      "Git对象": "97fc02114930e9d0ef70963447a97526987581d2",
+      "原始字节SHA256": "4bdf3bd164033df7a16f38443889d763e58d1ac29e3c6499203cb61f4a8aac87",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/full-cpu-final.log",
+      "Git对象": "90aacf756e596ee6aa491ce5069af9bae4c36468",
+      "原始字节SHA256": "f0c5c7005a43824bf5b2c9cb45510209ed101e5c107037977aaa03b8999ca97c",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/full-cpu.log",
+      "Git对象": "aec8406dd55d2e418578d1750479d0241b12935f",
+      "原始字节SHA256": "94480fb850740b17b989bde4f3ecd575596ea6b241cf6daa6e72b42b6a0987ff",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/integration-initial.log",
+      "Git对象": "d246d9edd4b93534fa832b70e61a6d371ac9bf06",
+      "原始字节SHA256": "7c9f0f6d408e2f53f0b32f41755980b27a0c12bc47e9deb85a8b1975b571904d",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/local-budget.log",
+      "Git对象": "e99dde0674520aa7c835016a982edc09a214868c",
+      "原始字节SHA256": "84fd875359d1dc3cfeea3744c339a79fc8f6a3b2b1077546b706ee7f6e441ce9",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/nesting-final.json",
+      "Git对象": "13e89ad4f18409e185037664b2ebec5d896efb5c",
+      "原始字节SHA256": "34dd51b1367537d41f1642bdcd6cf91ac5ac5328d8e022354aaa78aebf6ebd8c",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/new-chain-initial.log",
+      "Git对象": "5cfc8a1769a4b4547f2503671dd1f23ef1beacd8",
+      "原始字节SHA256": "5b81778cfc9acf25b07b1f57ccdfb97765a2253fb9cafe8d53b6bd29dde18ec9",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/numerical-resume.log",
+      "Git对象": "2c1395e9f4b888d164c69b08031da27b199ffae4",
+      "原始字节SHA256": "4b56c6f9398cae35cd54638de0f7acfffddba3aab8646a3c81db4a53dc5d6801",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/pilot-initial.log",
+      "Git对象": "6610a7de33802b6fabf3bbfe57be6ed0046fbbf1",
+      "原始字节SHA256": "c6e7da61dca9a11a85f485dc794e5b5c9297a74c61be70c6bed7ab1c25968562",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/proposal.log",
+      "Git对象": "a0b72736d00cff6ee30727a29c294b586ef1fc69",
+      "原始字节SHA256": "9ad8f4e8a6e481ffcddb58fafeec07696f076c9b17347882a7a1a62005922194",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/resource-final.log",
+      "Git对象": "688dfcef80412aa49d3a4fb50e93fa8c5f8a344d",
+      "原始字节SHA256": "ccfb202c87c28a20d66013c303a506532e46d946e26cc77d4df23fe53cddcbcc",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/static-final.json",
+      "Git对象": "ddeab38f318ae9b95140e0ff63791cabde1bcaf6",
+      "原始字节SHA256": "bf0bfcfef3551c398b273a6d799e911453fea579d8284181aab12a422f3d2822",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/transaction.log",
+      "Git对象": "f7b82a39272e19f163628a7664c4653b2f1a42f0",
+      "原始字节SHA256": "f6a7177a69186741006bc5122ecb4a215766a41cd8ec256d211473e34789eaf3",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/verification.json",
+      "Git对象": "c0a6b74e388292b12e165e948ab471da029f0990",
+      "原始字节SHA256": "e5a99fb5e06bcf8baaed90a0a453f20cc4f0475e93803e3c0a438df3d946f20a",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/00-scan-report.md",
+      "Git对象": "b5a567db8acc7a1daf787a99e9025a33401ced68",
+      "原始字节SHA256": "d220788cd36120f9a98785750f88aef9cff2dac16ac264a83c8020fec6e78517",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/01-scanner-numerics.md",
+      "Git对象": "b93abf5adc03b5fffd22f7f2abafa753eff98993",
+      "原始字节SHA256": "54a6b26ee0163ef3b9b43f9b169f54fbbbf0a0cae4cf7dcda865548d547d11d8",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/02-scanner-gates.md",
+      "Git对象": "03151160bd9c32fcee28718bfaed6d9c25b3592b",
+      "原始字节SHA256": "2a37a34495d705c5037e08a259a0462e21468af3f1ab26288007562979b3a0f2",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/03-scanner-identity.md",
+      "Git对象": "e6dbebaa2ea82e3b87d13c26c3371ff2dfb9c2e7",
+      "原始字节SHA256": "f7e4c7ec8e45768abc0e68825c3a06a2be80a6dd7abab5e2e58b031674d6ede7",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/04-independent-review.md",
+      "Git对象": "cc8038c64341b1190b6a6ade2f63284777c58e75",
+      "原始字节SHA256": "f0d33adade9747f8679715f1dd12a941547bfeedb74275b028b18bbb86189cff",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/05-qa.md",
+      "Git对象": "0aec1ee83973e6b41b119a773293a1417e8acb13",
+      "原始字节SHA256": "20ff56a228af9c8d073b2c1b48755c6f5c0e6a1626d0854af9d3f5a3ecc82877",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/06-gates-fix.md",
+      "Git对象": "409baa37d1cfe59b1eb67f51450aea94c53d9f09",
+      "原始字节SHA256": "4d90e63b5146df85075214769e2ec0929a60f8bd26831c557a9ea69c40a63f34",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/RUNBOOK-SUPPLEMENT.md",
+      "Git对象": "b2c69c9c8568c253616a78b0d1db9be55a5734d6",
+      "原始字节SHA256": "6553d1a6282c27a0942e301a20487b83853b92a09f2ea39dd1c1007a6dcd6ee8",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/SHA256SUMS",
+      "Git对象": "ad69c80c8a1a054e4678c91d9c0f56e09eb25f23",
+      "原始字节SHA256": "04ae5983ed1c0f4a9e20bdb249572a2741ab8519a8bf7df93087f92591b87e42",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/baseline.json",
+      "Git对象": "98428d0d065c82c4ba804cf01d6ffc495ed7c227",
+      "原始字节SHA256": "8ce94ced8575d31e9c65d56a2481c6be01bbe17ae082e6ca8899a1c8aa7db246",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/costs-final.log",
+      "Git对象": "09c5eb080da7af75a8163be715853f44798e2034",
+      "原始字节SHA256": "1d14234e5ae18347a6c1ef343fc1019bc7b53ad6a6d09f4d888209ef2e6c8ab2",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/cpu-initial.log",
+      "Git对象": "3509aa972f0c184b384db01b96f2e0b2a2877cb1",
+      "原始字节SHA256": "6cb96ee56734ea2ad4d7d7052a166c54d95f94e51276913264cc4d38f3baefd7",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/delivery-manifest.json",
+      "Git对象": "d8f5c96113ed306d7b6043c55c10edcb91dfc724",
+      "原始字节SHA256": "3e1213d8ffd6702eb2135a929e58ab436348bc8c1850072749d18d4ac0d8299f",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/delivery-validation.json",
+      "Git对象": "2a326059131501876e777f312d9ad58a0c222959",
+      "原始字节SHA256": "d209b647d488f14f5b85f88f2660c7767bd3d78e1eebeb0fbebc5cf2e7ab163b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/entrypoints-final.log",
+      "Git对象": "00a9d8be6745f24c4bac6ae5dc851e7d0874931d",
+      "原始字节SHA256": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/entrypoints.log",
+      "Git对象": "00a9d8be6745f24c4bac6ae5dc851e7d0874931d",
+      "原始字节SHA256": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/file-plan.md",
+      "Git对象": "82488167067f601e61074ac91b283510ade5201a",
+      "原始字节SHA256": "e55e1d5b61c25fddf9587f52d60ed6075afc2d4b02f42d66d435b93469673fe9",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/full-cpu-final.log",
+      "Git对象": "2608e854c38b6a16f4b647c28c2f0a5525282b14",
+      "原始字节SHA256": "069b98c5a74b7f1078cb6c4198523ae0da835fb4473f090bd231b85e6dfbe4f5",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/gates-after.log",
+      "Git对象": "9a8620742b99fce3fec779636cbdb5c495324c75",
+      "原始字节SHA256": "9c04195a75d2d4f4aa6702129cf23763bd341cdbcd88c0e511725ba06e0d0b05",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/gates-before.log",
+      "Git对象": "9202ce7c589b8e498bad7871a92ec7f6e741e0ec",
+      "原始字节SHA256": "f99f488272043c6ef72aa350efa052131cec69f41f05d0389d47c0a7ea24e935",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/gates-integration.log",
+      "Git对象": "81f2ae6f54bfb3fcfa5cdbaff4a664ddd351d211",
+      "原始字节SHA256": "c4cc7f0e7366e48bce8baeb8697476fe6a9e4fa57e940978edfc053ec9afcd5c",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/git-before.txt",
+      "Git对象": "589c88790001d5905ab2abe060d5861af724fc0d",
+      "原始字节SHA256": "ea519f8a07de754ad3c094fb4d8760ffd1f8f0f4ecfad188813ce9f3c3e2135a",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/git-status.txt",
+      "Git对象": "3b04a1a474547367d377d0659b5c0cad6fb37ef6",
+      "原始字节SHA256": "781494a5b5d133b18c5bec93d9e181abdd491813f061e4504bc4f00286a7e067",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/identity-binding-before.log",
+      "Git对象": "f75eed9cf30e5fa184449ddfc9f762dc1a9ccb79",
+      "原始字节SHA256": "5070a97791439890f734b3970cc2709519be8f59802741cbf90713294668f5cd",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/identity-binding.log",
+      "Git对象": "3ad919c2b60869e933584054bb74250e8d831c68",
+      "原始字节SHA256": "46dfc3260c30f5fb06a627e735f4feea22b8220cf8c5a94e13dd25b95a691ea9",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/identity-protocol.log",
+      "Git对象": "434c822dbea1eef11177467a13ba49fa929c6426",
+      "原始字节SHA256": "b359510c5db0c529912a86fe884a470a1fb4bfa39be7cee7b7b131a7b693bd3a",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/local-budget.log",
+      "Git对象": "b0a53f94fc7f6f447486d7e40cb9c7884499d2ce",
+      "原始字节SHA256": "4147a5ddf6dafa733370c12a6ed9466f6ce740e0c55fb9810265fb72bd916497",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/memory-after.log",
+      "Git对象": "397928c9e396046fa61928ae70ed68d46422d42b",
+      "原始字节SHA256": "d845f5b5677541500bd0d3364e598ddfca722236bf91d7dc1b81a61d443b568b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/memory-before.log",
+      "Git对象": "a401799d8435c728f8febfadebec2b16482c2a6b",
+      "原始字节SHA256": "f92ac890d59666c17e3252cc27ba0d4497afc5732583135f92f2ef9a03fb0328",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/pilot-evidence-check.json",
+      "Git对象": "6c72bc45abe5f9b7fee1cddd1882c253d79553b2",
+      "原始字节SHA256": "9521c182aa07cf21eb675861045b3448b84ac29ec0b3ff552ffe281b89c35f98",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/resource-completion-after.log",
+      "Git对象": "7e70428c5f1d7dcee92399dfa3450337cfcde6f8",
+      "原始字节SHA256": "e81924a96ef00214c31f69095363bb427bbc584a759852aeb7d11e81523836b5",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/resource-completion-before.log",
+      "Git对象": "cd10f323070fe88056623bc74078af3112de160a",
+      "原始字节SHA256": "e20b7731936a37501ab2255f2204bee23afe2ec03a4cf082d3c6fa5778a959ed",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/source-version-after.log",
+      "Git对象": "ac9486e5fa907093b1580694e71e0e517e5e5812",
+      "原始字节SHA256": "9809d67abbd6f52e3c5dd0b0272ece0bf461441361ba140ec91517316c60601b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/source-version-before.log",
+      "Git对象": "cb735c3d76af4715d6a0e92b1b731850a4c1d55c",
+      "原始字节SHA256": "854dab8e78dc38cc599732053e164a0637dd084b9f3d4333666880e44aa14822",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/static-validation.json",
+      "Git对象": "6cf719d90f260b0abe5b61c324cf426474165973",
+      "原始字节SHA256": "7aade58056f442ba0e7f5979f1b0e17f374933e13168b29b542df9ae091ff697",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/verification.json",
+      "Git对象": "f7357bb0a2ad0f036db378c75776c0ed273d1a3b",
+      "原始字节SHA256": "c8f63a58eb6177320b6b543edae56d0d9ebbf5bec9bbc5291534f91f8221c431",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "docs/plans/ara-v2-refusal-optimization/spec.md",
+      "Git对象": "ee9b7c647dc1fc81d7b78641a9091e48a02dbf2e",
+      "原始字节SHA256": "3242495b130c03cdfa2507c3170d798ab70e4e6641e642b49a079882f5299d8e",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "scripts/prepare_ara_research_protocol.py",
+      "Git对象": "7561af50eb55c6ab6ffac1c3b22ccd2d17f938ac",
+      "原始字节SHA256": "55fd8332f644457d549f8d2c1074bafc97712aee800ac3e19425983bfe661686",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "scripts/run_ara_research_96.sh",
+      "Git对象": "d06875003b6688940219ee77ffb0920ea930fa20",
+      "原始字节SHA256": "41ce9d5a6f46c136d0ea66cd7299649a268afbb005770f8fbcba8a1eefaaa806",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "scripts/run_qwen38_27b_ara_v3_pro6000.sh",
+      "Git对象": "fce3f2a6ae6b1d54dec275db09e4fb2022f3d3df",
+      "原始字节SHA256": "c2f40222ff41a1d9f24c294833be7ee31e83023362c6ecf4e535e7ad0635f0c3",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/acceptance_export.py",
+      "Git对象": "640953eab420b973b1d2c1ea8876e43eede627a0",
+      "原始字节SHA256": "2b3c6953808031c1cdd2820781ad277eaa332598ad33b0b45f31acf56561eeca",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_backtracking.py",
+      "Git对象": "f641cf2d19f2279bd897f45a9ec8227c020d1b66",
+      "原始字节SHA256": "06fcf00609cf1eeda12a18c313358f8cac789044e4d672e0c239dab5704d8519",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_pilot.py",
+      "Git对象": "7bc76b5a85e9ae6c07259f716af2775bce3dcfd9",
+      "原始字节SHA256": "37903a4a7bab71e0693ee3330c4e171590d21143af69c2669d8fb9a633ffa123",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_proposal.py",
+      "Git对象": "dc563a9ca2c9b637fadb7f1a029f0a7876d72cef",
+      "原始字节SHA256": "4012194ca3aa08aa1ff74f52ee755c1395caf723a42e70b57c96bddafa6dd444",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement.py",
+      "Git对象": "954c1fa887da0f3f0df16a7ea0564fcfb80c98bb",
+      "原始字节SHA256": "e064c6ee0a10cb100c10fdb85fee04c76aaa151eeca69f2a3da726efc5c19e56",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement_capture.py",
+      "Git对象": "5a3914b981e4594e0100994f48dd7422c0b2d18f",
+      "原始字节SHA256": "71027848f3df7de1a282ff4449d02d93fce8506dfb57a5a6b666ad0b8972bc9c",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement_config.py",
+      "Git对象": "95c81f82b8ac23ac91eeaade76f9c607af7ceea7",
+      "原始字节SHA256": "49b808715a1e1c96182e2aaf8210772ae865717f71babdaed708e1695011617b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_research_acceptance.py",
+      "Git对象": "37cf3d9579ca2edeb5f48e950b455f2006a31aaf",
+      "原始字节SHA256": "151fbaad86bfaa58adcb4adfc4fa54c5fffec23f2bc38f828af0ff19c1d6190c",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_research_runner.py",
+      "Git对象": "7ca62713bf71f65455e72a6525266361edf29654",
+      "原始字节SHA256": "40b824cd6a2b58563a49a18638280a7924fafad7ab509ea3d8250c903f88248c",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_research_schema.py",
+      "Git对象": "d9c53ddd90bfa95ed537cec515b0ee933e923aa6",
+      "原始字节SHA256": "5b0450f9b4b45a069b17986445dd5af9713d00b358b3dc3ecc30bcfe79581e56",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/ara_runtime.py",
+      "Git对象": "0ba444c6bf94b2d17fdd315ac2abef398d48d6d6",
+      "原始字节SHA256": "127a1fb92c6536b8bad7ea23ccb526c4736fbd1ac78e7351c76189408a894dee",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/artifact_schema.py",
+      "Git对象": "4b6bbf3014e8d59d7b9cb5fb0d2df00409b7b0ee",
+      "原始字节SHA256": "b510023b29aa0feeab20e59c23c43a4bf5017e194ff44e967e330f9013a315df",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/continuation_scores.py",
+      "Git对象": "32d07dd1b823b6988a192f12906c667f12e55aa4",
+      "原始字节SHA256": "225e8229753acace1127d715f54d463e7fb3a6645408832d79fd76cd4968a4fc",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/pro6000_experiment.py",
+      "Git对象": "5ca64648efebc000e56d7b166cd99130c51069b6",
+      "原始字节SHA256": "ba2d202aa84f78906dbf97a1601f45d68b654e497b742437d3692c6c08c44cf7",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/pro6000_launch.py",
+      "Git对象": "d162f6586224b28f4fe0136c45e7d85eb0671819",
+      "原始字节SHA256": "b12f86f19165e4270c053cf8203aef4944622ae6c86a37c00fcfe6dddb605739",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/pro6000_prepare.py",
+      "Git对象": "1cb8e8f1a25c15f5b72aaeca9f6ff4c9f6ba2d89",
+      "原始字节SHA256": "9195b556741404acd7d3a8cbc311b99dd51b9a6312160b72f440f6975a1d6bdc",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/reproduce.py",
+      "Git对象": "6cf1483065e4a648fd172b093a1beeab7d25677b",
+      "原始字节SHA256": "eca6a079e5bcde042954c197775851a2291a4a69f78f25edf0539a6385b16f02",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/research_audit.py",
+      "Git对象": "dc2fcc3560b00faf52f3c83aee465b05c6852f6e",
+      "原始字节SHA256": "6437ed85111361e17afb7ecb260371810ce923afdbf9e033f8cf67bec8463e70",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/research_audit_recovery.py",
+      "Git对象": "fb79b261afff0b93d8c43642a4b36b454e8f84b2",
+      "原始字节SHA256": "f166b068beb6e6a0b3e7a88adf3e2e4c5d34c7ce7b126acd882b5e1bb17ac049",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/research_budget.py",
+      "Git对象": "573a8bfbdfafa09110d6ae2bccbb5eba9ea630c4",
+      "原始字节SHA256": "6de962c67d0e26d1208c66fd54a60868cc2a20058b971acfc8df093ecc2ef5d8",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/research_evaluation.py",
+      "Git对象": "96a8e03249832069f1a1c6d9d2925f65c797ad07",
+      "原始字节SHA256": "4dc4450f314aa3e0b1b60527c28a96a1a2db1d3357e313e3ec8c17e01ce4e6e3",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/research_protocol.py",
+      "Git对象": "a739eb6ecda347f9ce8a3c66aeecef65e68eaa96",
+      "原始字节SHA256": "5f6b487b44ab00fe8940d29422d9c363df61b1cad57ad994c483c77159c4b7eb",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/sequence_scores.py",
+      "Git对象": "d429127f57acf5dc1b0be82e323db93f3609e332",
+      "原始字节SHA256": "b5fa64124cfc83fd708ded9fa7fafebdf82fcdc3fdf3d2c2114948bda8a50dfd",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/trial_methods.py",
+      "Git对象": "77c0c600439a7cccc1e4a3da12e3c251396e52e7",
+      "原始字节SHA256": "be2478f5a3ee56df22891b39fc0e617cae424774f0e9fa0113041c2145805f3b",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "src/heretic/workflow.py",
+      "Git对象": "321df5f4bba062b53e40284b9d20632e21639402",
+      "原始字节SHA256": "154dcb98c49aa10ef46376801814c83d05f08cac7de64a4209e7d314d5e39636",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_acceptance_export.py",
+      "Git对象": "4c98133e1635553d6e415307c85f65a1f4db3725",
+      "原始字节SHA256": "20401d3787a5cd01e88f15ed67c70c6a4df296bfaf756090072c29675dcc772d",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_ara_backtracking.py",
+      "Git对象": "d3f2a57034254a63cfbfb3dc8cf05a16b4f94073",
+      "原始字节SHA256": "0048890f17e37ac4c84db05a4d60522ec938395428f4c8a573fa2406196e7441",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_ara_pilot.py",
+      "Git对象": "c95d92861d960677bf09b5e381c2177fd502acfa",
+      "原始字节SHA256": "f83520e38de813c17c336e056c949dc7135f445d722b3fad2fb0564bea5098ea",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_ara_proposal.py",
+      "Git对象": "85ab5a8d4f6c1f692de94ee2b6bc9f3f6c112dea",
+      "原始字节SHA256": "7fcc51ad4a1912b9be98ac4716d406262314282c1b1e60d686f5922ef6f58e06",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_ara_refinement.py",
+      "Git对象": "94a37efc8227e03ffeaf7a2467ca06ddef348235",
+      "原始字节SHA256": "33e1a26cf85058e207498b3f86cb278dfbeab708b523a182084e9281228dbdf5",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_ara_research_acceptance.py",
+      "Git对象": "2e2a128cfdeb9931642bb401a05c2d3a3dabac84",
+      "原始字节SHA256": "3082a2543bb9f0ea940bc7b5ca3b51dc59e4c6c86341160852123a2e862f646f",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_ara_research_runner.py",
+      "Git对象": "f3989a5b7b067783c2ecd4375bd2e8fa24c32dda",
+      "原始字节SHA256": "9f0e6ae7d5438d0f6b73912d259035e7c705bd1802ce535385226a9bfe7695f0",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_config.py",
+      "Git对象": "883df680b70506bf6e8702ae7e823a328154a9ff",
+      "原始字节SHA256": "0c77b65b44ed1bb3d4483efb080fc1f7e22427b4e75fa51331a1b607891065f7",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_pro6000_experiment.py",
+      "Git对象": "2d9751586e098c9be6dafcc7f27dbbe5c2815af2",
+      "原始字节SHA256": "19e85168617095cb2e5a5ac5f55d19515cb78c3f8ee6139729fadb7a97a18157",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_pro6000_export.py",
+      "Git对象": "ae897f709209ec4ce9670a2dec6bd3fdf476790a",
+      "原始字节SHA256": "9b031d44b7b7c24f35d4db9e62175e8a0196bb6495f1ab6dc2f624b240cdf353",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_protocol_data.py",
+      "Git对象": "74207bcedacdff4e033ed53f22cc037e015e9da2",
+      "原始字节SHA256": "6f96e86c3282c2e104c8e433874ccec11864d3df3f39c88a71a516835d7a7bc2",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_refusal_log_odds.py",
+      "Git对象": "2971d3c1c22032c1ba872a6ca91184ab3d0585aa",
+      "原始字节SHA256": "b680550cd18353da88601241a93a4be72b4cb36aac80abf297fb71a01545c6fb",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_reproduce.py",
+      "Git对象": "088829a9c10acf3be6904130e6a3c6356fe8565f",
+      "原始字节SHA256": "bc107188935167e2785f4f5e2db1da10dbc5fffb2e7b96d1fbb60adc44968b80",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_research_audit.py",
+      "Git对象": "f47d0a9b66d4ca86d5e88686d3ab74744da5128c",
+      "原始字节SHA256": "f539217839f8d04c62d26237ec3c269644f43e866f2d76fd147d66995bd852eb",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_research_evaluation.py",
+      "Git对象": "9bd1853e9ae6453ff7a5f81b2bc95ff565816634",
+      "原始字节SHA256": "4cd896af752e5dc85c6238ac191370ef9093256db090feefca1f9a9b27451521",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_sequence_scores.py",
+      "Git对象": "3206f9dc08e2a796b5b4429710d86cb4d9936d11",
+      "原始字节SHA256": "02ce8e96249baa6cf85d474a4c4f2c13ca57885590aa8395d37a93009a5a9bca",
+      "与逐路径hash-object核对一致": true
+    },
+    {
+      "文件": "tests/test_workflow.py",
+      "Git对象": "9a3c3bcc40d19cd955404c8163fc345a7ca0dda4",
+      "原始字节SHA256": "6948f691cf7b1e4b10969a9d632d109a015ded7d80f5f5627dd0ef92409e447e",
+      "与逐路径hash-object核对一致": true
+    }
+  ],
+  "已逐项核对git_log_stat": true,
+  "git_log_stat": "commit e8f094885b356414602ce227de98e773974cf15e\nAuthor: 476494220@qq.com <476494220@qq.com>\nDate:   Mon Sep 14 05:45:58 2026 -0500\n\n    feat: 完善 ARA 谱回溯与研究放行并固化评审验证\n\n README.md                                          |  35 +-\n config.qwen38-27b-cara-v3-96.toml                  |   6 +\n docs/logs/ara-v3/commit-20260914/baseline.json     |   5 +\n docs/logs/ara-v3/commit-20260914/commit-plan.json  | 137 ++++\n docs/logs/ara-v3/commit-20260914/cpu-unittest.log  | 368 ++++++++++\n .../ara-v3/commit-20260914/delivery-check.json     | 619 ++++++++++++++++\n docs/logs/ara-v3/commit-20260914/entrypoints.log   |  10 +\n docs/logs/ara-v3/commit-20260914/file-plan.md      |  51 ++\n .../ara-v3/commit-20260914/fixture-identity.json   |   7 +\n docs/logs/ara-v3/commit-20260914/git-status.txt    |  88 +++\n docs/logs/ara-v3/commit-20260914/local-budget.log  |   6 +\n .../commit-20260914/preflight-validation.json      |  22 +\n docs/logs/ara-v3/commit-20260914/preflight.log     |   1 +\n .../ara-v3/commit-20260914/staged-validation.json  |   9 +\n .../ara-v3/commit-20260914/static-validation.json  | 438 ++++++++++++\n .../logs/ara-v3/commit-20260914/tested-inputs.json |  94 +++\n docs/logs/ara-v3/commit-20260914/verification.json |  27 +\n .../logs/ara-v3/implementation-20260914/RUNBOOK.md | 152 ++++\n .../logs/ara-v3/implementation-20260914/SHA256SUMS |  66 ++\n .../logs/ara-v3/implementation-20260914/SUMMARY.md |  37 +\n .../implementation-20260914/entrypoints-final.log  |  10 +\n .../ara-v3/implementation-20260914/entrypoints.log |  14 +\n .../ara-v3/implementation-20260914/file-plan.md    |  61 ++\n .../implementation-20260914/full-cpu-final.log     | 345 +++++++++\n .../ara-v3/implementation-20260914/full-cpu.log    | 343 +++++++++\n .../integration-initial.log                        | 211 ++++++\n .../implementation-20260914/local-budget.log       |   6 +\n .../implementation-20260914/nesting-final.json     |   6 +\n .../implementation-20260914/new-chain-initial.log  | 199 ++++++\n .../implementation-20260914/numerical-resume.log   |  63 ++\n .../implementation-20260914/pilot-initial.log      |  67 ++\n .../ara-v3/implementation-20260914/proposal.log    |  16 +\n .../implementation-20260914/resource-final.log     |  85 +++\n .../implementation-20260914/static-final.json      |   4 +\n .../ara-v3/implementation-20260914/transaction.log |  83 +++\n .../implementation-20260914/verification.json      | 408 +++++++++++\n docs/logs/ara-v3/review-20260914/00-scan-report.md |  84 +++\n .../ara-v3/review-20260914/01-scanner-numerics.md  |  44 ++\n .../ara-v3/review-20260914/02-scanner-gates.md     |  75 ++\n .../ara-v3/review-20260914/03-scanner-identity.md  | 109 +++\n .../review-20260914/04-independent-review.md       | 136 ++++\n docs/logs/ara-v3/review-20260914/05-qa.md          | 124 ++++\n docs/logs/ara-v3/review-20260914/06-gates-fix.md   |  40 ++\n .../ara-v3/review-20260914/RUNBOOK-SUPPLEMENT.md   |  53 ++\n docs/logs/ara-v3/review-20260914/SHA256SUMS        | 102 +++\n docs/logs/ara-v3/review-20260914/baseline.json     |   5 +\n docs/logs/ara-v3/review-20260914/costs-final.log   |  15 +\n docs/logs/ara-v3/review-20260914/cpu-initial.log   | 223 ++++++\n .../ara-v3/review-20260914/delivery-manifest.json  | 410 +++++++++++\n .../review-20260914/delivery-validation.json       |  11 +\n .../ara-v3/review-20260914/entrypoints-final.log   |  10 +\n docs/logs/ara-v3/review-20260914/entrypoints.log   |  10 +\n docs/logs/ara-v3/review-20260914/file-plan.md      |  51 ++\n .../logs/ara-v3/review-20260914/full-cpu-final.log | 368 ++++++++++\n docs/logs/ara-v3/review-20260914/gates-after.log   |  21 +\n docs/logs/ara-v3/review-20260914/gates-before.log  |   8 +\n .../ara-v3/review-20260914/gates-integration.log   | 120 ++++\n docs/logs/ara-v3/review-20260914/git-before.txt    |  86 +++\n docs/logs/ara-v3/review-20260914/git-status.txt    |  87 +++\n .../review-20260914/identity-binding-before.log    |  24 +\n .../ara-v3/review-20260914/identity-binding.log    |  13 +\n .../ara-v3/review-20260914/identity-protocol.log   |  51 ++\n docs/logs/ara-v3/review-20260914/local-budget.log  |   6 +\n docs/logs/ara-v3/review-20260914/memory-after.log  |  21 +\n docs/logs/ara-v3/review-20260914/memory-before.log |  19 +\n .../review-20260914/pilot-evidence-check.json      |  65 ++\n .../review-20260914/resource-completion-after.log  |  25 +\n .../review-20260914/resource-completion-before.log |  38 +\n .../review-20260914/source-version-after.log       |  22 +\n .../review-20260914/source-version-before.log      |  39 +\n .../ara-v3/review-20260914/static-validation.json  | 438 ++++++++++++\n docs/logs/ara-v3/review-20260914/verification.json |  26 +\n docs/plans/ara-v2-refusal-optimization/spec.md     | 351 ++++++++-\n scripts/prepare_ara_research_protocol.py           |   9 +-\n scripts/run_ara_research_96.sh                     |   3 +-\n scripts/run_qwen38_27b_ara_v3_pro6000.sh           |   3 +-\n src/heretic/acceptance_export.py                   |  18 +-\n src/heretic/ara_backtracking.py                    | 307 ++++++++\n src/heretic/ara_pilot.py                           | 760 ++++++++++++++++++++\n src/heretic/ara_proposal.py                        | 239 +++++++\n src/heretic/ara_refinement.py                      | 122 +++-\n src/heretic/ara_refinement_capture.py              | 165 +++++\n src/heretic/ara_refinement_config.py               | 347 ++++++++-\n src/heretic/ara_research_acceptance.py             | 100 ++-\n src/heretic/ara_research_runner.py                 | 180 +++--\n src/heretic/ara_research_schema.py                 | 361 +++++++++-\n src/heretic/ara_runtime.py                         |   4 +-\n src/heretic/artifact_schema.py                     |  58 +-\n src/heretic/continuation_scores.py                 |  50 +-\n src/heretic/pro6000_experiment.py                  |  72 +-\n src/heretic/pro6000_launch.py                      |  27 +\n src/heretic/pro6000_prepare.py                     |  64 ++\n src/heretic/reproduce.py                           |   3 +-\n src/heretic/research_audit.py                      |  64 +-\n src/heretic/research_audit_recovery.py             |  38 +\n src/heretic/research_budget.py                     | 649 ++++++++++++++++-\n src/heretic/research_evaluation.py                 | 174 ++++-\n src/heretic/research_protocol.py                   | 191 ++++-\n src/heretic/sequence_scores.py                     |   3 +-\n src/heretic/trial_methods.py                       |  19 +-\n src/heretic/workflow.py                            |  18 +-\n tests/test_acceptance_export.py                    |  26 +\n tests/test_ara_backtracking.py                     | 103 +++\n tests/test_ara_pilot.py                            | 793 +++++++++++++++++++++\n tests/test_ara_proposal.py                         |  82 +++\n tests/test_ara_refinement.py                       | 166 ++++-\n tests/test_ara_research_acceptance.py              | 120 ++++\n tests/test_ara_research_runner.py                  | 299 +++++++-\n tests/test_config.py                               |  54 +-\n tests/test_pro6000_experiment.py                   | 144 ++++\n tests/test_pro6000_export.py                       |  37 +\n tests/test_protocol_data.py                        | 233 ++++++\n tests/test_refusal_log_odds.py                     |  22 +\n tests/test_reproduce.py                            |  56 ++\n tests/test_research_audit.py                       |  50 ++\n tests/test_research_evaluation.py                  |  76 ++\n tests/test_sequence_scores.py                      |  22 +\n tests/test_workflow.py                             |  71 +-\n 118 files changed, 13546 insertions(+), 285 deletions(-)\n",
+  "原有暂存删除数": 23,
+  "原有暂存差异SHA256": "ecc7027297b06b30062476f98150736a8ca51ae3ba46ab61fbb801074c2c0ff8",
+  "原有暂存差异字节未变": true,
+  "随后记账文件": [
+    "docs/plans/ara-v2-refusal-optimization/spec.md",
+    "docs/logs/ara-v3/commit-20260914/SUMMARY.md",
+    "docs/logs/ara-v3/commit-20260914/checkpoint-verification.json"
+  ],
+  "摘要语义": "Git对象经现有text/eol=lf规则规范化；原始SHA256记录检查点提交后、规格追加记账前的工作树字节。规格随后追加本轮记录，历史摘要不重写。",
+  "最终记账核验位置": "第二次提交SHA与逐文件核对结果登记任务平台运行日志；不在提交中递归写入自身SHA。"
+}

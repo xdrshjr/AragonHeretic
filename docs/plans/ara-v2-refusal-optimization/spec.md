@@ -987,3 +987,151 @@ ARA-DESIGN-009 的实际模型与数据身份、双 3090 资源及 pilot 成本�
 | ARA-DESIGN-009 | 真实 R1/R2 进展与资源、独立审计来源/抽样前提、跨模型及双评资源，按对应研究阶段落实 |
 
 历史 ARA-REVIEW-011/012/013/014 已由本轮上游实现并经回归核验：真实预测误差、剩余快照空间、提前结束成本检查点、`recovery_supported` 标签可关闭。两项新增 P2 不阻断代码精确提交，但限制对应诊断与机制声明。#6 可据本轮代码评审通过决定流程走向；代码完成与研究效果验收继续分开。
+
+
+## 第 1+1 轮提交记录（2026-09-14）
+
+记录日期：2026-09-14。提交节点：#5。本节对应用户第二轮需求及正文 v3.2；沿用图节点的“第 1+1 轮”标题并以日期区分历史记录。
+
+**代码检查点：`e8f094885b356414602ce227de98e773974cf15e`。** 主题：`feat: 完善 ARA 谱回溯与研究放行并固化评审验证`。父提交：`0ab032c8acdee8a0f197d4ffba8bec1bad93caad`。已执行 `git rev-parse --is-inside-work-tree`，结果为 true。
+
+依据 #4 的精确交付清单核验 102 项原始字节摘要，展开 103 个交付路径，加上本节点复验证据，共对 118 个具体文件逐个执行 `git add`，以 `git commit --only` 限定路径提交。已执行并逐行核对 `git log -1 --stat`，全部提交路径与 Git 对象均一致。原有 23 项暂存删除的完整差异字节未变，SHA256 为 `ecc7027297b06b30062476f98150736a8ca51ae3ba46ab61fbb801074c2c0ff8`；运行时、IDE/索引、旧 pilot 未跟踪材料与论文产物未混入提交。未跳过 hooks。
+
+### 自验结论与限制
+
+274 项不同测试通过：273 项开发服务器 CPU 回归（2.463 秒）与 1 项本地真实子进程预算测试（1.310 秒）。7 项入口/脚本检查、43 Python 文件编译与 Ruff、25 个源码文件增量约束检查通过。真实 CLI 在缺少冻结协议时正确退出 2 且未创建 study。远端静态文本夹具摘要一致，所有被测源码/测试/配置在复验与提交之间未改变。
+
+远端使用既有依赖和当前源码内存加载，隐藏 CUDA；本地子进程直接加载当前工作树。验证覆盖数值提案、整组恢复、资源与成本证据、跨目录预算、硬超时、身份及新旧制品分派。本节点没有修改源码或发现新的 P0/P1。上述结果基于人工夹具，不构成真实 GPU、超过基线或极低拒答率证据。
+
+源码、测试、脚本、配置暂存空白检查通过。完整提交清单检查退出 2，报告 150 项原始执行日志空白；原样保留证据，不将其标作通过。Git 沿用文本 LF 规范化规则，原始字节 SHA256 与 Git 对象用途不同。规格随后追加本节，因此历史摘要仍指向追加前字节。
+
+保留本轮两项新增 P2、历史 ARA-REVIEW-015、ARA-DESIGN2-007 及研究阶段 ARA-DESIGN-009；它们的责任与时点沿用前节。未新增 GPU pilot、正式矩阵、独立能力审计、人工双评或模型 checksum 流程。旧 pilot 失败结论维持。
+
+中文证据：[提交验收说明](../../logs/ara-v3/commit-20260914/SUMMARY.md)、[验证摘要](../../logs/ara-v3/commit-20260914/verification.json)、[原始 CPU 日志](../../logs/ara-v3/commit-20260914/cpu-unittest.log)、[逐文件核对](../../logs/ara-v3/commit-20260914/checkpoint-verification.json)。本节、验收说明和逐文件核对另作一次 3 文件的 `feat:` 记账提交，实际第二次 SHA 与最终核对结果登记任务运行日志，避免自引用提交 SHA。
+
+### 代码检查点提交文件清单（118 项）
+
+- `README.md`
+- `config.qwen38-27b-cara-v3-96.toml`
+- `docs/logs/ara-v3/commit-20260914/baseline.json`
+- `docs/logs/ara-v3/commit-20260914/commit-plan.json`
+- `docs/logs/ara-v3/commit-20260914/cpu-unittest.log`
+- `docs/logs/ara-v3/commit-20260914/delivery-check.json`
+- `docs/logs/ara-v3/commit-20260914/entrypoints.log`
+- `docs/logs/ara-v3/commit-20260914/file-plan.md`
+- `docs/logs/ara-v3/commit-20260914/fixture-identity.json`
+- `docs/logs/ara-v3/commit-20260914/git-status.txt`
+- `docs/logs/ara-v3/commit-20260914/local-budget.log`
+- `docs/logs/ara-v3/commit-20260914/preflight-validation.json`
+- `docs/logs/ara-v3/commit-20260914/preflight.log`
+- `docs/logs/ara-v3/commit-20260914/staged-validation.json`
+- `docs/logs/ara-v3/commit-20260914/static-validation.json`
+- `docs/logs/ara-v3/commit-20260914/tested-inputs.json`
+- `docs/logs/ara-v3/commit-20260914/verification.json`
+- `docs/logs/ara-v3/implementation-20260914/RUNBOOK.md`
+- `docs/logs/ara-v3/implementation-20260914/SHA256SUMS`
+- `docs/logs/ara-v3/implementation-20260914/SUMMARY.md`
+- `docs/logs/ara-v3/implementation-20260914/entrypoints-final.log`
+- `docs/logs/ara-v3/implementation-20260914/entrypoints.log`
+- `docs/logs/ara-v3/implementation-20260914/file-plan.md`
+- `docs/logs/ara-v3/implementation-20260914/full-cpu-final.log`
+- `docs/logs/ara-v3/implementation-20260914/full-cpu.log`
+- `docs/logs/ara-v3/implementation-20260914/integration-initial.log`
+- `docs/logs/ara-v3/implementation-20260914/local-budget.log`
+- `docs/logs/ara-v3/implementation-20260914/nesting-final.json`
+- `docs/logs/ara-v3/implementation-20260914/new-chain-initial.log`
+- `docs/logs/ara-v3/implementation-20260914/numerical-resume.log`
+- `docs/logs/ara-v3/implementation-20260914/pilot-initial.log`
+- `docs/logs/ara-v3/implementation-20260914/proposal.log`
+- `docs/logs/ara-v3/implementation-20260914/resource-final.log`
+- `docs/logs/ara-v3/implementation-20260914/static-final.json`
+- `docs/logs/ara-v3/implementation-20260914/transaction.log`
+- `docs/logs/ara-v3/implementation-20260914/verification.json`
+- `docs/logs/ara-v3/review-20260914/00-scan-report.md`
+- `docs/logs/ara-v3/review-20260914/01-scanner-numerics.md`
+- `docs/logs/ara-v3/review-20260914/02-scanner-gates.md`
+- `docs/logs/ara-v3/review-20260914/03-scanner-identity.md`
+- `docs/logs/ara-v3/review-20260914/04-independent-review.md`
+- `docs/logs/ara-v3/review-20260914/05-qa.md`
+- `docs/logs/ara-v3/review-20260914/06-gates-fix.md`
+- `docs/logs/ara-v3/review-20260914/RUNBOOK-SUPPLEMENT.md`
+- `docs/logs/ara-v3/review-20260914/SHA256SUMS`
+- `docs/logs/ara-v3/review-20260914/baseline.json`
+- `docs/logs/ara-v3/review-20260914/costs-final.log`
+- `docs/logs/ara-v3/review-20260914/cpu-initial.log`
+- `docs/logs/ara-v3/review-20260914/delivery-manifest.json`
+- `docs/logs/ara-v3/review-20260914/delivery-validation.json`
+- `docs/logs/ara-v3/review-20260914/entrypoints-final.log`
+- `docs/logs/ara-v3/review-20260914/entrypoints.log`
+- `docs/logs/ara-v3/review-20260914/file-plan.md`
+- `docs/logs/ara-v3/review-20260914/full-cpu-final.log`
+- `docs/logs/ara-v3/review-20260914/gates-after.log`
+- `docs/logs/ara-v3/review-20260914/gates-before.log`
+- `docs/logs/ara-v3/review-20260914/gates-integration.log`
+- `docs/logs/ara-v3/review-20260914/git-before.txt`
+- `docs/logs/ara-v3/review-20260914/git-status.txt`
+- `docs/logs/ara-v3/review-20260914/identity-binding-before.log`
+- `docs/logs/ara-v3/review-20260914/identity-binding.log`
+- `docs/logs/ara-v3/review-20260914/identity-protocol.log`
+- `docs/logs/ara-v3/review-20260914/local-budget.log`
+- `docs/logs/ara-v3/review-20260914/memory-after.log`
+- `docs/logs/ara-v3/review-20260914/memory-before.log`
+- `docs/logs/ara-v3/review-20260914/pilot-evidence-check.json`
+- `docs/logs/ara-v3/review-20260914/resource-completion-after.log`
+- `docs/logs/ara-v3/review-20260914/resource-completion-before.log`
+- `docs/logs/ara-v3/review-20260914/source-version-after.log`
+- `docs/logs/ara-v3/review-20260914/source-version-before.log`
+- `docs/logs/ara-v3/review-20260914/static-validation.json`
+- `docs/logs/ara-v3/review-20260914/verification.json`
+- `docs/plans/ara-v2-refusal-optimization/spec.md`
+- `scripts/prepare_ara_research_protocol.py`
+- `scripts/run_ara_research_96.sh`
+- `scripts/run_qwen38_27b_ara_v3_pro6000.sh`
+- `src/heretic/acceptance_export.py`
+- `src/heretic/ara_backtracking.py`
+- `src/heretic/ara_pilot.py`
+- `src/heretic/ara_proposal.py`
+- `src/heretic/ara_refinement.py`
+- `src/heretic/ara_refinement_capture.py`
+- `src/heretic/ara_refinement_config.py`
+- `src/heretic/ara_research_acceptance.py`
+- `src/heretic/ara_research_runner.py`
+- `src/heretic/ara_research_schema.py`
+- `src/heretic/ara_runtime.py`
+- `src/heretic/artifact_schema.py`
+- `src/heretic/continuation_scores.py`
+- `src/heretic/pro6000_experiment.py`
+- `src/heretic/pro6000_launch.py`
+- `src/heretic/pro6000_prepare.py`
+- `src/heretic/reproduce.py`
+- `src/heretic/research_audit.py`
+- `src/heretic/research_audit_recovery.py`
+- `src/heretic/research_budget.py`
+- `src/heretic/research_evaluation.py`
+- `src/heretic/research_protocol.py`
+- `src/heretic/sequence_scores.py`
+- `src/heretic/trial_methods.py`
+- `src/heretic/workflow.py`
+- `tests/test_acceptance_export.py`
+- `tests/test_ara_backtracking.py`
+- `tests/test_ara_pilot.py`
+- `tests/test_ara_proposal.py`
+- `tests/test_ara_refinement.py`
+- `tests/test_ara_research_acceptance.py`
+- `tests/test_ara_research_runner.py`
+- `tests/test_config.py`
+- `tests/test_pro6000_experiment.py`
+- `tests/test_pro6000_export.py`
+- `tests/test_protocol_data.py`
+- `tests/test_refusal_log_odds.py`
+- `tests/test_reproduce.py`
+- `tests/test_research_audit.py`
+- `tests/test_research_evaluation.py`
+- `tests/test_sequence_scores.py`
+- `tests/test_workflow.py`
+
+### 随后记账文件清单（3 项）
+
+- `docs/plans/ara-v2-refusal-optimization/spec.md`
+- `docs/logs/ara-v3/commit-20260914/SUMMARY.md`
+- `docs/logs/ara-v3/commit-20260914/checkpoint-verification.json`
