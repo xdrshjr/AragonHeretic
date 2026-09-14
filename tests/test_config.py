@@ -35,11 +35,13 @@ class RefinementConfigurationTests(unittest.TestCase):
         from heretic.ara_runtime import _match_target
 
         path = Path(__file__).resolve().parents[1]
-        settings = make_settings(tomllib.loads(
-            (path / "config.qwen38-27b-cara-v3-96.toml").read_text(
-                encoding="utf-8"
+        settings = make_settings(
+            tomllib.loads(
+                (path / "config.qwen38-27b-cara-v3-96.toml").read_text(
+                    encoding="utf-8"
+                )
             )
-        ))
+        )
         projections = (
             ("self_attn.o_proj", "attn.o_proj", 6144),
             ("linear_attn.out_proj", "attn.o_proj", 6144),
@@ -303,6 +305,50 @@ class CARAConfigTests(unittest.TestCase):
         values["scorer"]["KeywordRate"]["prompts"]["split"] = "test[:10%]"
         with self.assertRaisesRegex(ValidationError, "overlap"):
             make_settings(values)
+
+
+class NewProposalConfigurationTests(unittest.TestCase):
+    def test_unregistered_search_policy_has_no_resource_admission(self):
+        from types import SimpleNamespace
+        from unittest.mock import patch
+        from heretic.ara_refinement_config import _new_phase_limit
+
+        settings = SimpleNamespace(
+            seed=42,
+            ara_v3=SimpleNamespace(
+                method_id="S2", proposal_policy="spectral-clip-v1"
+            ),
+        )
+        protocol = {
+            "target_execution_contract": {
+                "phase_budgets": {"search": {"members": {}}}
+            }
+        }
+        with patch("heretic.ara_pilot.validate_phase_readiness"):
+            with self.assertRaisesRegex(ValueError, "未登记"):
+                _new_phase_limit(settings, protocol, "search")
+
+    def test_new_policy_requires_new_schema_and_frozen_alphas(self):
+        from heretic.ara_refinement_config import RefinementConfig
+
+        with self.assertRaises(ValueError):
+            RefinementConfig(
+                protocol_manifest="p", proposal_policy="spectral-backtrack-v1"
+            )
+        with self.assertRaises(ValueError):
+            RefinementConfig(
+                protocol_manifest="p",
+                artifact_schema="cara-research-acceptance-v3.1",
+                proposal_policy="spectral-backtrack-v1",
+                backtracking_alphas=(1, 0.25),
+            )
+        value = RefinementConfig(
+            protocol_manifest="p",
+            artifact_schema="cara-research-acceptance-v3.1",
+            proposal_policy="spectral-backtrack-v1",
+            backtracking_alphas=(1, 0.5, 0.25, 0.125, 0.0625),
+        )
+        self.assertEqual(value.method_id, "S2")
 
 
 if __name__ == "__main__":

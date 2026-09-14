@@ -17,6 +17,9 @@ from .ara_research_schema import (
     read_json,
     resolve_artifact,
     write_json,
+    PROTOCOL_SCHEMA_V31,
+    research_version,
+    validate_target_contract,
 )
 
 AUDIT_ROLES = {"legacy-audit", "research-audit", "ability-audit"}
@@ -221,7 +224,7 @@ def build_research_manifest(config: dict) -> dict:
     output = Path(config["output"]).resolve()
     root = Path(config.get("input_root", ".")).resolve()
     roles, bodies, access = {}, {}, []
-    pilot = bool(config.get("pilot", False))
+    pilot = _is_smoke(config)
     for role, source in config["roles"].items():
         rows, text = _prepare_rows(role, source, root)
         _validate_role_count(role, rows, pilot)
@@ -277,7 +280,7 @@ def _protocol_payload(config, roles, access):
         key: value for key, value in config.items() if key not in excluded
     }
     payload.update(
-        schema_version=PROTOCOL_SCHEMA,
+        schema_version=config.get("schema_version", PROTOCOL_SCHEMA),
         roles=roles,
         created_at=datetime.now(timezone.utc).isoformat(),
         methods={key: list(value) for key, value in METHODS.items()},
@@ -291,6 +294,8 @@ def _protocol_payload(config, roles, access):
         groups = {r["scenario_group_id"] for r in rows if r["primary_in_group"]}
         missing[side] = max(0, 300 - len(groups))
     payload["audit_sample_shortfall"] = missing
+    if payload["schema_version"] == PROTOCOL_SCHEMA_V31:
+        _validate_new_protocol(payload)
     return payload
 
 
@@ -301,27 +306,22 @@ def prepare_protocol(config, metadata_loader=None, *, experiment=False) -> dict:
         raise ValueError("缺少冻结 protocol.json；请先完成独立数据准备")
     protocol = read_json(path)
     expected = protocol.pop("protocol_hash", None)
-    if protocol.get("schema_version") != PROTOCOL_SCHEMA:
-        raise ValueError("研究协议 schema 不匹配")
+    research_version(protocol, "protocol")
     if digest(protocol) != expected:
         raise ValueError("冻结协议 hash 不匹配")
     protocol["protocol_hash"] = expected
-    scope = protocol.get("execution_scope")
-    if scope and not experiment:
-        raise ValueError("独立实验协议必须使用对应实验入口，禁止研究提升")
-    if experiment and scope != "pro6000-experiment-v1":
-        raise ValueError("Pro 6000 实验协议范围不匹配")
+    if protocol["schema_version"] == PROTOCOL_SCHEMA_V31:
+        _validate_new_settings(config, protocol)
+    _validate_execution_scope(protocol, experiment)
     if REQUIRED_ROLES - protocol["roles"].keys():
         raise ValueError("训练协议缺少必需的开发角色")
     if protocol["required_level"] != config.ara_v3.required_level:
         raise ValueError("冻结后不能改变 required_level")
     _validate_identity_isolation(protocol["roles"])
     for role, bundle in protocol["roles"].items():
-        _validate_role_count(
-            role, bundle["prompts"], protocol.get("pilot", False)
-        )
+        _validate_role_count(role, bundle["prompts"], _is_smoke(protocol))
         source = bundle["source"]
-        _validate_bundle_counts(role, bundle, protocol.get("pilot", False))
+        _validate_bundle_counts(role, bundle, _is_smoke(protocol))
         if "dataset_spec" in source:
             _preflight_source(source["dataset_spec"], metadata_loader)
             _validate_source_rows(bundle)
@@ -329,6 +329,160 @@ def prepare_protocol(config, metadata_loader=None, *, experiment=False) -> dict:
             load_role_body(protocol, path.parent, role)
     _validate_runtime_identity(config, protocol)
     return protocol
+
+
+def _validate_new_settings(config, protocol):
+    _validate_new_protocol(protocol)
+    if config.ara_v3.artifact_schema != "cara-research-acceptance-v3.1":
+        raise ValueError("协议与运行制品版本不一致")
+    if (
+        protocol.get("pilot")
+        and config.ara_v3.pilot_profile != protocol["pilot_profile"]
+    ):
+        raise ValueError("试点 profile 与配置不一致")
+    _validate_hardware_identity(config, protocol["target_execution_contract"])
+
+
+def _validate_hardware_identity(config, contract):
+    import torch
+
+    devices = config.ara_runtime_guard.required_target_devices
+    names = [
+        torch.cuda.get_device_name(int(device.split(":")[1]))
+        for device in devices
+    ]
+    if names != contract["hardware"]["device_names"]:
+        raise ValueError("实际 GPU 型号与试点资源证明的硬件身份不一致")
+
+
+def _validate_execution_scope(protocol, experiment):
+    scope = protocol.get("execution_scope")
+    if scope and not experiment:
+        raise ValueError("独立实验协议必须使用对应实验入口，禁止研究提升")
+    if experiment and scope != "pro6000-experiment-v1":
+        raise ValueError("Pro 6000 实验协议范围不匹配")
+
+
+def _is_smoke(protocol):
+    return (
+        bool(protocol.get("pilot"))
+        and protocol.get("pilot_profile", "smoke") == "smoke"
+    )
+
+
+def _validate_new_protocol(protocol):
+    if protocol.get("schema_version") != PROTOCOL_SCHEMA_V31:
+        raise ValueError("新版目标证据的来源协议版本必须为 v3.1")
+    contract = protocol["target_execution_contract"]
+    expected = validate_target_contract(contract)
+    if protocol.get("target_execution_hash") != expected:
+        raise ValueError("目标执行契约 hash 不匹配")
+    if protocol.get("role_layout") not in {
+        "pilot-preserving-v1",
+        "contiguous-v3",
+    }:
+        raise ValueError("新协议必须显式冻结角色布局")
+    if protocol.get("pilot_profile") not in {"smoke", "full-calibration"}:
+        raise ValueError("新协议必须显式冻结校准 profile")
+    keys = (
+        "model_identity",
+        "tokenizer_identity",
+        "source_files",
+        "package_versions",
+        "generation_profiles",
+        "initialization_sources",
+        "role_layout",
+        "quantization",
+        "dtype",
+    )
+    for key in keys:
+        if protocol.get(key) != contract[key]:
+            raise ValueError(f"协议与目标执行契约不匹配：{key}")
+    if protocol.get("judge_identity") != contract["scorer_identity"]:
+        raise ValueError("协议评分器与目标执行契约不匹配")
+    if protocol.get("replay_weight_comparison") != "effective-update-v1":
+        raise ValueError("新协议必须采用有效权重重放")
+    _validate_target_roles(protocol, contract)
+
+
+def _validate_target_roles(protocol, contract):
+    profile = protocol["pilot_profile"]
+    mapping = contract["role_mappings"][profile]
+    frozen = contract["role_identities"][profile]
+    for role, bundle in protocol["roles"].items():
+        if is_audit_role(role):
+            continue
+        identities = [row["prompt_id"] for row in bundle["prompts"]]
+        if identities != mapping[role]:
+            raise ValueError(f"{role} 不符合预注册角色 ID 映射")
+        if role_execution_identity(bundle) != frozen[role]:
+            raise ValueError(f"{role} 正文或来源身份与目标契约不一致")
+
+
+def role_execution_identity(bundle):
+    """固定有序题目、正文及来源；本地输入文件位置不构成数据身份。"""
+    source = {k: v for k, v in bundle["source"].items() if k != "path"}
+    return {
+        "prompts_hash": digest(bundle["prompts"]),
+        "body_hash": bundle["body_hash"],
+        "source_hash": digest(source),
+    }
+
+
+def validate_target_protocol_fields(contract):
+    """新目标在试点前固定精度、评分器及两套角色内容摘要。"""
+    for key in ("quantization", "dtype"):
+        if not isinstance(contract[key], str) or not contract[key]:
+            raise ValueError(f"目标执行契约缺少计算身份：{key}")
+    if not isinstance(contract["scorer_identity"], dict):
+        raise ValueError("目标评分器必须保存完整 judge_identity 对象")
+    _validate_target_role_profiles(contract)
+    _validate_shared_role_identity(contract["role_identities"])
+
+
+def _validate_target_role_profiles(contract):
+    profiles = contract["role_identities"]
+    if not isinstance(profiles, dict) or set(profiles) != {
+        "smoke",
+        "full-calibration",
+    }:
+        raise ValueError("目标角色正文身份必须包含两个校准 profile")
+    for profile, roles in profiles.items():
+        expected = set(contract["role_mappings"][profile]) - {
+            "_fit_selected_ids"
+        }
+        if not isinstance(roles, dict) or set(roles) != expected:
+            raise ValueError("目标角色正文身份清单不完整")
+        for identity in roles.values():
+            _validate_role_identity(identity)
+
+
+def _validate_shared_role_identity(profiles):
+    for role in (
+        "development.good",
+        "development.bad",
+        "mechanism-development.good",
+        "mechanism-development.bad",
+    ):
+        for key in ("prompts_hash", "body_hash"):
+            if (
+                profiles["smoke"][role][key]
+                != profiles["full-calibration"][role][key]
+            ):
+                raise ValueError("R1/R2 开发角色正文身份必须保持不变")
+
+
+def _validate_role_identity(identity):
+    if not isinstance(identity, dict) or set(identity) != {
+        "prompts_hash",
+        "body_hash",
+        "source_hash",
+    }:
+        raise ValueError("角色身份必须固定有序题目、正文及来源摘要")
+    if any(
+        not isinstance(value, str) or not value for value in identity.values()
+    ):
+        raise ValueError("角色正文身份摘要不能为空")
 
 
 def _validate_bundle_counts(role, bundle, pilot):
@@ -449,7 +603,16 @@ def select_fit_rows(protocol: dict, side: str, seed: int) -> list[dict]:
     selected = generator.sample(
         range(bundle["candidate_count"]), bundle["selected_count"]
     )
-    return [bundle["prompts"][index] for index in sorted(selected)]
+    rows = [bundle["prompts"][index] for index in sorted(selected)]
+    if protocol.get("schema_version") == PROTOCOL_SCHEMA_V31:
+        mapping = protocol["target_execution_contract"]["role_mappings"][
+            protocol["pilot_profile"]
+        ]
+        if [row["prompt_id"] for row in rows] != mapping["_fit_selected_ids"][
+            str(seed)
+        ][side]:
+            raise ValueError("运行时 fit 选择与执行前冻结的 ID 不一致")
+    return rows
 
 
 def fit_selection(settings, protocol, protocol_root):

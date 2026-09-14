@@ -99,14 +99,14 @@ def _collect_runtime_resources(devices: Sequence[str]) -> RuntimeResources:
     with suppress(ImportError):
         resource = importlib.import_module("resource")
         usage = getattr(resource, "getrusage")(getattr(resource, "RUSAGE_SELF"))
-        peak = usage.ru_maxrss / 1024**2
-        rss = max(rss, peak)
+        rss = max(rss, usage.ru_maxrss / 1024**2)
     free: dict[str, float] = {}
     allocated: dict[str, float] = {}
     for device in devices:
         if not device.startswith("cuda:"):
             continue
         index = int(device.partition(":")[2])
+        torch.cuda.synchronize(index)
         free_bytes, _ = torch.cuda.mem_get_info(index)
         free[device] = free_bytes / 1024**3
         allocated[device] = torch.cuda.max_memory_allocated(index) / 1024**3

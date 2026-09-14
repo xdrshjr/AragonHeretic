@@ -1,0 +1,67 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_file_mutation_is_rejected_before_declared_pass (test_ara_pilot.PilotTests.test_file_mutation_is_rejected_before_declared_pass) ... ok
+test_full_calibration_pilot_requires_previous_proof (test_ara_pilot.PilotTests.test_full_calibration_pilot_requires_previous_proof) ... ok
+test_legacy_summary_does_not_open_expansion (test_ara_pilot.PilotTests.test_legacy_summary_does_not_open_expansion) ... ok
+test_native_evidence_can_pass_and_is_recomputed (test_ara_pilot.PilotTests.test_native_evidence_can_pass_and_is_recomputed) ... ok
+test_parameter_identity_changes_while_study_stays_fixed (test_ara_pilot.PilotTests.test_parameter_identity_changes_while_study_stays_fixed) ... ok
+test_target_rejects_self_or_readiness_hash (test_ara_pilot.PilotTests.test_target_rejects_self_or_readiness_hash) ... ok
+test_accepts_first_monitor_improvement_and_records_discrepancy (test_ara_backtracking.BacktrackingTests.test_accepts_first_monitor_improvement_and_records_discrepancy) ... ok
+test_all_rejections_restore_same_original (test_ara_backtracking.BacktrackingTests.test_all_rejections_restore_same_original) ... ok
+test_monitor_exception_restores_all_factors (test_ara_backtracking.BacktrackingTests.test_monitor_exception_restores_all_factors) ... ok
+test_nonzero_old_update_reinstalled_is_not_new_update (test_ara_backtracking.BacktrackingTests.test_nonzero_old_update_reinstalled_is_not_new_update) ... ok
+test_acceptance_gate_requires_deterministic_pinned_disjoint_data (test_config.CARAConfigTests.test_acceptance_gate_requires_deterministic_pinned_disjoint_data) ... ok
+test_ara_rejects_row_normalization_and_reserved_kwargs (test_config.CARAConfigTests.test_ara_rejects_row_normalization_and_reserved_kwargs) ... ok
+test_components_are_deduplicated_and_unknown_values_rejected (test_config.CARAConfigTests.test_components_are_deduplicated_and_unknown_values_rejected) ... ok
+test_default_method_remains_directional (test_config.CARAConfigTests.test_default_method_remains_directional) ... ok
+test_registered_qwen_configuration_parses (test_config.CARAConfigTests.test_registered_qwen_configuration_parses) ... ok
+test_resume_keeps_current_run_control_fields (test_config.CARAConfigTests.test_resume_keeps_current_run_control_fields) ... ok
+test_runtime_ranges_and_template_keys_are_validated (test_config.CARAConfigTests.test_runtime_ranges_and_template_keys_are_validated) ... ok
+test_trajectory_v2_configuration_is_fully_preregistered (test_config.CARAConfigTests.test_trajectory_v2_configuration_is_fully_preregistered) ... ok
+test_dual_gpu_template_uses_independent_budget (test_config.RefinementConfigurationTests.test_dual_gpu_template_uses_independent_budget) ... ok
+test_method_mapping_rejects_ambiguous_variant (test_config.RefinementConfigurationTests.test_method_mapping_rejects_ambiguous_variant) ... ok
+test_v3_rejects_unregistered_response_prefix (test_config.RefinementConfigurationTests.test_v3_rejects_unregistered_response_prefix) ... ok
+test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) ... ok
+test_accepts_slug_like_instance_name (test_config.ScorerConfigTests.test_accepts_slug_like_instance_name) ... ok
+test_rejects_dot_in_instance_name (test_config.ScorerConfigTests.test_rejects_dot_in_instance_name) ... ok
+test_rejects_empty_instance_name (test_config.ScorerConfigTests.test_rejects_empty_instance_name) ... ok
+test_rejects_whitespace_in_instance_name (test_config.ScorerConfigTests.test_rejects_whitespace_in_instance_name) ... ok
+test_anchors_are_distinct_and_random_stage_is_deterministic (test_ara_research_runner.RunnerTests.test_anchors_are_distinct_and_random_stage_is_deterministic) ... ok
+test_budget_charges_across_multiple_launches (test_ara_research_runner.RunnerTests.test_budget_charges_across_multiple_launches) ... ok
+test_exhausted_resume_finalizes_orphan_before_loading_model (test_ara_research_runner.RunnerTests.test_exhausted_resume_finalizes_orphan_before_loading_model) ... ok
+test_finalize_error_does_not_overwrite_frozen_phase_result (test_ara_research_runner.RunnerTests.test_finalize_error_does_not_overwrite_frozen_phase_result) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '冻结标注已改变'}
+ok
+test_initial_finalize_error_allows_corrected_request (test_ara_research_runner.RunnerTests.test_initial_finalize_error_allows_corrected_request) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '缺少标签文件'}
+{'phase': 'finalize', 'research_status': 'passed', 'inputs_hash': 'frozen-inputs'}
+ok
+test_pilot_and_ablation_reject_unregistered_member (test_ara_research_runner.RunnerTests.test_pilot_and_ablation_reject_unregistered_member) ... ok
+test_pilot_budget_is_shared_across_run_directories (test_ara_research_runner.RunnerTests.test_pilot_budget_is_shared_across_run_directories) ... ok
+test_replay_resume_reuses_complete_evidence_and_latches_failure (test_ara_research_runner.RunnerTests.test_replay_resume_reuses_complete_evidence_and_latches_failure) ... ok
+test_search_has_exact_24_terminal_attempts_and_resumes_lock (test_ara_research_runner.RunnerTests.test_search_has_exact_24_terminal_attempts_and_resumes_lock) ... /home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py:203: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = optuna.samplers.TPESampler(
+[I 2026-09-14 16:45:08,550] A new study created in memory with name: no-name-42dd080d-a53a-48c3-8b94-f4e29e5fd354
+[I 2026-09-14 16:45:08,558] A new study created in memory with name: no-name-9fbd752b-1909-40cb-818e-c8fac7e42394
+[I 2026-09-14 16:45:08,565] A new study created in memory with name: no-name-0e267839-7c08-403d-aa63-156b2bbdbf7a
+[I 2026-09-14 16:45:08,571] A new study created in memory with name: no-name-00b84ac6-6f62-49af-8fc3-45c2f3ec804f
+[I 2026-09-14 16:45:08,578] A new study created in memory with name: no-name-ba8cb4e7-1e73-413c-b8c5-6113f6d40a94
+[I 2026-09-14 16:45:08,584] A new study created in memory with name: no-name-abed972d-81aa-4744-9501-6b8543ea73f1
+[I 2026-09-14 16:45:08,591] A new study created in memory with name: no-name-2a3eabd1-c134-42f8-a7ee-070186756d57
+[I 2026-09-14 16:45:08,598] A new study created in memory with name: no-name-f72312a3-0a7a-4d5b-af09-9eaba6fa743f
+[I 2026-09-14 16:45:08,605] A new study created in memory with name: no-name-8ebbcc36-67e8-4633-9ee7-7beb9bbc2aa2
+[I 2026-09-14 16:45:08,612] A new study created in memory with name: no-name-95117177-ae62-4316-9e4d-4346694abc42
+[I 2026-09-14 16:45:08,619] A new study created in memory with name: no-name-d6b5a155-5bf9-4e7a-b2e4-03006edd1fab
+[I 2026-09-14 16:45:08,626] A new study created in memory with name: no-name-2df5b11f-6e53-4b63-882e-47332fb8ae1c
+ok
+test_shortlist_filters_hard_constraints_before_top_three (test_ara_research_runner.RunnerTests.test_shortlist_filters_hard_constraints_before_top_three) ... ok
+test_snapshot_restore_failure_stops_search_after_terminal_record (test_ara_research_runner.RunnerTests.test_snapshot_restore_failure_stops_search_after_terminal_record) ... ok
+test_subprocess_failures_write_phase_result_and_exit_three (test_ara_research_runner.RunnerTests.test_subprocess_failures_write_phase_result_and_exit_three) ... {'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+ok
+
+----------------------------------------------------------------------
+Ran 38 tests in 2.045s
+
+OK
+
+退出码：0

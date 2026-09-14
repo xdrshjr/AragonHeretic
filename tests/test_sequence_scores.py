@@ -40,5 +40,27 @@ class SequenceKLTests(unittest.TestCase):
         self.assertEqual(logits.shape, (1, 4))
 
 
+class StreamingSequenceTests(unittest.TestCase):
+    def test_chunked_kl_matches_full_vocab_dense_reference(self):
+        generator = torch.Generator().manual_seed(42)
+        base = torch.randn(33, 129, generator=generator)
+        candidate = torch.randn(33, 129, generator=generator)
+        mask = torch.arange(33) % 3 != 0
+        left, right = base.log_softmax(-1), candidate.log_softmax(-1)
+        expected = (left.exp() * (left - right)).sum(-1)[mask]
+        actual = masked_token_kl(base, candidate, mask, 8)
+        self.assertTrue(torch.allclose(actual, expected, atol=1e-7))
+
+    def test_selected_cpu_logits_do_not_retain_long_prompt_storage(self):
+        model = tiny_model()
+        selected = logits_on_sequence(
+            model, TokenSequence("long", (1,) * 1024, (2,))
+        )
+        self.assertEqual(
+            selected.untyped_storage().nbytes(),
+            selected.numel() * selected.element_size(),
+        )
+
+
 if __name__ == "__main__":
     unittest.main()

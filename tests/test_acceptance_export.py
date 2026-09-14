@@ -449,5 +449,31 @@ class AcceptanceExportTests(unittest.TestCase):
             verify_artifact_graph(context.destination)
 
 
+class NewResearchExportTests(unittest.TestCase):
+    def test_common_json_export_checks_new_artifact_graph(self):
+        import json
+        from heretic.utils import generate_reproduce_json
+        from heretic.ara_research_acceptance import promote_research_artifact
+        from test_ara_research_acceptance import new_passed_report
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            staging, formal = root / "staging", root / "formal"
+            promote_research_artifact(
+                staging, formal, new_passed_report(staging)
+            )
+            settings = SimpleNamespace(
+                ara_objective_version="sequential-v3",
+                save_directory=str(formal),
+            )
+            payload = json.loads(
+                generate_reproduce_json(settings, None, "", {}, False)
+            )
+            self.assertEqual(payload["schema"], "cara-research-reproduce-v3.1")
+            (formal / "weights.bin").write_bytes(b"changed")
+            with self.assertRaises(ValueError):
+                generate_reproduce_json(settings, None, "", {}, False)
+
+
 if __name__ == "__main__":
     unittest.main()

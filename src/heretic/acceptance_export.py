@@ -37,7 +37,7 @@ from .artifact_schema import (
 )
 from .config import ExportStrategy
 from .system import empty_cache
-from .utils import ask_if_unset, format_exception, get_file_sha256, print as rich_print
+from .utils import ask_if_unset, format_exception, print as rich_print
 
 LEDGER_TRANSITIONS = {
     "not_started": {"started"},
@@ -684,19 +684,9 @@ def _verify_local_reproduction(
     destination: Path,
     reproduction: Mapping[str, Any] | None,
 ) -> None:
-    if reproduction is None:
-        return
-    rich_print("Verifying hashes of weight files...")
-    hashes = reproduction.get("hashes", reproduction.get("core_artifact_hashes", {}))
-    for filename, expected in hashes.items():
-        if not filename.endswith((".safetensors", ".bin")):
-            continue
-        path = destination / filename
-        if not path.is_file():
-            raise RuntimeError(f"reproduced file is missing: {filename}")
-        if get_file_sha256(path).lower() != expected.lower():
-            raise RuntimeError(f"reproduced file hash mismatch: {filename}")
-        rich_print(f"[bold]{filename}:[/] [green]Hash matches[/]")
+    from .artifact_schema import verify_reproduced_weights
+
+    verify_reproduced_weights(destination, reproduction)
 
 
 def run_save_action(context: SaveActionContext) -> bool:

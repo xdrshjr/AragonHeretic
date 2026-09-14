@@ -203,6 +203,23 @@ def prepare_config(root, run):
         max_cuda_allocated_gib=88.0,
         max_capture_cpu_gib=64.0,
     )
+    if run.get("artifact_version") == "v3.1":
+        settings["ara_v3"].update(
+            artifact_schema="cara-research-acceptance-v3.1",
+            proposal_policy="spectral-backtrack-v1",
+            backtracking_alphas=[1, 0.5, 0.25, 0.125, 0.0625],
+            pilot_profile="full-calibration",
+        )
+    else:
+        for key in (
+            "proposal_policy",
+            "backtracking_alphas",
+            "spectral_projection_margin",
+            "pilot_profile",
+            "stage_execution_id",
+        ):
+            settings["ara_v3"].pop(key, None)
+        settings["ara_v3"]["artifact_schema"] = "cara-research-acceptance-v3"
     target = source / RUNTIME_CONFIG
     target.write_text(tomli_w.dumps(settings), encoding="utf-8", newline="\n")
     return settings
@@ -260,7 +277,41 @@ def _preparation_payload(root, run, pilot):
         "inclusion_rules": "保留 pilot 各角色题目，按原始行号扩充 fit/monitor",
         "grouping_rule": "规范化文本分组，仅作 benchmark 实验",
     }
+    if run.get("artifact_version") == "v3.1":
+        _bind_new_experiment(payload, run)
     return payload
+
+
+def _bind_new_experiment(payload, run):
+    from .ara_pilot import read_bound
+    from .ara_research_schema import validate_target_contract
+
+    contract = read_bound(run["target_execution_contract"])
+    validate_target_contract(contract)
+    expected = {
+        "quantization": contract["quantization"],
+        "dtype": contract["dtype"],
+        "judge_identity": contract["scorer_identity"],
+    }
+    if any(payload.get(key) != value for key, value in expected.items()):
+        raise ValueError("单卡执行精度或评分器与目标契约不一致")
+    payload.update(
+        schema_version="cara-research-protocol-v3.1",
+        target_execution_contract=contract,
+        target_execution_hash=digest(contract),
+        initialization_sources=contract["initialization_sources"],
+        initialization_scheme="paired-data-v3.1",
+        role_layout=contract["role_layout"],
+        pilot_profile="full-calibration",
+        replay_weight_comparison="effective-update-v1",
+        source_files=contract["source_files"],
+        source_tree_hash=digest(contract["source_files"]),
+    )
+    payload["phase_budgets"]["experiment"].update(
+        max_gpu_hours=run["hours"],
+        readiness_evidence=run["readiness_evidence"],
+        members=[f"S2/spectral-backtrack-v1/{run['seed']}"],
+    )
 
 
 def snapshot_requirement(settings, remaining=24):
@@ -275,6 +326,19 @@ def snapshot_requirement(settings, remaining=24):
 def prepare_experiment(root: Path, run: dict) -> dict:
     """生成可独立恢复的冻结协议，尚不加载 GPU 模型。"""
     import shutil
+
+    if run.get("artifact_version") == "v3.1":
+        from .ara_pilot import read_bound, validate_readiness
+
+        validate_readiness(
+            read_bound(run["readiness_evidence"]),
+            {
+                "required_stage": "search_readiness",
+                "target_execution_contract": read_bound(
+                    run["target_execution_contract"]
+                ),
+            },
+        )
 
     hardware = check_hardware()
     summary, pilot, folder = read_pilot(Path(run["pilot_record"]))

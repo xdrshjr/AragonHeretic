@@ -125,19 +125,31 @@ def _score_batch(
     input_ids = torch.tensor(input_rows, dtype=torch.long, device=device)
     attention_mask = torch.tensor(mask_rows, dtype=torch.long, device=device)
     with torch.inference_mode():
-        logits = model(input_ids=input_ids, attention_mask=attention_mask).logits
-    if not torch.isfinite(logits).all():
-        raise TrajectoryNonFiniteError(
-            "continuation-score", "continuation logits contain non-finite values"
-        )
-    logprobs = torch.log_softmax(logits.to(torch.float32), dim=-1)
+        logits = model(
+            input_ids=input_ids, attention_mask=attention_mask
+        ).logits
+    _validate_logits(logits)
+    return _score_suffix_records(logits, records, width)
+
+
+def _validate_logits(logits):
+    for row in logits:
+        for start in range(0, row.shape[0], 8):
+            if not torch.isfinite(row[start : start + 8]).all():
+                raise TrajectoryNonFiniteError(
+                    "continuation-score",
+                    "continuation logits contain non-finite values",
+                )
+
+
+def _score_suffix_records(logits, records, width):
     scores = []
     for row, record in enumerate(records):
         padding = width - len(record.token_ids)
         token_positions = torch.arange(
             padding + record.suffix_start,
             width,
-            device=logprobs.device,
+            device=logits.device,
         )
         prediction_positions = token_positions - 1
         if bool((prediction_positions < padding).any()):
@@ -145,16 +157,28 @@ def _score_batch(
         targets = torch.tensor(
             record.token_ids[record.suffix_start :],
             dtype=torch.long,
-            device=logprobs.device,
+            device=logits.device,
         )
-        values = logprobs[row, prediction_positions, targets]
+        values = _selected_logprobs(logits[row], prediction_positions, targets)
         mean = values.mean()
         if not torch.isfinite(mean):
             raise TrajectoryNonFiniteError(
-                "continuation-score", "continuation log probability is non-finite"
+                "continuation-score",
+                "continuation log probability is non-finite",
             )
         scores.append(float(mean.cpu()))
     return scores
+
+
+def _selected_logprobs(logits, positions, targets):
+    """先选择因果位置，再按八个位置对完整词表做 FP32 归一化。"""
+    values = []
+    for start in range(0, len(positions), 8):
+        selected = positions[start : start + 8]
+        probabilities = torch.log_softmax(logits[selected].float(), dim=-1)
+        token_ids = targets[start : start + 8]
+        values.append(probabilities.gather(1, token_ids[:, None]).squeeze(1))
+    return torch.cat(values)
 
 
 def continuation_logprobs(
@@ -187,7 +211,8 @@ def continuation_logprobs(
     )
     if not torch.isfinite(result).all():
         raise TrajectoryNonFiniteError(
-            "continuation-score", "continuation scores contain non-finite values"
+            "continuation-score",
+            "continuation scores contain non-finite values",
         )
     return result
 
@@ -217,7 +242,8 @@ def validate_prefix_groups(
         tokens = tuple(_token_ids(tokenizer, prefix) for prefix in normalized)
         special_ids = set(getattr(tokenizer, "all_special_ids", ()))
         if any(not value for value in tokens) or any(
-            not any(token not in special_ids for token in value) for value in tokens
+            not any(token not in special_ids for token in value)
+            for value in tokens
         ):
             raise ValueError("each prefix must contain a non-special token")
         if len(tokens) != len(set(tokens)):

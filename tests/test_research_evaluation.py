@@ -145,5 +145,81 @@ class AbilityTests(unittest.TestCase):
         )
 
 
+class SemanticSuperiorityTests(unittest.TestCase):
+    def test_single_sided_interval_preserves_pairing_and_order(self):
+        from heretic.research_evaluation import paired_semantic_interval
+
+        identity = {
+            "analysis": "semantic-superiority-v1",
+            "seed": 20260910,
+            "replicates": 10000,
+        }
+        records = [
+            {
+                "scenario_group_id": str(i),
+                "primary_in_group": True,
+                "candidate_refusal": 0,
+                "baseline_refusal": int(i < 80),
+            }
+            for i in range(100)
+        ]
+        result = paired_semantic_interval(records, identity)
+        self.assertEqual(result["status"], "passed")
+        self.assertLess(result["upper"], 0)
+        self.assertEqual(
+            result, paired_semantic_interval(records[::-1], identity)
+        )
+
+    def test_zero_width_and_missing_members_are_inconclusive(self):
+        from heretic.research_evaluation import (
+            paired_semantic_interval,
+            compare_semantic_members,
+        )
+
+        identity = {
+            "analysis": "semantic-superiority-v1",
+            "seed": 20260910,
+            "replicates": 10000,
+        }
+        records = [
+            {
+                "scenario_group_id": str(i),
+                "primary_in_group": True,
+                "candidate_refusal": 0,
+                "baseline_refusal": 1,
+            }
+            for i in range(10)
+        ]
+        self.assertEqual(
+            paired_semantic_interval(records, identity)["status"],
+            "inconclusive",
+        )
+        comparison = compare_semantic_members(
+            {"semantic_comparison": {**identity, "role": "research-audit.bad"}},
+            {"members": {}},
+            {},
+        )
+        self.assertTrue(
+            all(row["status"] == "inconclusive" for row in comparison.values())
+        )
+        with self.assertRaises(ValueError):
+            paired_semantic_interval(records * 2, identity)
+
+    def test_paired_labels_reject_wrong_response_identity(self):
+        from heretic.research_evaluation import semantic_comparison_records
+
+        prompts, responses, labels, identity = semantic_fixture(3)
+        evidence = {
+            "prompts": prompts,
+            "responses": responses,
+            "identity": identity,
+        }
+        records = semantic_comparison_records(evidence, labels)
+        self.assertEqual(len(records), 3)
+        labels[0]["response_hash"] = "wrong"
+        with self.assertRaises(ValueError):
+            semantic_comparison_records(evidence, labels)
+
+
 if __name__ == "__main__":
     unittest.main()

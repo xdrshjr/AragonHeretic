@@ -1,0 +1,38 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_budget_persists_stage_failure_classification (test_ara_research_runner.StageCompletionRegressionTests.test_budget_persists_stage_failure_classification) ... ERROR
+test_comparison_numeric_failure_allowed_but_resource_error_blocks (test_ara_research_runner.StageCompletionRegressionTests.test_comparison_numeric_failure_allowed_but_resource_error_blocks) ... FAIL
+test_failed_widest_resource_cannot_use_another_narrow_probe (test_ara_research_runner.StageCompletionRegressionTests.test_failed_widest_resource_cannot_use_another_narrow_probe) ... FAIL
+
+======================================================================
+ERROR: test_budget_persists_stage_failure_classification (test_ara_research_runner.StageCompletionRegressionTests.test_budget_persists_stage_failure_classification)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_research_runner.py", line 823, in test_budget_persists_stage_failure_classification
+    self.assertEqual(failed["failure_category"], "RuntimeError")
+                     ~~~~~~^^^^^^^^^^^^^^^^^^^^
+KeyError: 'failure_category'
+
+======================================================================
+FAIL: test_comparison_numeric_failure_allowed_but_resource_error_blocks (test_ara_research_runner.StageCompletionRegressionTests.test_comparison_numeric_failure_allowed_but_resource_error_blocks)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_research_runner.py", line 806, in test_comparison_numeric_failure_allowed_but_resource_error_blocks
+    with self.assertRaisesRegex(PilotGateError, "阶段"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PilotGateError not raised
+
+======================================================================
+FAIL: test_failed_widest_resource_cannot_use_another_narrow_probe (test_ara_research_runner.StageCompletionRegressionTests.test_failed_widest_resource_cannot_use_another_narrow_probe)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_research_runner.py", line 788, in test_failed_widest_resource_cannot_use_another_narrow_probe
+    with self.assertRaisesRegex(PilotGateError, "阶段"):
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+AssertionError: PilotGateError not raised
+
+----------------------------------------------------------------------
+Ran 3 tests in 1.206s
+
+FAILED (failures=2, errors=1)
+
+退出码：1

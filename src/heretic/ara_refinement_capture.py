@@ -7,6 +7,7 @@ import hashlib
 import math
 from contextlib import contextmanager
 from dataclasses import dataclass, replace
+from pathlib import Path
 
 import torch
 from torch import Tensor
@@ -410,6 +411,25 @@ def bind_evaluation_state(bank: ReferenceBank, state_hash: str):
     )
 
 
+def remaining_snapshot_count(root, planned):
+    """仅扣除文件和张量摘要均正确的已落盘快照，覆盖重放恢复。"""
+    from .ara_research_schema import read_json, file_digest
+
+    completed = set()
+    for path in Path(root).rglob("trial.json"):
+        row = read_json(path)
+        if row.get("schema_version") != "cara-research-trial-v3.1":
+            continue
+        snapshot = Path(row["final_snapshot_path"])
+        if file_digest(snapshot) != row["snapshot_file_hash"]:
+            raise ValueError("已落盘快照损坏，不能从空间预留中扣除")
+        values = torch.load(snapshot, map_location="cpu", weights_only=True)
+        if tensor_identity(values) != row["final_snapshot_hash"]:
+            raise ValueError("已落盘张量身份不匹配")
+        completed.add(snapshot.resolve())
+    return max(1, planned - len(completed))
+
+
 def preflight_snapshot_storage(model, root, *, snapshots=32):
     """按实际 shape 预留全部 trial、重放及 staging 快照和 20% 余量。"""
     import shutil
@@ -432,6 +452,64 @@ def preflight_snapshot_storage(model, root, *, snapshots=32):
         "required_bytes": required,
         "available_bytes": available,
     }
+
+
+@contextmanager
+def measure_research_phase(model, name, records):
+    """记录阶段耗时与实际设备峰值；不把 empty_cache 当作释放证据。"""
+    import time
+
+    guard = getattr(getattr(model, "settings", None), "ara_runtime_guard", None)
+    devices = getattr(guard, "required_target_devices", ())
+    indices = [
+        int(device.split(":")[1])
+        for device in devices
+        if device.startswith("cuda:")
+    ]
+    depth = getattr(model, "_ara_resource_depth", 0)
+    model._ara_resource_depth = depth + 1
+    for index in indices:
+        torch.cuda.synchronize(index)
+        if depth == 0:
+            torch.cuda.reset_peak_memory_stats(index)
+    started = time.monotonic()
+    record = {
+        "phase": name,
+        "status": "running",
+        "devices": len(indices),
+        "peak_scope": "enclosing_phase" if depth else "phase",
+    }
+    try:
+        yield record
+        record["status"] = "complete"
+    finally:
+        model._ara_resource_depth = depth
+        for index in indices:
+            torch.cuda.synchronize(index)
+        record["wallclock_seconds"] = time.monotonic() - started
+        record["cuda"] = {
+            str(index): {
+                "allocated_peak_bytes": torch.cuda.max_memory_allocated(index),
+                "reserved_peak_bytes": torch.cuda.max_memory_reserved(index),
+                "free_bytes": torch.cuda.mem_get_info(index)[0],
+            }
+            for index in indices
+        }
+        if record["status"] == "running":
+            record["status"] = "failed"
+        records.append(record)
+        if record["status"] == "complete":
+            _check_phase_peak(guard, record)
+
+
+def _check_phase_peak(guard, record):
+    """下一阶段重置计数器前执行约束，异常阶段保留原始异常。"""
+    for index, values in record["cuda"].items():
+        allocated = values["allocated_peak_bytes"] / 1024**3
+        if allocated > guard.max_cuda_allocated_gib:
+            record["status"] = "failed"
+            record["failure_reason"] = "cuda_allocated_limit"
+            raise RuntimeError(f"cuda:{index} allocated 超过冻结显存上限")
 
 
 def research_resource_status(model):
@@ -462,4 +540,91 @@ def research_resource_status(model):
         "cpu_rss_gib": rss,
         "system_available_gib": psutil.virtual_memory().available / 1024**3,
         "cuda": gpu,
+    }
+
+
+def extend_trial_evidence(artifacts, parameters, snapshot, evidence):
+    from .ara_research_schema import build_execution_identity
+
+    changed, summaries = _summarize_trial_updates(artifacts, snapshot)
+    identity = build_execution_identity(
+        artifacts.protocol,
+        artifacts.config,
+        artifacts.seed,
+        (parameters, artifacts.attempt),
+    )
+    events = evidence["events"]
+    _record_trial_identity(artifacts, identity, evidence)
+    evidence.update(
+        changed_modules=changed,
+        effective_updates=summaries,
+        update_status="accepted" if changed else "none",
+    )
+    _record_trial_cost(artifacts, events, evidence)
+
+
+def _summarize_trial_updates(artifacts, snapshot):
+    from .ara_proposal import effective_norm, relative_change
+
+    changed, summaries = [], {}
+    for key in sorted(name for name in snapshot if name.endswith(".A")):
+        keys = (key, key[:-1] + "B")
+        initial = tuple(artifacts.initial_factors[name] for name in keys)
+        final = tuple(snapshot[name] for name in keys)
+        change = relative_change(initial, final)
+        if change > 1e-6:
+            changed.append(key[:-2])
+        summaries[key[:-2]] = {
+            "initial_norm": effective_norm(initial),
+            "final_norm": effective_norm(final),
+            "relative_change": change,
+        }
+    return changed, summaries
+
+
+def _record_trial_identity(artifacts, identity, evidence):
+    import os
+
+    events = evidence["events"]
+    evidence.update(
+        schema_version="cara-research-trial-v3.1",
+        worker_pid=os.getpid(),
+        execution_identity=identity,
+        execution_identity_hash=digest(identity),
+        study_execution_hash=identity["study_execution_hash"],
+        pilot_execution_config_hash=identity["pilot_execution_config_hash"],
+        stage_execution_id=artifacts.config.stage_execution_id,
+        invocation_id=artifacts.output_dir.parent.name,
+        accepted_blocks=sum(int(row["accepted"]) for row in events),
+        actual_sweeps=len({row["sweep"] for row in events}),
+    )
+
+
+def _record_trial_cost(artifacts, events, evidence):
+    evidence["measurements"] = {
+        "load": {
+            "phase": "load",
+            "status": (
+                "complete"
+                if getattr(artifacts, "load_seconds", None)
+                else "not_measured"
+            ),
+            "wallclock_seconds": getattr(artifacts, "load_seconds", None),
+        },
+        "trial": {
+            "phase": getattr(artifacts, "invocation_phase", "trial"),
+            "status": "complete",
+            "wallclock_seconds": evidence["wallclock_seconds"],
+        },
+    }
+    evidence["workload_evidence"] = {
+        "target_modules": len(artifacts.initial_factors) // 2,
+        "observed_modules": len(
+            {name for event in events for name in event["local_statistics"]}
+        ),
+        "sweeps": evidence["actual_sweeps"],
+        "max_backtracks": max(
+            (len(e.get("backtracking_attempts", [1])) for e in events),
+            default=0,
+        ),
     }

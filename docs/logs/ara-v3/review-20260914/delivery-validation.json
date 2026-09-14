@@ -1,0 +1,11 @@
+{
+  "通过": true,
+  "已核验本轮文档链接": 34,
+  "凭证未进入交付": true,
+  "待生成摘要文件": [
+    "SHA256SUMS",
+    "delivery-manifest.json",
+    "verification.json"
+  ],
+  "问题": []
+}

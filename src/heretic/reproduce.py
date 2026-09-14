@@ -126,8 +126,9 @@ def load_reproduction_information(path: str) -> dict[str, Any]:
         json_str = Path(path).read_text(encoding="utf-8")
 
     information = json.loads(json_str)
-    if information.get("schema") == "cara-research-reproduce-v3":
+    if str(information.get("schema", "")).startswith("cara-research-"):
         from .artifact_schema import parse_reproduce
+
         parse_reproduce(information)
     return information
 

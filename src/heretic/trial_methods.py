@@ -292,14 +292,20 @@ def parameters_from_trial(trial: Trial | FrozenTrial) -> MethodParameters:
     )
 
 
-def normalize_reproduction_parameters(information: Mapping[str, Any]) -> dict[str, Any]:
+def normalize_reproduction_parameters(
+    information: Mapping[str, Any],
+) -> dict[str, Any]:
     """Migrate reproduce v3 parameters or validate a v4 envelope."""
 
     version = str(information.get("version"))
     raw = information.get("parameters")
     if not isinstance(raw, Mapping):
         raise ValueError("reproduction information has no parameter object")
-    if information.get("schema") in {"cara-reproduce-v2", "cara-research-reproduce-v3"}:
+    if information.get("schema") in {
+        "cara-reproduce-v2",
+        "cara-research-reproduce-v3",
+        "cara-research-reproduce-v3.1",
+    }:
         from .artifact_schema import parse_reproduce
 
         parse_reproduce(information)
@@ -595,8 +601,13 @@ def build_study_manifest(settings: Settings) -> dict[str, Any]:
     dumped = settings.model_dump(mode="json")
     manifest = {name: dumped[name] for name in sorted(_STUDY_FIELDS)}
     if settings.ara_objective_version == "sequential-v3":
-        return {**manifest, "ara_v3": dumped["ara_v3"],
-                "schema_version": "cara-research-study-v3"}
+        return {
+            **manifest,
+            "ara_v3": dumped["ara_v3"],
+            "schema_version": settings.ara_v3.artifact_schema.replace(
+                "acceptance", "study"
+            ),
+        }
     scorer_tables = dumped.get("scorer")
     if scorer_tables is not None:
         manifest["scorer_settings"] = scorer_tables

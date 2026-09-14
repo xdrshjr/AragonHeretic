@@ -1,0 +1,65 @@
+{
+  "files": [
+    {
+      "file": "config.toml",
+      "passed": true
+    },
+    {
+      "file": "exit.json",
+      "passed": true
+    },
+    {
+      "file": "experiment.json",
+      "passed": true
+    },
+    {
+      "file": "layer-group-summary.json",
+      "passed": true
+    },
+    {
+      "file": "pilot.log",
+      "passed": true
+    },
+    {
+      "file": "pilot-budget.json",
+      "passed": true
+    },
+    {
+      "file": "pilot-result.json",
+      "passed": true
+    },
+    {
+      "file": "preflight.log",
+      "passed": true
+    },
+    {
+      "file": "preflight-wrapper-attempt1.log",
+      "passed": true
+    },
+    {
+      "file": "preparation.json",
+      "passed": true
+    },
+    {
+      "file": "protocol.json",
+      "passed": true
+    },
+    {
+      "file": "run-pilot.sh",
+      "passed": true
+    },
+    {
+      "file": "run-preflight.sh",
+      "passed": true
+    },
+    {
+      "file": "run-summary.json",
+      "passed": true
+    },
+    {
+      "file": "SUMMARY.md",
+      "passed": true
+    }
+  ],
+  "passed": true
+}

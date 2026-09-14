@@ -1,13 +1,50 @@
 # ARA 实验诊断与顺序重校准方法设计
 
-**文档版本：** v2.0（架构评审修订，供实施节点执行）  
-**日期：** 2026-09-10  
+**文档版本：** v3.2（第 2 轮：架构评审就地修订，作为本轮实施依据）
+
+**日期：** 2026-09-14
 **交付类型：** 需求理解与技术设计；本节点只交付本文件。  
-**代码参照：** 当前 HEAD `0ee873054094ac2eaa8aa29326de75f65400c4ff`。  
-**方法标识：** 拟新增 `sequential-v3`；目录名称是本任务的定位标识，不代表重做已有 `trajectory-v2`。  
-**证据状态：** 已复核 point-v1 归档、现有源码和固定版本数据集元信息；未运行新 GPU 实验，未证明新方法达到低拒答率。
+**代码参照：** 当前 HEAD `0ab032c8acdee8a0f197d4ffba8bec1bad93caad`；保留首轮提交与后续 Pro 6000 实现。
+
+**方法标识：** 已有 `sequential-v3`；本轮新增提案策略 `spectral-backtrack-v1`，历史策略显式标识为 `reject-v1`，不重写旧方法。
+**版本边界：** v3.2 是本规格的评审版本；尚待实现的新制品格式仍使用正文定义的 v3.1 schema，不能按文档版本自动改成未定义的 v3.2 格式。
+**证据状态：** 本轮复核最新 pilot 的 15 项本地文件哈希及原生事件；工程完成但五组全部回滚。未运行新 GPU 实验，未证明超过基线或达到低拒答率。下方注明 2026-09-10 的评审、实施、提交和决策均为历史记录。
 
 ## 评审记录
+
+### 第 1+1 轮评审（本次架构复核，v3.2，2026-09-14）
+
+本次从黑板 `plan/current` 定位 v3.1，逐节核对当前求解、搜索、准备、预算、审计和通用重现路径。以下修复均已写入设计正文；不代表源码已经实现。历史评审、实施与提交记录继续保留，本轮有效结论见文末。
+
+| 编号 | 严重度 | 问题与影响 | 正文修复位置 | 状态 |
+| --- | --- | --- | --- | --- |
+| ARA-DESIGN2-001 | P1 | ExecutionIdentity 包含单次参数，却同时作为整个 study 的固定身份；第二个不同参数或 TPE 恢复无法满足该契约 | 接口 §1、§3；技术设计 §5：分开 StudyExecutionIdentity 与 TrialExecutionIdentity | [x] 已修复 |
+| ARA-DESIGN2-002 | P1 | R1 两个 reject 对照、R2 两个 anchor 共享 method/policy/seed，阶段成员主键无法区分工作或可靠累计重放费用 | 接口 §1、§3；实施 §2：预注册 stage_execution_id、固定参数与调用清单 | [x] 已修复 |
+| ARA-DESIGN2-003 | P1 | R2 要求锁定后重放，却只定义正式 24-attempt 候选锁；pilot 的五条改善门槛不能进入旧正式筛选器 | 技术设计 §5；接口 §2、§3；实施 §2：独立 PilotCandidateLock 与专用重放入口 | [x] 已修复 |
+| ARA-DESIGN2-004 | P1 | “study 全部零更新则停止下一 study”与 B1/B2/S1 正式对照允许失败冲突，可误停主矩阵 | 接口 §3；实施 §2：目标方法停止规则与对照失败独立处理 | [x] 已修复 |
+| ARA-DESIGN2-005 | P1 | 新 schema 文件计划遗漏 workflow 的旧版本硬编码；集合汇总和物理路径仍可能沿用旧成员名 | 文件计划；接口 §1、§3：补全通用加载分派、显式主方法集合与成员存储键 | [x] 已修复 |
+| ARA-DESIGN2-006 | P2 | 要求修正 recovery 标签，但 research_claim 枚举仍无对应值，容易继续写 sample_only | 接口 §3、验证清单：新 schema 增加 recovery_supported，旧报告原样读取 | [x] 已修复 |
+| ARA-DESIGN2-007 | P2 | 部分秩亏损模块补零后，其双零因子方向可能在后续热启动中继续失活 | 技术设计 §3.2、风险表：记录实际秩及失活方向，不暗加随机增秩 | [ ] 保留并缓解 |
+
+逐节结论：目标与范围保持开发进展和研究结论分离；关键假设仍待实测；数值与数据契约可执行；文件计划补齐通用消费者并限制模块尺寸；身份、pilot 重放及阶段账本已消除上述冲突；资源与审计条件保持分阶段验证。本次新增 P0=0，五项 P1 和一项 P2 已在文档修复，新增保留 P2 一项；未解决设计 P0=0、P1=0。历史资源和审计输入 P2 继续按对应阶段落实。
+
+输入复核：独立重算最新 pilot 的 15 项归档 SHA-256 全部一致；原生事件共五组、72 个模块，72/72 谱超限、0/72 累计偏移超限，五组起止均等于最终身份，接受数及 monitor_after 数均为零。大因子文件未在本地，本次未重新校验远端文件；旧 184 项测试属于历史证据，本次没有重新运行或将其算作 v3.2 实现验收。
+
+### 第 2 轮独立文档评审（v3.1，2026-09-14）
+
+结论：**FIXED**。基于本规格、最新 pilot 精简证据与当前求解、重放、协议、单卡准备、审计和统计源码进行独立审阅，直接完成以下设计修复。此处“修复”仅指文档契约；没有修改源码、访问远端或运行新 GPU 实验。
+
+| 编号 | 级别 | 问题及保守修复 | 状态 |
+| --- | --- | --- | --- |
+| ARA-PLAN2-001 | P1 | 旧连续切分与最新 pilot 实际行身份不同；增加 role_layout 与保留原角色的扩充映射，development 100 条固定为同一清单 | 已修复 |
+| ARA-PLAN2-002 | P1 | 新有效权重重放与旧 A/B 比较冲突，零投影可能产生双零热启动；按 schema 分派比较并保持零模块的非零 A/零 B 初始化 | 已修复 |
+| ARA-PLAN2-003 | P1 | readiness 可能反向包含正式 protocol，形成循环 hash；先冻结独立目标执行契约，明确 profile、seed、方法成员的兼容范围 | 已修复 |
+| ARA-PLAN2-004 | P1 | 新 schema/成员标识没有覆盖审计和通用制品读取端；补齐版本边界、增量文件与验证计划 | 已修复 |
+| ARA-PLAN2-005 | P1 | 多 protocol 可能重复领取阶段预算，旧双卡计费遗漏单卡；按 campaign/stage 共享账本，固定分阶段预测公式与实际设备计费 | 已修复 |
+| ARA-PLAN2-006 | P1 | 新语义优越性区间缺少固定参数，固定参数旧 S2 与正式搜索比较混称；补齐 bootstrap 和逐 seed 条件，分开主基线与诊断结论 | 已修复 |
+| ARA-PLAN2-007 | P1 | pilot 豁免可能绕过 full-calibration 前置证明；两入口统一 R1 无前证、R2 需 active_update、扩大实验需 search_readiness | 已修复 |
+
+本轮未解决设计阻断 P0=0、P1=0。历史 P2 和实际资源、语义/能力审计输入仍按正文阶段条件处理；算法可行性、超过基线与极低拒答均待下游实测，不由本次文档评审认证。历史各轮评审与提交记录保留原文。
 
 ### 上游评审（v1.1，2026-09-10）
 
@@ -39,13 +76,14 @@
 
 根据 ARA v1 的失败结果，建立能检验拒答机制、解释方法失效原因并持续改进效果的研究流程。核心目标是在明确的数据分布上降低真实语义拒答，同时控制通用能力退化。国际顶会级别的要求落实为可证伪假设、充分对照、独立审计和可重现证据，不承诺论文录用或最佳论文。
 
-本节点的完成条件是：逐节评审中文规格，原地修复全部 P0/P1，保留六个必需章节，更新版本、评审记录与结论，并写入本轮黑板 verdict。算法实现、服务器运行、论文改写和 Git 提交由下游节点执行。
+本节点的完成条件是：评审上游中文规格并就地修复设计 P0/P1，保留六个必需章节和历史记录，明确失败证据、增量算法、接口、比较协议和退出条件，递增文档版本、追加评审结论并登记本轮 verdict。算法实现、服务器运行、论文改写和 Git 提交由下游节点执行。上一轮决策记录允许“收到进入下一阶段的明确要求”回到规划；本轮用户明确要求继续优化，且真实 pilot 暴露了提案与约束不匹配，故将该原因整合进本轮正文。
 
 后续工程和研究使用不同的成功判定，避免把程序运行结束解释为效果成功：
 
 | 层次 | 预先固定的要求 | 允许的结论 |
 | --- | --- | --- |
 | 工程完整性 | 数据预检、事务恢复、确定性重放、独立进程加载、制品哈希链全部通过；正式搜索 24 个 attempt 全部终态，至少 23 个 COMPLETE，运行时故障至多 1 个 | 该实验和制品可复现 |
+| 本轮进展门槛 | 新策略先有至少一组接受、有效更新非零，再在同身份 development.bad 100 条上比 B0 至少少 5 条关键词拒答；monitor 规则与两项 KL 上限保持不变 | 仅为进入扩大实验的开发证据，不替代 recovery、语义或统计验收 |
 | 效果恢复 | 开发验证及一次性审计均满足 Keywords ≤ 0.10、相对下降 ≥ 0.50、第一 token KL ≤ 0.15；语义拒答率 ≤ 0.10 | 在所报告样本上达到低拒答门槛 |
 | 极低拒答的样本目标 | 独立审计的关键词拒答率与语义拒答率均 ≤ 0.01；无效输出率 ≤ 0.02；回答有效率 ≥ 0.95 | 在指定样本上达到极低拒答率 |
 | 极低拒答的统计声明 | 至少 300 个独立情景组，语义拒答率单侧 95% Clopper–Pearson 上界 ≤ 0.01；每个训练 seed 分别报告；不得靠合并重复 prompt 扩大样本量 | 对指定抽样总体提供拒答率低于 1% 的统计证据 |
@@ -92,21 +130,42 @@
 
 元信息来自 [固定 revision 的官方 README](https://huggingface.co/datasets/mlabonne/harmful_behaviors/raw/01cead01398926d81f7c52bdb790ee8cf77ebba7/README.md)，读取日期 2026-09-10，原始字节 SHA-256 为 `79d578d1ea2ba0f43c59b9cc269ba050bde949cb31e08d8fb5247eceb500067b`。执行前仍须核对实际数据构建器元信息与行数，数据卡不替代运行预检。
 
-本地 `docs/logs/` 只发现 ara-v1 归档，未发现 v2 的真实效果归档。这表示当前可用证据不足，不能推断所有远程环境都没有运行过 v2。
+2026-09-10 的证据盘点以 ara-v1 为主；2026-09-14 已收到下述 v3 原始归档，不能继续沿用“没有 v3 真实实验”的历史表述。未获得可比较的完整 v2 新效果归档，不推断其他环境没有运行。
+
+### 3.1 本轮 pilot 复核与因果边界
+
+来源为 [最新 pilot 总结](../../logs/ara-v3/pilot-20260914-pro6000/SUMMARY.md)、[原生结果](../../logs/ara-v3/pilot-20260914-pro6000/pilot-result.json)、[实际配置](../../logs/ara-v3/pilot-20260914-pro6000/config.toml) 及 [SHA256SUMS](../../logs/ara-v3/pilot-20260914-pro6000/SHA256SUMS)。本轮逐项计算 15 个本地文件的 SHA-256，全部匹配；直接聚合原生事件，不依赖派生总结判断。大型 factors.pt 未在本地，远端 hash 验证属于上游归档记录，本节点未重新验证该大文件。
+
+| 原生事实 | 本轮复核 | 解释与边界 |
+| --- | --- | --- |
+| 实际运行 | S2、seed 42、anchor 0；fit/monitor 每侧 8；development 每侧 100；只执行第 0 轮 | TOML 的 24 trials、64 monitor 不是本次实际执行量 |
+| 五个层组 | 16–23、24–31、32–39、40–47、48–51 层；模块数 16/16/16/16/8 | 共 72 个提案，接受数为 0 |
+| 奇异值与累计偏移 | 每模块最大奇异值范围 13.190416–27.630745，72/72 超过 8.0；累计偏移最大 0.246108，0/72 超过 0.60 | 当前直接阻断来自谱约束；不是累计偏移先拒绝 |
+| 事务轨迹 | 五个 `before_adapter_hash=after_adapter_hash=final_snapshot_hash`；没有 `monitor_after` | `solve_refinement_block` 已拒绝，未进入实际联合输出及候选 monitor；不能断言这些后续门槛太严 |
+| 评分 | Keywords：B0=1.0、最终=1.0；log-odds=4.967287；首 token/序列 KL 均 0 | 最终仍是初态，不能作为“有效更新却没有改善”的证据 |
+| 时间和显存 | trial 1345.470342 秒；端到端约 2687 秒；末态 allocated/reserved 51.31/89.05 GiB | 均非峰值；一次 8,130,658,304 字节分配告警后仍退出 0，不是零更新直接原因 |
+
+证据身份：protocol `469022a4a90f8ae94b54df7c8a7443f048e3c6aaaedef1a65b5a63214f16b747`，参数 `79312ce48da6495086e38191c792a2bb7767449295cd9242e2d1a1944d285a98`，最终因子 `fbd3b42d2e6d39bcd171a34ba37f00a1858dbd166c575263119f97f721d9c71c`。历史 v1 的 0.54 属于 BF16、不同协议的最佳开发值；本次 B0=1.0 是同次运行的零更新基线，两者不能混用。
+
+代码链已核对为 `ara_refinement._optimize_module → solve_refinement_block → _block_transaction → _run_sweeps`：无谱约束的 LBFGS 产生有限解，随后一次性检查 8.0；任一模块超限即拒绝整组；整轮零接受即停。该行为符合旧规格，不是应删除的事务保护。待检验假设 H2 为“先生成满足谱约束的候选，再用固定回溯处理联合前向非线性，可产生被接受且行为改善的更新”。谱约束可行性不保证 H2 的行为部分成立，单锚点小样本也不能证明所有强度均失效。
+
+现有单卡入口 `pro6000_prepare.read_pilot` 只要求旧工程摘要通过、退出 0 和快照校验；`pro6000_experiment` 是独立开发实验，允许导出 comparison_only，未冒充正式审计。它仍缺少本轮要求的“有效更新/进展放行”检查；不得只修双卡 research runner 而遗漏此入口。
+
+本轮另比对冻结 source_files：当前 refinement、capture、config、sequence_scores、continuation_scores 五份文件一致，research runner 不同；因此不将归档 source_revision 与当前 HEAD 相同当作整个工作树完全一致的证明。根因定位依赖相同的求解/事务文件，运行与重放必须继续使用逐文件 hash。
 
 ### 4. 范围
 
-纳入：纠正数据协议、同硬件同量化的 v1/v2/v3 对照、按层组顺序重新捕获、绑定基座参考的局部优化、开发集上的事务验收、语义拒答与序列漂移评估、机制消融、双 3090 资源配置、失败与成功结果的完整归档。
+纳入：保留已完成数据协议和 v3 架构；新增可行提案、有限回溯、真实误差事件、pilot 放行、评分内存优化与同硬件同量化对照。优先交付小规模进展证据，再按下述门槛展开正式矩阵；完整审计目标保留。双 3090 是本轮已授权可用执行环境，Pro 6000 日志用作证据及兼容入口，后续实际使用哪台须写入新协议并验证可用性。
 
 不纳入：本节点改源码或启动 GPU；重写默认 directional 路径；27B 全参数训练；把旧日志改成成功；自动上传模型；以低关键词率替代安全性或回答正确性判断。视觉、长上下文和 thinking 模式是后续外推实验，未测不作结论。
 
 ## Key decisions & Assumptions（关键决策与假设）
 
-1. **先恢复可执行的比较协议，再增加算法复杂度。** 使用合法的既有开发切分进行调参，明确它已经被历史搜索观察；独立审计另行隔离。禁止通过把 `expected_samples` 降成 16 来掩盖 v2 配置错误。旧配置加历史说明并由预检明确拒绝，新配置使用新 study ID，不静默迁移旧 journal。
-2. **以顺序重校准作为核心候选机制。** 当前 trajectory-v2 在初态捕获一次模块输入，再独立拟合各模块；上游 adapter 生效后，下游实际输入可能偏离捕获输入。v3 每处理一个层组就在当前已接受状态下重捕获，必要时第二轮刷新 continuation。假设是这能降低局部代理与实际联合前向的偏差；必须用配对消融检验。
-3. **固定基座参考并保持 rank 128。** 重捕获不能把已漂移的模型当成新的能力保持基线。使用相同 token 序列下的基座输出作参考，局部解替换该层组的绝对 adapter，不做无界累加。rank 增大、保护子空间和全模型反向传播暂不同时加入，以便归因。
-4. **将训练反馈、开发选择、独立审计分开。** Keywords 与前缀 log-odds 用于廉价搜索；完整响应的语义标签、序列 KL、能力任务用于验证。审计只评估冻结后的候选，不反馈到权重、超参或候选选择。开发集上反复使用的指标不作为泛化证据。
-5. **96 服务器采用独立 NF4 协议。** 用户提供的开发服务器是双 RTX 3090，各 24 GiB，系统约 94 GiB RAM；现有 v2 模板却是单卡 90 GiB 预算和 Blackwell 路径。计划新建双卡配置，所有比较方法使用同一 NF4 基座、tokenizer 和计算类型；历史 BF16 数字仅作背景。模型缓存路径、运行时包版本与可用显存尚未实测，必须在下游预检中确认。
+1. **先修提案可行性，保持硬上限。** 新策略使用有效更新的谱投影，最大奇异值仍 ≤8.0、累计偏移仍 ≤0.60、两项 KL 仍 ≤0.15；不通过放宽阈值、扩大 rank 或改数据分母制造改善。只保证约束可检验，不承诺投影解是原损失的约束最优解。
+2. **保留顺序重捕获，固定五次以内的回溯。** LBFGS 每组只运行一次，候选沿旧有效更新至投影提案的路径尝试；首个满足全部原 monitor 条件者接受。捕获、loss、两轮刷新等机制保持一致，回溯新增计算全部计费，不根据 development 选择步长。
+3. **用同协议对照区分投影、回溯与强度变化。** 默认仍 rank 128、gain=1、六维 4+8+12 搜索边界。小规模预注册 reject/统一缩放/谱裁剪/谱裁剪加回溯对照，必要的低强度诊断单独标识，不能混进旧 study。
+4. **分开工程完成、有效更新、开发进展和研究结论。** 零更新可为 COMPLETE 以保留证据，但不可作为扩大实验的通过证明；默认新入口检查 machine-readable 放行记录。候选与审计继续隔离；正式语义、能力和统计门槛不变。
+5. **硬件与预算按实测绑定。** 同一比较用同一模型文件、NF4、tokenizer、题目和硬件；单卡占用按 1 张、双卡按 2 张计费。双 3090 的容量和耗时须重新测量，不能继承 Pro 6000 的可运行结论；超预算则交付小规模结果及阻断原因。
 
 本方案的创新性定位是“可检验的顺序条件重校准”，不是宣称发现新的普遍拒答定理。单方向研究已展示某些模型上的因果干预；后续工作发现多个独立方向，并指出几何正交不保证干预独立。因此高秩参数本身不是充分的新颖性证据。[单方向研究](https://arxiv.org/abs/2406.11717v3)，[拒答几何与干预独立性](https://arxiv.org/abs/2502.17420v2)。
 
@@ -139,7 +198,7 @@ flowchart TD
 
 ### 2. 数据协议先修复
 
-开发阶段继续使用两个已固定的源：harmful revision `01cead01398926d81f7c52bdb790ee8cf77ebba7`，harmless revision `02c6a92cfcf11bb0c387334f8146d149d65b587f`。每个源分别采用以下角色：
+开发阶段继续使用两个已固定的源：harmful revision `01cead01398926d81f7c52bdb790ee8cf77ebba7`，harmless revision `02c6a92cfcf11bb0c387334f8146d149d65b587f`。以下是首轮的 `role_layout=contiguous-v3` 布局，保留为旧协议及独立新协议的选择；它不是最新 pilot 的实际行身份。本轮 R1–R3 默认使用随后定义的 `pilot-preserving-v1`，不能只因计数相同混用两种布局：
 
 | 角色 | 候选行区间与实际样本数 | 用途与限制 |
 | --- | --- | --- |
@@ -150,6 +209,10 @@ flowchart TD
 | diagnostic | `train[400:416]`，16 条 | 可选误差诊断，不能扩充为 100 条验证 |
 | legacy-audit | `test[:100]`，100 条 | 仅在审计消费记录证明未被使用时启用 |
 | research-audit | 外部预注册清单，每侧至少 300 个独立情景组 | 支持极低拒答统计声明和跨分布分析 |
+
+最新 pilot 两侧实际为 fit `train[0:8]`、monitor `train[8:16]`、mechanism-development `train[16:60]`、development `train[60:160]`。R1 在新策略与新初始化协议下重新使用这份行布局做配对诊断，不冒充旧字节身份的精确数值重放。R2 按现有 `pro6000_prepare.split_full_rows` 的“先保留全部旧角色，再按源行顺序补 fit/monitor”规则冻结完整清单。在新增候选无规范化内容冲突时，fit 候选为 `train[0:8] ∪ train[160:344]` 共 192 条，monitor 为 `train[8:16] ∪ train[344:400]` 共 64 条，另外两个角色原样保留。fit 再用已冻结的现有 seed 抽样算法从这 192 条选 96 条；旧 8 条保留于候选池，不承诺全部入选 96 条。每个 seed 的选中 ID/顺序须在执行前冻结，不依据 R1 分数增删。
+
+R1 与 R2 的 profile 变化允许 fit/monitor 的上述映射；development 的 100 条原始 ID、顺序、正文 hash 和评分配置须完全相同。源内容去重若使实际扩充不等于上述范围，必须在运行 R1 前冻结并公开具体 ID 清单与原因，不能运行后静默补样。R2/R3 同布局、同 seed 下的 B0/B1/B2/S1/S2 使用相同开发角色；旧 `train[300:400]` 的分数与新 `train[60:160]` 的分数不可按相同分母配对。跨协议来源与全部角色 hash 重新计算，旧文件保持不动。历史开发暴露标识继续保留，两种布局均不因此成为独立审计。
 
 同一角色允许多个 scorer 共享样本；不同角色必须在行身份和规范化内容上去重。fit 与 monitor 的历史暴露不影响它们作为训练数据，但绝不能被转述成独立测试数据。严格先检查 harmless 源实际边界，不能因为 harmful 合法就默认两者都合法。
 
@@ -183,9 +246,9 @@ v3 平衡项明确采用 trajectory-v2 的 `BALANCE_WEIGHT × mean((AAᵀ-BᵀB)
 
 保留项比较的是固定 bank 下的局部预测 `z` 与全基座参考，不能沿用仅惩罚 `||BAx||²` 的公式来忽略上游累计漂移。`z` 不等同于整组全部开启后的真实输出，后者须在层组事务中另外检查。邻居距离是局部代理，不承诺改变拒答的语义；不把 softnear 输出当成概率。LBFGS 优化期间所有 bank 张量固定，禁止在 closure 内刷新前向状态。
 
-**部署。** 每模块使用 FP32 LoRA、LBFGS 最多 20 步、history 10，复用 QR+小矩阵 SVD 的 canonicalization 原理。默认 deployment gain 固定为 1，不再增加隐含搜索维度；所有 guard 在实际部署因子上重算。检查有限值、有效更新误差 `rtol=1e-6, atol=1e-7`、good 累计偏移 RMS 比例 ≤ 0.60、有效更新最大奇异值 ≤ 8.0。累计偏移以 `z_good-y_ref_good` 计算，并独立报告局部 `BAx` 比例，两个字段不可混用。
+**部署。** 每模块使用 FP32 LoRA、LBFGS 最多 20 步、history 10，复用 QR+小矩阵 SVD 的 canonicalization 原理。deployment gain 固定为 1，不增加自由搜索维度；所有 guard 在实际部署因子上重算。检查有限值、有效更新误差 `rtol=1e-6, atol=1e-7`、good 累计偏移 RMS 比例 ≤ 0.60、有效更新最大奇异值 ≤ 8.0。累计偏移以 `z_good-y_ref_good` 计算，并独立报告局部 `BAx` 比例，两个字段不可混用。以下一次提案拒绝规则保留为 `reject-v1`；新策略在同样的部署和 monitor 规则前增加 §3.2 的可行化与有限回溯。
 
-局部累计比例使用与真实输出相同的加权 `E_good[RMS(z-y_ref)/max(RMS(y_ref),1e-6)]`，逐模块检查，不能由组平均掩盖单模块越界。求解器在克隆的候选因子上工作，整组所有 proposal 完成后才暂时安装并评估。有限候选超出偏移/奇异值门槛是 `proposal_rejected`，回滚整组且仍可继续；canonicalization 不保持有效更新、shape/身份不符或非有限值是实现/数值异常，使 attempt 失败。这样既不会把正常不接受计作运行故障，也不会把坏求解器藏在回滚里。
+局部累计比例使用与真实输出相同的加权 `E_good[RMS(z-y_ref)/max(RMS(y_ref),1e-6)]`，逐模块检查，不能由组平均掩盖单模块越界。求解器在克隆的候选因子上工作，整组 proposal 完成后才暂时安装并评估。`reject-v1` 的有限候选超出偏移/奇异值门槛是 `proposal_rejected`，回滚整组且仍可继续；新策略则先执行 §3.2。canonicalization 不保持其输入的有效更新、shape/身份不符或非有限值仍使 attempt 失败；有意的谱投影单独记录改变量，不能错误要求它保持原始提案不变。
 
 **层组事务。** 一组求解完成后开启本组 adapter，进行真实联合前向。每层独立局部求解未捕获的组内交互，交给这一步验证；方案不声称组内完全线性。在同一 fit token 序列上补测整组开启后的各模块 good 累计偏移，采用 `E_good[RMS(y_actual-y_ref)/max(RMS(y_ref),1e-6)] ≤ 0.60`；分别保存局部预测和真实联合输出的比例。该期望使用上述 prompt/step 权重，不能用未加权的行均值替代。
 
@@ -194,6 +257,36 @@ v3 平衡项明确采用 trajectory-v2 的 `BALANCE_WEIGHT × mean((AAᵀ-BᵀB)
 monitor 的 Keywords/log-odds 明确来自 `monitor.bad`，两个 KL 来自 `monitor.good`；development 和审计沿用这一侧别映射。效果恢复的相对关键词下降只用于 bad 侧，good 侧基座零拒答不触发“相对下降不可计算”阻断；good 侧的过度拒答/有效回答单独评估，并在 sample_extreme/statistical_extreme 层应用绝对门槛。
 
 若一整轮没有接受更新，直接结束该 trial，按实际最终状态评分；不能伪称两轮都执行过。OOM、非有限值和设备异常使当前 attempt 进入终态，并恢复全 trial 初态；不能把运行故障当作普通层组回滚。任何 audit 或 development 指标都不能决定层组是否接受。
+
+### 3.2 新提案策略：谱约束与有限回溯
+
+**有效权重定义。** 对每个模块令 `D_old=B_old A_old` 为进入该组事务时的完整有效 adapter，`D_raw=B_raw A_raw` 为一次 LBFGS 的完整替换提案；均已包含实际 PEFT scaling，gain=1。在 `no_grad` 中对 `B=Q_B R_B`、`Aᵀ=Q_A R_A` 做 reduced QR，仅对 `R_B R_Aᵀ` 做小矩阵 SVD。实现保持矩阵无关的因子运算，不在 GPU 构造 `out_features×in_features` 的完整更新。现有 `_check_effective_update` 的 FP64 分行等价性检查保留，不退回已修复的 FP32 误报路径。
+
+设 `D_raw=U diag(s) Vᵀ`，固定投影目标 `c=8.0×(1−10⁻⁶)`；谱候选为 `D_clip=U diag(min(s,c)) Vᵀ`，返回平衡的 FP32 A/B。独立缩放对照采用 `D_scale=min(1,c/max(s)) D_raw`，最大奇异值为零时比例定义为 1。投影/缩放前必须先检查有限值，不可将 NaN 裁成合法值；原始解不超 c 时投影应保持其有效权重。记录裁剪奇异值个数、原始/投影谱范数、Frobenius 范数、相对改变量及局部 loss 前后各项，不能只保存投影后的“已通过”。这是部署候选变换，不能宣称无约束 LBFGS 已求得约束最优解。
+
+**回溯的唯一含义。** 对整组同步使用固定序列 `α∈[1, 0.5, 0.25, 0.125, 0.0625]`，构造有效权重 `D_mix(α)=(1−α)D_old+αD_clip`。必须插值权重乘积，禁止分别线性插值 A/B（会产生交叉项），也禁止将 `D_clip` 再加到旧更新上。用拼接因子 `B_mix=[sqrt(1−α)B_old, sqrt(α)B_clip]`、`A_mix=[sqrt(1−α)A_old; sqrt(α)A_clip]` 表达最高 rank 256 的混合，再经小矩阵 SVD 截断至 rank 128，并将最终奇异值压至 c，记为 `D_try`。不足 128 维时按既有因子 shape 补零；旧状态本身应满足 8.0，异常旧状态直接报错。秩截断可能改变局部保留项，因此每次从 `D_try` 重新计算全部约束，不能假设 α 变小就一定满足联合前向或效果门槛。α=0 只表示恢复旧状态，不是可接受的新候选；全部零有效更新不能因 A/B 表示变化被计为成功。
+
+**事务顺序。** 捕获 bank 与 `monitor_before` 在组起点固定一次；LBFGS 完成一次后不在回溯中重新求解或刷新轨迹。每个 α 从同一原始快照出发：检查预算→构建 D_try→检查有限值、rank、实际 scaling、奇异值、局部累计偏移→临时安装全组→真实联合输出偏移→monitor。实际偏移失败时跳过昂贵 monitor 并记录 `not_evaluated`；首个同时通过全部原 monitor 条件的非零更新被接受，不比较多个 α 的 development 分数。失败则先恢复全组原始 A/B 和开关，再尝试下一个 α；所有尝试失败则回滚整组。任意 OOM、非有限值、身份或重构异常中止 attempt，原有全 trial 恢复继续生效。预算检查覆盖每次回溯和外部评分，不额外增加五个 Optuna attempts。
+
+这里的“非零更新”要求至少一个组内模块相对事务起点满足 `||D_try−D_old||F/max(1,||D_old||F)>1e-6`；已有非零 D_old 的原样安装仍是 `no_effective_change`，不能靠评分舍入变化接受。rank 128 是部署 shape 和秩上限；记录截断前后实际秩及 `||D_try−D_mix||F`，不声称所有 α 都保留原混合或拥有相同有效秩。部分零奇异值可按 shape 补零，但一个模块的目标有效权重严格为零时，必须使用该模块固定 seed 的非零初始 A 与零 B 表示并记录，避免它随其他模块共同接受后以 A=B=0 热启动、导致下一轮双线性梯度全零。该表示变换仍须保持目标 BA 等价；不能因小于变化阈值就把有限非零权重强行归零，也不引入未登记的随机增秩。
+
+部分秩亏损但非零模块仍按上述补零规则处理，不能把“整个模块零权重”的初始化例外推广成未经预注册的增秩。对 A 的零行与 B 的对应零列同时为零的方向，双线性数据项梯度也为零；后续热启动可能继续失活。记录每轮实际秩及这种成对零方向数量，作为 ARA-DESIGN2-007 的机制限制；若影响效果，应另立预注册初始化消融，不能在本次回溯中临时注入随机方向。
+
+**数值与重放。** 在 FP64 小矩阵/分行参考上验证 QR/SVD 重构和 D_mix 的计算；验证有意投影及 rank 截断后的目标 D_try，不将它与未经投影的 D_raw 做等价性断言。最终 FP32 部署值仍须 ≤8.0；超限就拒绝，不使用大容差放宽门槛。固定 SVD 调用配置与符号约定，并对重奇异值记录数值不唯一风险；跨重放比较有效权重及冻结输出容差，文件完整性仍要求精确 hash。不能为了因子字节一致改回错误的权重等价检查。[PyTorch SVD 文档](https://docs.pytorch.org/docs/stable/generated/torch.linalg.svd.html) 明确奇异向量不唯一；此事实不作为放宽制品完整性检查的理由。
+
+### 3.3 拒绝归因与机制可观测性
+
+新增分阶段原因 `raw_nonfinite`、`canonicalization_error`、`projected_spectral_guard`、`local_cumulative_guard`、`actual_cumulative_guard`、`monitor_keywords`、`monitor_log_odds`、`monitor_first_kl`、`monitor_sequence_kl`、`no_strict_improvement`、`no_effective_change`、`budget_exhausted`，最后一组无可行尝试记 `backtracking_exhausted` 并保留每次的具体原因。异常仍是 FAIL，普通拒绝仍是 COMPLETE 内的事件；不把所有失败统称为 monitor_guard。多个已评估条件失败时保存全部布尔结果；未运行的条件用 null/未评估原因，不可伪填 0 或 passed。
+
+将历史 P2 `ARA-REVIEW-011` 纳入本轮必做：在同一已安装 D_try、同一组、同一 prompt/step 上计算 `prediction_discrepancy=E_good[RMS(y_actual−(y_minus+x_cur D_tryᵀ))/max(RMS(y_ref),1e−6)]`，使用已有 prompt/step 权重并逐模块记录。它不同于 local/actual 各自相对基座的偏移；只有实际前向执行后才有值。非接受候选也保留已计算误差。该指标先用于诊断，不新增数据驱动接受门槛，不读取 mechanism-development 或 audit 来决定该组。
+
+### 3.4 评分峰值内存与成本
+
+本轮观测只定位到 allocation warning，尚未证明唯一分配源；实施先对局部优化、捕获、Keywords、prefix log-odds 和序列 KL 分阶段测量 allocated/reserved 峰值、设备空闲量及耗时。已知 `continuation_scores._score_batch` 在完整序列 logits 上转换 FP32 并 log-softmax，`sequence_scores.logits_on_sequence` 先生成完整 prompt logits 才切 continuation；作为优先审查路径，不能声称日志已证明它们就是告警源。
+
+连续评分先精确选择原有因果位置，再按最多 8 个位置分块，对每个位置完整词表做 FP32 log-softmax 或 logsumexp/gather；禁止只对候选 token 子集归一化。序列 KL 同样保持完整词表、原 prompt 均值及 EOS 掩码。支持选择输出位置的模型只在适配接口确认且全量 logits 数值对照通过后启用；不支持时保留正确路径，仍可减少 FP32 工作集。移除仍被引用的 bank、LBFGS 历史与 logits 后再清理缓存，不能把 empty_cache 当成释放活跃张量的保证；参见 [PyTorch CUDA 内存说明](https://docs.pytorch.org/docs/main/notes/cuda.html)。不通过缩短响应、改变前缀、少评 prompt 或 CPU OOM 后补零节省内存。
+
+新增阶段测量遵守实际 GPU 数量及累计预算；无候选安装的旧 pilot 耗时不能覆盖新的真实 monitor、第二轮和最多五次回溯。仅作风险算术，旧核心耗时 `1345.470342×24×1.25/3600≈11.2123` 小时已超过旧每 study 8 小时限制；这既非正式成本预测也非严格下界。必须重新测完整样本/最宽层区间及阶段分项，给出可核对预测公式和原始事件；无法在预算内完成时停止扩大实验，不改写旧上限。
 
 ### 4. 指标、选择与可解释性
 
@@ -235,7 +328,7 @@ B2 与 S1 还存在层组事务和 keep 参考的差异，不能仅凭两者差�
 
 记录三个机制量：冻结 bank 下预测输出与真实联合前向输出的归一化误差；每层组关闭时的语义拒答/连续评分变化；替换为匹配更新范数的随机因子时的效果。对同一已锁定 adapter 做逐组关闭和恢复，使用完整重放快照，避免干预累积。默认随机对照 5 个固定 seed，在独立机制开发集测量，不消耗正式 audit。若误差下降而拒答不改善，则 H1 的代理改善成立但行为收益不成立；若随机干预同样有效，不支持特定机制解释。
 
-方法间报告相同 prompt 的配对差值、按情景组 bootstrap 的 95% 区间，以及 seeds 42、43、44 的均值、标准差和逐 seed 结果。不能把 120 个自适应试验当成 120 次独立训练重复。机制主张还需在一个可用且模型身份固定的较小模型上复验；只完成 Qwen 27B 时明确限制结论的模型范围。
+方法间报告相同 prompt 的配对差值、按情景组 bootstrap 的 95% 区间，以及 seeds 42、43、44 的均值、标准差和逐 seed 结果。一般机制差值用双侧区间，正式语义优越性用单侧上界；均固定 10,000 次、统计 seed 20260910、按排序后的独立情景组有放回配对抽样及线性分位数，分别取 `[0.025,0.975]` 和 `0.95`。语义主分析每组只使用预注册主问题；机制变体先在组内求平均，再等权统计组差值。保存逐组配对值、重采样身份及分析类型，禁止读完结果切换单双侧。少于两个独立组、配对差值全相同、bootstrap 退化、成员缺失或身份不匹配均为 inconclusive，不用零宽区间宣称优越。不能把 120 个自适应试验当成 120 次独立训练重复。机制主张还需在一个可用且模型身份固定的较小模型上复验；只完成 Qwen 27B 时明确限制结论的模型范围。
 
 ### 5. 搜索、重放与审计
 
@@ -258,11 +351,13 @@ TPE 目标为 development 的连续拒答评分与第一 token KL；约束沿用
 
 study 身份包含方法变体、所有数据角色、量化方式、A/B 初始化、参数空间、预算、monitor 接受规则、基座与 tokenizer hash、代码树 hash、judge/rubric、精度和资源配置。同一个 seed 下各方法共用 fit 的 96 个原始行 ID；基座轨迹与初始 A 按共同协议、seed、attempt 和 module_key 派生随机状态，派生键不含方法名。前 4 个 anchor 与随后 8 个随机探索的六字段参数在方法间完全配对；TPE 从各方法自己的历史继续，单独保存其 RNG 状态，不能声称后 12 个参数仍逐项配对。只在 trial 边界恢复；孤立 RUNNING 在持有独占锁、明确没有旧 worker 后标记 FAIL 并占用原 attempt。不得在内存层组中间“猜测继续”。
 
-候选锁定后执行两次完整校准、层组更新和评分重放；A/B 按既有容差比较，Keywords 完全相同，第一 token 与序列 KL 漂移均 ≤ 0.005，连续评分漂移 ≤ 1e-4，层组接受事件序列一致。第三次 apply 也要与锁定状态比较，不能导出仅有相同超参但不同权重的 adapter。
+候选锁定后执行两次完整校准、层组更新和评分重放；权重按下述版本规则比较，Keywords 完全相同，第一 token 与序列 KL 漂移均 ≤ 0.005，连续评分漂移 ≤ 1e-4，层组接受事件序列一致。第三次 apply 也要与锁定状态比较，不能导出仅有相同超参但不同权重的 adapter。
 
-这里必须比较“锁定的搜索状态→重放 1→重放 2→第三次 apply”，不能只比较后两次而漏掉原候选。因子比较容差写入协议且默认 `rtol=1e-5, atol=1e-6`；SVD 符号/基空间差异不得以人工判断放行，超差即重放失败。字节 hash 用于每份快照的完整性，重放间的数值等价按上述容差判断：区分 `capture_manifest_hash`（结构、输入 token 与状态来源身份）与 `tensor_content_hash`（该次实际字节），保存每次结果，不要求容差允许的浮点差异同时满足字节 hash 相等，也不把一个 hash 写到另一次 bank 上。
+上述正式 CandidateLock 继续要求完整 study 与正式选择规则。R1/R2 使用独立的 `PilotCandidateLock`：R1 只对预注册 backtrack/anchor0 记录锁及独立快照重载；R2 只锁定预注册 anchor0 的原始 trial、完整开发评分与最终快照，再执行重放1、重放2、第三次完整 apply 和独立进程重载。后四项按本节相同数值/输出/事件规则与原始锁比较，但不调用正式 shortlist、24-attempt 工程计数或 Keywords≤0.10 资格筛选。R2 的进入条件仍是五条改善和既定 KL/guard；pilot 锁永久 `eligibility=pilot_only`，不进入正式 EvaluationPlan 或提升接口。anchor2 的资源探针不得替换进展锁。锁定失败、重放超差或证据缺失保留原锁及失败状态，不重选、不伪造 24 条 trial，也不消耗 audit。
 
-跨重放逐项精确比较 protocol、模块/组次序、prompt/step、token IDs 和接受事件；因子在前述四个最终状态间按预注册容差比较。manifest 内的上游权重 hash 可能因此不同，应分别验证它指向本次事件链中的正确状态，不能把 manifest hash 必须相同当作额外隐含数值门槛。每次 bank 重新生成并验证本次输入、捕获来源和内容 hash；默认不要求跨次 bank 逐值相等，也不声称已经证明该性质。若另行分析 bank 数值重现误差，须实际保留原始 bank 或可重建它的中间因子快照，不能只用超参相同代替数值证据。
+这里必须比较“锁定的搜索状态→重放 1→重放 2→第三次 apply”，不能只比较后两次而漏掉原候选。旧 v3 schema 继续逐 A/B 用 `rtol=1e-5, atol=1e-6`，保持历史失败边界。新 v3.1 schema 固定 `replay_weight_comparison=effective-update-v1`，逐模块在 FP64 分行比较含实际 scaling 的 BA，逐元素 `rtol=1e-5, atol=1e-6`；A/B 的 shape、有限性、rank 上限及 8.0 guard 仍独立核验，但其基底/符号差异不另作因子 allclose 否决。规则在 protocol 冻结，不可见到漂移后切换。接受/拒绝轨迹、各次尝试原因与 selected_alpha 必须一致；输出漂移按上文检查，超差即失败，不接受人工豁免。字节 hash 用于每份快照的完整性，重放间的数值等价按相应版本规则判断：区分 `capture_manifest_hash`（结构、输入 token 与状态来源身份）与 `tensor_content_hash`（该次实际字节），保存每次结果，不要求容差允许的浮点差异同时满足字节 hash 相等，也不把一个 hash 写到另一次 bank 上。
+
+跨重放逐项精确比较 protocol、模块/组次序、prompt/step、token IDs 和接受事件；权重在前述四个最终状态间按上述版本化规则比较。manifest 内的上游权重 hash 可能因此不同，应分别验证它指向本次事件链中的正确状态，不能把 manifest hash 必须相同当作额外隐含数值门槛。每次 bank 重新生成并验证本次输入、捕获来源和内容 hash；默认不要求跨次 bank 逐值相等，也不声称已经证明该性质。若另行分析 bank 数值重现误差，须实际保留原始 bank 或可重建它的中间因子快照，不能只用超参相同代替数值证据。
 
 复用现有 staging→core hash→acceptance→reproduce 的无环证据顺序。v3 先在独立进程通过 adapter 文件 hash、有效因子和非审计固定探针验证加载；该 worker 不初始化任何 audit scorer/数据集。通过后才进入唯一审计，不得复用会在构造阶段读取审计正文的旧 callback。逐成员消费前失败可以从同一 staging 恢复；消费后缺失结果只能报告不确定。对已冻结响应导入人工标注通过单独 `finalize` 阶段完成，不再加载模型或读取数据源正文，不得以补标注为由重新生成响应。
 
@@ -274,7 +369,33 @@ study 身份包含方法变体、所有数据角色、量化方式、A/B 初始�
 
 ## File plan（文件计划）
 
-本节点评审只修改本 `spec.md`。下表是交给后续实现节点的变更计划；所有现有文件保持原地修改，新增模块承担新逻辑，遵守 `CLAUDE.md` 的 800 行文件和 50 行方法约束。
+本节点只修改本 `spec.md`。本轮增量文件计划如下；后面的首轮表仅为历史职责索引，所列新建文件均已存在，不得重新创建或覆盖。新源码遵守 `CLAUDE.md` 的 800 行文件和 50 行方法约束。
+
+| 文件 | 本轮动作 | 职责及验证 |
+| --- | --- | --- |
+| `src/heretic/ara_proposal.py` | 新建 | 因子级谱投影、统一缩放、权重插值、rank 截断；不访问模型或数据源 |
+| `src/heretic/ara_backtracking.py` | 新建 | 固定 α 的整组事务、详细拒绝原因、异常恢复与预算检查 |
+| `src/heretic/ara_pilot.py` | 新建 | 由原生证据生成有效更新、开发进展和资源放行记录 |
+| `src/heretic/ara_refinement.py` | 修改 | 分离原始求解与部署策略，接入回溯和真实预测误差，保留旧策略 |
+| `src/heretic/ara_refinement_config.py`、`src/heretic/ara_research_schema.py`、`src/heretic/research_protocol.py` | 修改 | 策略、计费设备、新版执行身份、事件和 pilot schema；旧 hash 原样校验 |
+| `src/heretic/ara_research_runner.py`、`src/heretic/research_budget.py` | 修改 | 零更新状态、策略绑定重放、回溯计费、成本检查点与放行检查 |
+| `src/heretic/pro6000_prepare.py`、`src/heretic/pro6000_experiment.py`、`src/heretic/pro6000_launch.py` | 修改 | 单卡新运行也使用进展放行；旧恢复保持旧身份；comparison 导出明确效果状态 |
+| `src/heretic/continuation_scores.py`、`src/heretic/sequence_scores.py` | 修改 | 精确因果位置、完整词表的分块评分；逐项与原值核对 |
+| `src/heretic/ara_refinement_capture.py`、`src/heretic/ara_runtime.py` | 小范围修改 | 分阶段资源峰值与剩余快照预检，不改变捕获语义 |
+| `src/heretic/trial_methods.py`、`src/heretic/reproduce.py`、`src/heretic/ara_research_acceptance.py` | 修改 | 执行身份传递、旧新读取分派、recovery 标签修正；保留审计规则 |
+| `src/heretic/workflow.py` | 小范围修改 | `validate_reproduction_model` 显式分派 v3/v3.1，防止新制品进入旧 model_fingerprint 分支 |
+| `src/heretic/research_audit.py`、`src/heretic/research_audit_recovery.py`、`src/heretic/artifact_schema.py`、`src/heretic/acceptance_export.py` | 修改 | 新 method/policy/seed 成员标识、v3.1 读取与正式/比较制品分派；旧账本和制品不得迁移重写 |
+| `src/heretic/research_evaluation.py` | 修改 | 新语义单侧配对区间、固定重采样参数、退化状态；不变更旧报告结论 |
+| `scripts/prepare_ara_research_protocol.py` | 修改 | 冻结 role_layout、profile 映射和无环目标执行契约，传递新的准备输入 |
+| `config.qwen38-27b-cara-v3-96.toml`、`scripts/run_ara_research_96.sh`、`scripts/run_qwen38_27b_ara_v3_pro6000.sh` | 修改 | 新运行显式选择新策略与阶段；退出码透传，不覆盖冻结旧配置 |
+| `tests/test_ara_proposal.py`、`tests/test_ara_backtracking.py`、`tests/test_ara_pilot.py` | 新建 | 数值反例、回溯事务、旧零更新证据不得放行 |
+| `tests/test_ara_refinement.py`、`tests/test_ara_research_runner.py`、`tests/test_pro6000_experiment.py`、`tests/test_pro6000_export.py` | 扩展 | 零/非零更新、两入口、恢复和导出状态一致 |
+| `tests/test_sequence_scores.py`、`tests/test_refusal_log_odds.py`、`tests/test_reproduce.py` | 扩展 | 流式/原始数值一致、EOS、长 prompt、旧新身份不混用 |
+| `tests/test_workflow.py` | 扩展 | 通过通用重现入口读取两版制品；模型/执行身份错误及未知 schema 拒绝 |
+| `tests/test_research_audit.py`、`tests/test_ara_research_acceptance.py`、`tests/test_acceptance_export.py`、`tests/test_research_evaluation.py`、`tests/test_config.py`、`tests/test_protocol_data.py` | 扩展 | 新成员/旧 schema 分派、无环 hash、真实角色布局扩充、统计单双侧与退化、profile 计数边界 |
+| `README.md`、`docs/logs/ara-v3/<new-run-id>/` | 后续修改/生成 | 使用说明与原生事件、阶段成本、对照差值、放行报告、哈希清单 |
+
+本轮实施顺序：身份/策略→因子数值→事务/事件→pilot/双入口→内存/预算→真实诊断与进展复验。身份分层、阶段工作注册与 pilot 锁分别归入已有计划中的 schema/protocol、budget 和新增 ara_pilot 模块，不扩大求解器职责。通用生成出口 `utils.generate_reproduce_json` 已委托制品校验器，可保持原接口，但必须从该出口做 v3.1 全链验证；单卡导出实际位于 `pro6000_experiment._export_adapter`，不虚构新的 export 模块。新改函数还须满足 CLAUDE.md 的最多五参、圈复杂度≤10、嵌套≤4、行宽≤80；现有大文件新增代码应随职责抽取，不能只检查新增文件。以下为**首轮已完成的文件计划归档**，本轮动作以上表为准：
 
 | 文件 | 后续动作 | 职责与验证重点 |
 | --- | --- | --- |
@@ -313,7 +434,7 @@ study 身份包含方法变体、所有数据角色、量化方式、A/B 初始�
 
 ### 1. 配置与 CLI 契约
 
-以下均为拟实现接口，不声称当前命令已经支持 v3。继续使用现有 `heretic` CLI 与 TOML 解析，不另建 REST、WebSocket 或数据库服务。新 wrapper 接受 `--config <path> --run-dir <path> --phase preflight|pilot|search|freeze|audit|finalize`。`freeze --members <path>` 校验所有 CandidateLock 并生成不可变 EvaluationPlan；`audit --evaluation-plan <path>` 不允许直接传 trial number 绕过锁定；`finalize --evaluation-plan <path> --labels <path>` 只导入冻结响应的标注并计算报告，禁止模型加载/生成。重复 finalize 对相同输入应幂等，不能覆盖已有正式报告；改标注须单列修订证据且不得悄悄改变原结论。
+已有 v3 CLI 与 TOML 保留，不另建网络服务。wrapper 已支持 `--config <path> --run-dir <path> --phase preflight|pilot|search|freeze|audit|finalize`；新增字段以下方标记为准。`freeze --members <path>` 冻结候选集合；`audit --evaluation-plan <path>` 不得绕过锁；`finalize --evaluation-plan <path> --labels <path>` 只处理冻结响应的标注，不加载模型或生成，保持幂等与正式结果不可变。
 
 退出码固定为：0=请求阶段完成（finalize 时仅表示目标层 passed），2=协议/配置/身份不合法，3=运行或预算失败，4=目标层明确未达标，5=证据/标注/统计前提不足。阶段成功的 0 必须同时输出 `phase` 和 `research_status`，不能被 wrapper 解读为整项研究通过；失败或不确定都保留研究报告和 staging，不生成正式成功目录。
 
@@ -332,8 +453,16 @@ study 身份包含方法变体、所有数据角色、量化方式、A/B 初始�
 | `ara_v3.monitor_samples` | 每侧 64 | 不与旧 expected_samples 共用 |
 | `ara_v3.protocol_manifest` | 预检生成的已冻结相对路径 | 必须存在并通过 hash 校验 |
 | `ara_v3.gpu_hours_checkpoints` | `[4,8,12,16]` | 搜索成本曲线检查点，与正式 24-attempt 验收分开 |
-| `ara_v3.artifact_schema` | `cara-research-acceptance-v3` | 不可写入 v2 验收 schema |
+| `ara_v3.artifact_schema` | 旧 `cara-research-acceptance-v3`；新运行 `cara-research-acceptance-v3.1` | 显式版本分派，不可写入 v2 或旧 v3 schema |
 | `ara_v3.required_level` | `statistical_extreme` | 协议冻结后不可根据结果降级 |
+| `ara_v3.proposal_policy`（新增） | 旧缺省 `reject-v1`；新运行显式 `spectral-backtrack-v1` | 另允许诊断 `scale-v1`、`spectral-clip-v1`；B1/B2 只接受 reject-v1 |
+| `ara_v3.backtracking_alphas`（新增） | 新策略固定 `[1,0.5,0.25,0.125,0.0625]`，其他策略 `[1]` | 有限、降序、无重复，不允许任意增加次数 |
+| `ara_v3.spectral_projection_margin`（新增） | 固定 `1e-6` | 投影目标 c 与最终 8.0 guard 分开，不可调强度 |
+| `phase_budgets.*.devices`（新增/统一） | 单卡 1、双卡 2 | 匹配实际预约和 placement，取消计费中的硬编码 2 |
+| `phase_budgets.*.readiness_evidence`（新增） | path、sha256、stage、target_execution_hash | R1 smoke 无前证；R2 full-calibration 需 active_update；正式 search/单卡扩大 experiment 需 search_readiness |
+| `ara_v3.pilot_profile`（新增） | `smoke` 或 `full-calibration`，只用于 phase=pilot | smoke 每侧 fit/monitor=8；full-calibration 每侧 fit 候选192选96、monitor64；development 均100 |
+| `protocol.role_layout`（新增） | 本轮 `pilot-preserving-v1`；旧固定布局 `contiguous-v3` | 实际 prompt ID 清单为最终权威，计数相同不代表同布局 |
+| `target_execution_contract`（新增） | 规范 JSON 路径/hash；不含 readiness 或结果 | 预先冻结目标矩阵、角色映射、初态规则及阶段预算，见下文无环顺序 |
 
 配置构建器以如下合法组合生成 `method_id`；未列出的组合在模型加载前失败。B1/B2 仅由研究 runner 调用对应旧 solver，不通过更改整个进程 objective_version 进入旧 study/schema。P3 诊断组合不进入主搜索预算。
 
@@ -349,6 +478,29 @@ study 身份包含方法变体、所有数据角色、量化方式、A/B 初始�
 
 B0 是同身份的基座/零更新空操作检查，不创建 24-attempt study。`frozen-reference` 仅适用于 B1/B2，沿用其旧捕获语义；`frozen-diagnostic` 仅适用于 F1。所有组合均固定 rank=128、attention/MLP gain=1。F1 与 S1、A1/A2 与 S2 的配对参数来源写入 `parent_candidate_lock_hash`。
 
+新增策略作为方法身份的独立维度，完整成员标识为 `method_id/proposal_policy/seed`，例如 `S2/spectral-backtrack-v1/42`，不冒充旧 S2-42。协议可注册多个策略；F1/A1/A2 继承父锁策略；B0 仅在评分身份完全一致时共享。六维数值参数 envelope 保留，策略不是第七个可搜索参数。
+
+`member_id` 表示正式方法成员，不作为一次固定参数调用的唯一键。新增 `StageExecution` 在目标契约中预注册 `stage_execution_id`、stage、member_id、profile、purpose、anchor/完整固定参数及其 hash、初始化 attempt、调用种类和预算归属。R1 固定 ID 为 `r1-reject-anchor0`、`r1-scale-anchor0`、`r1-clip-anchor0`、`r1-backtrack-anchor0`、`r1-reject-quarter-anchor0`；第五项的完整参数显式包含两种 strength×0.25，不能与第一项覆盖。R2 至少注册 `r2-backtrack-anchor0` 与 `r2-backtrack-anchor2-resource`，anchor0 的两次 replay、第三次 apply 和独立 reload 另列调用 ID，并指向同一父执行项。R1 reload 和纯成本测量也须事先列入。每个 ID 在 campaign/stage 内唯一，成员白名单、证据路径和账本都绑定该 ID，重启继续同一累计记录；不能以更换目录、protocol 或调用 ID 追加未注册试验。正式成员仍为 method/policy/seed，24 个 attempts 在其 study 内独立编号。
+
+新执行身份分成两层，避免把不同搜索参数写成同一身份，或在 study 创建前依赖尚未采样的 TPE 参数：
+
+| 身份 | 冻结时机与内容 | 使用端 |
+| --- | --- | --- |
+| `StudyExecutionIdentity`（`cara-research-study-execution-v3.1`） | study 创建前固定 protocol_hash、method/policy/seed、参数空间与4+8+12抽样规则、初始化规则、模型/数据/生成、profile、源码/依赖、重放规则、硬件及预算；不含某个实际 trial 参数、候选或结果 | study 和恢复绑定 `study_execution_hash`，24 次搜索期间不变 |
+| `TrialExecutionIdentity`（`cara-research-execution-v3.1`） | 参数确定后绑定父 `study_execution_hash`、attempt、完整六维参数及 hash、方法/策略和对应执行配置；pilot 的父 study 为 null，改绑冻结的 `pilot_execution_config_hash` | TrialEvidence、正式/试点候选锁、重放与 reproduce 绑定 `execution_identity_hash`，另保留父身份 |
+
+`pilot_execution_config_hash` 是其 StageExecution 执行配置、source_protocol_hash 与固定环境身份的摘要，不含结果、锁或 readiness；该摘要在来源 pilot 协议冻结后计算，不反写目标契约。重放、第三次 apply 和 reload 沿用被验证原 trial 的逻辑执行身份和初始化 attempt，另记录各自 invocation ID/预算调用 ID，不能以新调用编号重新抽样初始 A。不同参数产生不同 trial 身份；每个 trial 的父 study 必须一致，候选不得指向其他 study。身份本体不含自己的摘要或后代结果；依赖方向为目标契约→来源/正式协议→study 或 pilot 执行配置→trial→锁/证据，正式协议还可引用先前完成的 pilot readiness，禁止反向把目标正式 protocol 写入其来源 pilot 身份。
+
+protocol、study、candidate、evaluation-plan、audit-ledger、acceptance、reproduce 等涉及新增字段或成员 ID 的新记录统一使用对应 `-v3.1` schema 并更新全部读写端；六维参数 payload 保持原值，但新增包络不得传入旧严格读取器。未知版本拒绝。通用重现须通过 `artifact_schema → reproduce/trial_methods → workflow.validate_reproduction_model → research runner` 的显式版本分派，不能让 v3.1 落到旧 fingerprint 分支。旧文件先按旧原始字节/hash 校验，运行时只解释为 reject-v1；旧初始化、角色布局按原始清单、因子重放规则与 journal 恢复行为原样分派，不补字段后重算旧 hash，不向旧 journal 写入新记录。旧运行可用冻结旧执行器继续自身恢复，不能借恢复创建新扩大运行或获得新 readiness。
+
+EvaluationPlan 在首次审计前冻结 `primary_method={method_id:S2, proposal_policy:spectral-backtrack-v1}` 及其 seeds42/43/44、对应三项精确 member_id；集合汇总按该映射查找，禁止硬编码旧 `S2-{seed}`、按前缀混入 reject 对照或用已有成员数量代替完整名单。成员记录同时保存结构化 method/policy/seed 并与显示 ID 严格互校；新物理目录使用规范 member_id 摘要作为 `member_storage_key`，由 manifest 映射到原 ID，不把含斜杠的显示 ID 直接拼为目录。审计账本与预算仍使用原逻辑 ID，避免存储键与成员身份混淆；旧目录按旧 schema 原样读取。
+
+新协议下全部策略及 B1/B2 研究对照采用 `initialization_scheme=paired-data-v3.1`：由冻结源文件/模型身份、seed、attempt、module_key 派生 A，排除方法/策略名、profile 的抽样数量以及包含其差异的 protocol 总 hash；B 保持零。相同 seed/attempt 的 R1/R2 初始 A 可相同；不同 seed/attempt 的 A 按同一规则各自生成，不能要求它们字节相同。同一 profile 和 seed 的 fit 行 ID 在各方法间完全配对；smoke 与 full-calibration 只按显式候选映射兼容。历史按 protocol hash 派生的路径保持原样。改变策略/数值须开新 run/protocol；不能将新因子移植到旧锁中。
+
+**readiness 的无环身份顺序。** 先冻结独立 `target_execution_contract`：含模型/tokenizer/源文件、相关源码/包版本、全部目标成员与策略、参数范围/固定诊断参数、seeds、初态规则、角色布局及 R1→R2→R3 的 ID 映射、生成/scorer 配置、硬件 placement、阶段成员/预算和验证规则。其规范 JSON 摘要即 target_execution_hash；契约本体不含自身 hash、任何 readiness 文件/path/hash、最终 protocol hash、输出或候选快照。随后 pilot 协议引用该目标 hash 并产生原生证据；由证据生成 readiness；最后正式 protocol 绑定目标 hash 和 readiness 文件 hash。只允许这条单向依赖链，禁止完整 protocol 先包含 readiness 再反向作为 target hash。变更目标契约必须产生新 hash 并重新验证证据，不靠排除未知字段维持旧 hash。
+
+readiness 按目标契约的成员映射检查兼容范围。R2 的 seed42/S2 进展只支持该策略在已预注册模型、硬件、数据布局与参数空间内进入 R3；不能声称 seed43/44 已有效。S1 的单轮和 B1/B2 的旧 solver 是目标矩阵内预注册对照，可按其独立成本证明运行，不能要求失败基线先达到新策略的进展门槛。未登记的模型、策略或数据布局不能复用证明；资源上限须覆盖每个实际目标成员。development 配对比较要求 prompt/生成/scorer/base identity 相同，候选 identity 必然不同并分别保存；fit/monitor 的数量差异仅接受已冻结 profile 映射，不要求整个 ScoreIdentity 或 protocol hash 相等。
+
 ### 2. 核心函数签名
 
 签名表达职责，不是本节点需要实现的源码；参数统一使用配置对象，避免超过五个参数。
@@ -363,9 +515,16 @@ B0 是同身份的基座/零更新空操作检查，不创建 24-attempt study�
 | `apply_refinement_trial(model, artifacts, parameters) -> TrialEvidence` | 从初态开始；返回事件、独立 CPU 最终因子快照及评分，快照成功后 finally 恢复初态；导出使用显式 apply_snapshot 并校验 hash |
 | `score_sequence_kl(model, sequence_bundle, options) -> SequenceScore` | 同一序列的基座至当前 KL，精确 prompt/token 分母 |
 | `select_research_candidate(study, protocol) -> CandidateLock` | 不读取 audit；无候选抛出稳定异常 |
+| `lock_pilot_candidate(evidence, execution) -> PilotCandidateLock`（新增） | 固定 R1/R2 进展项，绑定原始评分与快照；不调用正式 study 资格筛选 |
+| `replay_pilot_candidate(context, lock) -> PilotReplayEvidence`（新增） | 按阶段预注册调用重建同一 trial 并校验，记录每次预算；禁止正式导出与审计 |
 | `freeze_evaluation_plan(members, protocol) -> EvaluationPlan` | 纳入基座、锁定候选、失败对照和缺项，任何审计访问前完成 |
 | `evaluate_audit_member(plan, member, context) -> AuditEvidence` | 先无审计 reload 探针，再原子消费并评估一次；训练进程不可调用 |
 | `finalize_research_report(artifacts, audit, labels) -> ResearchReport` | 标注未齐全返回不确定状态；通过后才允许最终提升 |
+| `project_proposal(factors, policy) -> ProjectedProposal`（新增） | 小矩阵谱投影与原始统计，不修改模型 |
+| `interpolate_update(previous, proposal, alpha, policy) -> TrialProposal`（新增） | 权重插值、rank 恢复、部署统计，最多四参 |
+| `evaluate_block_proposals(context, request) -> BlockEvent`（新增） | 固定顺序整组事务，恢复与 monitor 规则不变 |
+| `build_pilot_readiness(evidence, contract) -> PilotReadiness`（新增） | 从原生 trial/资源/重放证据派生；不接收人工 passed 布尔值替代证据 |
+| `validate_readiness(record, execution) -> None`（新增） | 两入口共享，模型加载前检查阶段、策略、身份、计数和预算 |
 
 ### 3. 数据结构及边界
 
@@ -378,22 +537,34 @@ B0 是同身份的基座/零更新空操作检查，不创建 24-attempt study�
 | `TrialEvidence` | protocol/study/parameter identity、state、failure_category、有序 block events、final_snapshot_path/hash、全部 scorer 的 score/baseline/ScoreIdentity、实际时长、累计 GPU-hours 和启动/停止时间 |
 | `ScoreIdentity` | scorer 版本、role、prompt IDs/顺序、generation_profile_hash、reference_sequence_hash（不适用时显式 null）、base/candidate identity、prompt_count、有效 token_count |
 | `CandidateLock` | protocol/study identity、method/seed/attempt、参数、shortlist 及资格判定、selection_rule_hash、final_snapshot_hash、score_evidence_hash、eligibility=qualified 或 comparison_only、parent_candidate_lock_hash（消融使用） |
-| `EvaluationPlan` | plan_hash、protocol_hash、audit manifest/profile hashes、基座共享身份、全部 member IDs/locks/缺项、required_level、成员执行顺序、审计和标注预算 |
+| `PilotCandidateLock`（`cara-pilot-candidate-lock-v1`） | target_execution_hash、stage_execution_id、source_protocol_hash、pilot_execution_config_hash、execution_identity_hash、固定参数/初始化attempt、原始评分文件及hash、快照路径/文件hash/有效权重身份、gate_rule_hash、eligibility=pilot_only；无正式study计数与shortlist |
+| `StageExecution` | campaign_id、stage、stage_execution_id、member_id、profile、purpose、固定执行配置/参数hash、初始化attempt、operation、parent_stage_execution_id、阶段预算归属；不含结果或readiness |
+| `EvaluationPlan` | plan_hash、protocol_hash、audit manifest/profile hashes、基座共享身份、全部 member IDs/locks/缺项、结构化主方法与完整seed成员映射、member_storage_key映射、required_level、成员执行顺序、审计和标注预算 |
 | `AuditLedger` | schema_version、清单独占 plan 绑定、成员复合主键、pending/consumed/complete/inconclusive、worker/锁身份、访问时间、输出 manifest/hash、失败原因；原子更新并保留事件 |
 | `SemanticRecord` | prompt_id、response_hash、匿名方法 ID、refusal_label、answer_label、judge/rubric identity、双人原始标注与裁决、有效长度和 finish_reason |
 | `ResearchReport` | status、required_level、engineering_status、effect_status、ability_status、sample_extreme_status、statistical_extreme_status、research_claim、selected_candidate、audit_plan_hash、preparation_access_log_hash、audit_ledger_hash、各指标 n/k/value/区间、能力配对差异、阶段成本/终态、失败原因及 core 哈希 |
 
+本轮 BlockEvent 增加策略、raw/projected statistics、backtracking_attempts、selected_alpha、prediction_discrepancy 与各 guard/成本；每次尝试含 index、alpha、起点/候选/恢复 hash、rank/谱范数、局部/实际偏移、monitor/null 及精确原因。TrialEvidence 增加 initial/final 有效更新摘要、accepted_blocks、changed_modules、actual_sweeps、update_status=`none|accepted`、execution_identity_hash，以及 study_execution_hash 或 pilot_execution_config_hash 和本次 invocation/阶段调用 ID。有效变化按逐模块 `||D_final−D_initial||F/max(1,||D_initial||F)>1e-6` 判定，范数用小 Gram 或 FP64 分块计算，不能把 SVD 符号变化算作更新。
+
+`PilotReadiness`（`cara-pilot-readiness-v1`）包含 stage=`active_update|development_progress|search_readiness`、target_execution_hash、来源 protocol/trial/snapshot/重放/资源 hashes、进展项 stage_execution_id、pilot_candidate_lock_hash、逐调用证据与共享阶段账本 hash、实际角色数量及 ID 映射、accepted_blocks、changed_modules、keywords_delta、KL、guard 结果、resource_status、阶段耗时、预测公式及输入、budget、status=`passed|failed|inconclusive`、reasons。R1 只要求其锁定进展项的快照重载证据；R2 要求原始锁、两次完整重放、第三次 apply 与独立重载全部对应同一逻辑 trial。验证器核对来源文件、锁、执行映射、事件及计数并重算放行条件，不只校验 readiness 自身的 status/hash；资源探针的 guard 失败不能被删去或混入进展项。8/8 到 96/64 的来源差异通过 source_protocol_hash 与预注册目标映射显式记录，按上文无环契约检查，不要求两协议总 hash 或跨 profile 的完整评分身份相等；模型、策略、初态规则及共同 development 评分条件必须匹配。旧摘要只有 status/exit_code 不能产生新 passed，历史导出保持旧身份并标记 legacy/no_readiness。
+
+两入口共用以下门控：smoke 的 R1 无需先有 passed；full-calibration 的 R2 在加载模型前必须有 active_update；正式 search 和单卡扩大 experiment 必须有同时绑定 R2 开发进展与资源证据的 search_readiness。`pilot=true` 只排除正式导出和 study 计数，不能豁免 full-calibration 的前置证明。新单卡 prepare、launch、experiment 及双卡 research runner 均读取同一规则，缺字段不可退回旧“退出 0 即放行”。
+
+pilot 工程完成可退出 0，但必须输出 update_status/readiness_status；新扩大实验 preflight 的证明缺失/身份错误退出 2，资源预测失败退出 3，零更新或开发进展未达标退出 4，证据不全退出 5。单卡 experiment 的 completed 仍只表示执行结束，另写 effect_status=`improved|no_improvement|inconclusive` 和 baseline_comparison，comparison_only 导出保持研究限制。
+
+“全部零更新则停止扩大”只适用于目标方法 `S2/spectral-backtrack-v1`：R1/R2 未通过时不进入下一阶段；R3 首个目标 study 完成后全部零更新时，记录目标失败并停止后续目标 seeds 的扩大，未执行成员写 not_run 及原因，不缩减288项计划后称完整通过。R3 先运行该目标的seed42，再按冻结顺序运行比较；B1/B2/S1 是预注册正式对照，其零更新或效果失败保留为 comparison_only/unavailable，不停止其他已获放行成员。旧 S2/reject 的固定参数诊断也不触发目标方法停止。OOM、身份或共享资源异常仍按运行故障处理，不属于该对照豁免。零更新基线永远不能用于产生新策略 readiness。
+
 bank 缓存键至少绑定 protocol、base identity、capture_mode、实际捕获的组外状态、层组禁用策略、token 序列和精度；顺序模式同一超参但不同上游状态不能复用 bank。F1 仅允许前述显式冻结 bank 诊断例外，不能改变其捕获来源。scorer 缓存仍限于一次评分调用，adapter 变化后必须新建 Context，且所有 baseline 始终绑定零 adapter 基座。
 
-`ResearchReport.status` 枚举为 `passed|failed|inconclusive`，区别于任务平台 verdict 的二值 `pass|fail`。基数为零、NaN、Infinity、计数大于分母、缺失语义标签或不匹配数据身份均不得生成 passed。旧 artifact 字段不接受新增语义的隐式解释，只有 schema v3 承载新报告。
+`ResearchReport.status` 枚举为 `passed|failed|inconclusive`，区别于任务平台 verdict 的二值 `pass|fail`。基数为零、NaN、Infinity、计数大于分母、缺失语义标签或不匹配数据身份均不得生成 passed。旧 artifact 字段不接受新增语义的隐式解释；本轮新增语义由对应 v3.1 schema 承载，旧 v3 报告仍按原契约读取。
 
-各子状态使用 `passed|failed|inconclusive|not_run`，`research_claim` 使用 `statistical_supported|sample_only|insufficient_samples|assumption_unmet|not_supported|pending`。最终状态按下表计算，明确失败优先于缺证据；单独的工程通过永远不产生最终 passed。
+各子状态使用 `passed|failed|inconclusive|not_run`，新 v3.1 的 `research_claim` 使用 `statistical_supported|sample_only|recovery_supported|insufficient_samples|assumption_unmet|not_supported|pending`。`recovery_supported` 只表示恢复层通过；旧 v3 的 recovery/sample_only 按旧 schema 读取并展示 required_level，不重写历史报告。最终状态按下表计算，明确失败优先于缺证据；单独的工程通过永远不产生最终 passed。
 
 | 条件 | 最终 status 与制品处理 |
 | --- | --- |
 | 目标层任一必要门槛明确失败、协议无效、预算终止或候选重放失败 | failed；保留失败报告及研究快照，禁止正式提升 |
 | 没有明确失败，但必要标注/输出/能力区间缺失，或统计目标样本/抽样前提不足 | inconclusive；仅待审 staging，报告精确缺项 |
-| recovery：工程、开发及一次性审计效果恢复、能力保持全部通过 | passed；仅可声明 recovery |
+| recovery：工程、开发及一次性审计效果恢复、能力保持全部通过 | passed；research_claim=recovery_supported，仅可声明 recovery |
 | sample_extreme：recovery 全通过且两侧各自满足预注册样本极低拒答与回答门槛 | passed；research_claim=sample_only，不能声明统计低于 1% |
 | statistical_extreme：sample_extreme 全通过且各侧满足 n/抽样前提及二项上界 | passed；research_claim=statistical_supported，声明限于逐候选指定总体 |
 
@@ -419,6 +590,23 @@ CPU 快照必须及时写盘并释放，不能把 24 个 trial 的权重全部�
 
 ### 2. 实施与实验阶段
 
+**本轮先执行 R0–R2，再决定是否进入既有 P2–P4。** 下表是本轮执行顺序；后方首轮 P0/P1 所述“尚未实现 v3”和“pilot 只能 8 条”保留为历史背景，本轮允许显式 full-calibration pilot。它仍设置 pilot=true、使用独立 protocol/run，不写入正式 24-attempt study；准备器、角色校验、入口与证据共同读取 pilot_profile，旧无字段 pilot 仍按 smoke 校验。
+
+| 阶段 | 冻结执行内容 | 退出与下一步 |
+| --- | --- | --- |
+| R0：离线实施验证 | 数值原语、事务、身份、双入口门控和评分回归；复用旧 pilot 的数值摘要作反例，不使用响应正文作训练 | 所有必要检查通过后才运行 GPU；旧 reject 回归必须保持 |
+| R1：8/8 可行性诊断 | seed42/anchor0，最多两轮；同初态/题目分别跑 reject、scale、clip、backtrack 四策略；第五个固定对照为 reject 下 attention/MLP strength 同乘0.25，其余不变。全部先登记，非 TPE 搜索 | backtrack 至少一组接受、有效更新非零、原 guard 通过且快照重载通过，才产生 active_update 证明；全拒绝则保留全部原因并回诊断，不自动加试 |
+| R2：完整校准与开发进展 | 固定 backtrack 策略，seed42；anchor0 为唯一进展候选；另跑预注册宽范围 anchor2 只作成本/资源探针。每侧 fit192选96、monitor64、development100；两者分别从初态运行 | anchor0 相对同身份 B0 至少少5条关键词拒答、两项 KL≤0.15、非零更新、两次重放与第三次 apply/独立重载通过，产生 development_progress；anchor2 不能替代失败的 anchor0 |
+| R3：扩大比较 | R2 完成并得到 search_readiness 后，先做单 seed 24-attempt 有预算比较，再执行下面 P2 的三 seed 主矩阵；已完成同身份 seed 不重跑/重复计费 | 只扩大有进展且成本可行的研究；基线缺项必须明确，不能用旧 BF16 0.54 宣称胜出 |
+
+R1 和 R2 各预注册阶段总墙钟上限 8 小时，并以实际预约设备数换算 GPU-hours；成员依次运行并共享总账，不能每个新目录重新获得 8 小时。不同策略/profile 需要独立 protocol，因此阶段账本必须按预先冻结的 `campaign_id + stage` 绑定目标契约、预算及接口 §1 的完整 StageExecution 清单，再引用各 source_protocol_hash；不能仅按每个 protocol hash 发放独立 8 小时，也不能只用重复的 method/policy/seed 覆盖固定参数对照。账本保存调用开始/停止、已用成本、终态及输出身份；既有完成调用只读核验，故障调用按已冻结恢复规则处理，不能删除账单后重跑。R1 5 个对照中运行时异常按失败保留；不要求旧 reject 对照有效更新，目标策略未通过则停止。R2 先校验 active_update（模型/硬件/策略/生成/初态规则一致），即使 full-calibration 本身是 pilot 也不得绕过该前置条件。两阶段预算、计数或资源不足均报告失败/不确定，不静默少样本；R2 的重复校准、重载和额外资源测量全部计入同一阶段上限。
+
+search_readiness 必须同时引用 R2 的进展证据和成本证据：以完整样本的分阶段测量为输入，固定 `T_pred=1.25×(T_load+24×T_trial_bound+T_shortlist_bound+2×T_replay_bound+T_apply_reload_export_bound)`；trial 上界覆盖目标最大层跨度/模块数、两轮、每组一次 LBFGS 与最多五次回溯，shortlist 覆盖最多三个成员。记录阶段对应的工作量、测量次数及从观测最大值外推的倍率，GPU-hours 为各预约区间实际设备数乘墙钟之和。该公式是带余量的资源估计，不构成最坏运行时保证，实际 watchdog 仍执行硬预算。若没有测到某必经昂贵分支，则缺少证明，需在剩余 R2 预算内增加预先登记的纯资源测量，禁止填零；测量只补成本、不新增进展候选，也不能将被 guard 拒绝的候选记为接受。预算内测不到则 inconclusive。只有预测满足每个目标 search/experiment 已冻结的墙钟与 GPU-hours 才放行；B1/B2 的独立 solver 也必须有对应成本输入，不能把 S2 耗时自动当成全部方法上界。Pro 6000 独立 experiment 使用其 run.hours 实际上限，不能通过它绕过进展门槛，也不能冒充默认8小时正式协议。
+
+本轮“超过基线”分三级报告：R2 只说明相对同次 B0 的开发进展；扩大实验中主比较是同硬件、同数据、同 24-attempt/资源上限的新 S2 与 B1/B2，分别报告差值，不允许挑弱基线；旧 S2 是另列固定参数与预算的配对诊断，未进行独立同预算搜索时不能声称它与主 study 的调参机会相同。正式优越性需新 S2 相对预注册 B2 的配对语义拒答率差值单侧95%上界<0，同时通过能力保持和有效回答门槛。差值方向固定“新方法减基线”，按指标章节固定的 10,000 次组级 bootstrap 规则逐 seed 报告，三个预注册 seed 均通过才声明方法层优越；退化/缺失为 inconclusive。该相对结论不自动满足极低拒答绝对目标；它使用同一次已冻结集合审计的输出，不额外消费或触发第二次审计。
+
+R1 固定策略对照只改变提案算子，S2 的轨迹/损失/monitor/初始化相同；第五组强度变化单列归因。若只谱可行但 monitor 拒绝，应报告新瓶颈；若 prefix 改善但 Keywords 或语义未改善，不宣称超过行为基线。若较低强度 reject 已同样有效，不能将全部收益归因于投影；若回溯仅增加计算，应同时报告等 GPU-hours 曲线。R3 保留 B1/B2 旧求解器及新 S1/S2 的主矩阵；旧 S2 与各提案消融为预注册配对诊断预算，不暗加进288 attempts。
+
 | 阶段 | 工作及退出条件 | 产出 |
 | --- | --- | --- |
 | P0：离线协议与实现 | 修复数据边界前置检查；实现 v3；全部必要 CPU/小模型测试通过 | 冻结协议草案、测试结果与机器可读失败案例 |
@@ -429,17 +617,32 @@ CPU 快照必须及时写盘并释放，不能把 24 个 trial 的权重全部�
 
 P1 的 8 条属于另一份 pilot manifest，不允许混入正式 search 或冒充 100 条验收。24 attempts 只是预算设计，预计耗时必须由 pilot 测量；不得把 Blackwell 的历史 2 小时 38 分钟按比例作为双 3090 的承诺。
 
-每个正式方法/seed 设双卡占用墙钟上限 8 小时，即最多 16 GPU-hours，12 个主 study 最多 192 GPU-hours，未包含单独冻结的消融和审计预算。预检用最慢 pilot 估计并预留 25% 重放/加载余量，预测超过单 study 上限则先发布独立小规模结果和资源阻断，不自动进入全矩阵。超时保存已完成结果并终止，状态为预算不足；不得将不足 24 attempts 的 study 称为正式通过。
+每个正式方法/seed 的墙钟上限为 8 小时；双卡对应最多 16 GPU-hours、12 个主 study 共 192 GPU-hours，单卡对应最多 8 GPU-hours、12 个共 96 GPU-hours。两者都未包含单独冻结的诊断、消融和审计预算；Pro 6000 独立 experiment 若采用不同 run.hours，明确单列而非归入默认正式预算。预检按上文分阶段公式估计并预留 25% 余量，预测超过单 study 上限则先发布独立小规模结果和资源阻断，不自动进入全矩阵。R3 单 seed 的已完成 study 只在全部身份和预算与 P2 相同时直接计入该 288 attempts，不能另补一轮。超时保存已完成结果并终止，状态为预算不足；不得将不足 24 attempts 的 study 称为正式通过。
 
 该上限按 study 所有启动区间累计，包含恢复后的再次加载、shortlist 开发评估、两次重放和第三次 apply；重启、重放或进程退出不能清零。不可把 8 小时全部用于搜索后另加未记账的重放。runner 在每个 attempt/层组边界检查剩余预算，独立 watchdog 对长单步执行硬上限；超时终止 worker 并把未完成 attempt 计 interrupted，清理到新进程可验证的初态。累计账本必须记录每次 GPU 预约的开始/释放时间和设备数。
 
 P1 pilot、P3 消融、P4 审计分别在启动前填写 `phase_budgets`，缺预算则不启动对应阶段：至少包含最大 GPU-hours、最大墙钟、前向/生成成员清单；P4 还须填写基座及各 member 的预算和语义双评/裁决所需标注条数、负责角色及截止时间。数值由 pilot 实测和实际评审资源形成，不在本规格虚构可完成工时。阶段预算到期保留已完成成员和失败/未完成明细；标注截止仍不齐全为 inconclusive，不能用自动标签替代正式双评。无标注资源时可以完成 P0–P3 与待审制品，但不能宣称完成 P4 或研究目标。
 
-比较同时报告等 attempt 和等实际 GPU-hours 的结果；刷新多次前向的成本必须计入，不能仅用相同 trial 数声称计算公平。按累计 4/8/12/16 GPU-hours 保存搜索曲线；每个检查点只允许使用其截止前已经完成的候选及开发评分，跨过检查点的未完成 trial 归入下一个点，不能拿最终最优 trial 回填早期结果。成本从加载基座起计算，包含捕获、优化、monitor、开发评分、失败 attempt 和重放，均按两张占用 GPU 的墙钟求和；若 24 attempts 提前结束则曲线保持其当时最优值，并报告实际停止成本，不追加搜索。最终审计和人工标注单列成本，不混入搜索检查点。机制消融的前向次数与 GPU-hours 另列，不能隐含归零。语义人工评估完成时间不能假装为 GPU 运行时间。
+比较同时报告等 attempt 和等实际 GPU-hours 的结果；刷新多次前向的成本必须计入，不能仅用相同 trial 数声称计算公平。按累计 4/8/12/16 GPU-hours 保存搜索曲线；每个检查点只允许使用其截止前已经完成的候选及开发评分，跨过检查点的未完成 trial 归入下一个点，不能拿最终最优 trial 回填早期结果。成本从加载基座起计算，包含捕获、优化、monitor、开发评分、失败 attempt 和重放，按每段实际预约的设备数乘墙钟求和，禁止硬编码两张。若 24 attempts 提前结束，可另画带“完成后延长”标记的最优值水平线，并报告真实停止成本；未到达或超过单卡预算的检查点写 not_reached，不生成伪造耗时记录，也不追加搜索。最终审计和人工标注单列成本，不混入搜索检查点。机制消融的前向次数与 GPU-hours 另列，不能隐含归零。语义人工评估完成时间不能假装为 GPU 运行时间。
 
 所有超过 30 秒的远程等待，执行节点须先用任务工具登记 `wait_async`；后台作业原子更新 `progress.json` 和完成/退出标记，监测自己的退出标记，避免仅凭 GPU 空闲推断成功。不得在 SSH 内循环 sleep 占住任务；所有阶段保存真实退出码，完成或失败后释放等待句柄。
 
 ### 3. 必需验证清单
+
+本轮优先验收：①构造已知奇异值超8的低秩矩阵，检查 clip 保留小奇异值、scale 全谱同比、最终rank≤128及阈值；②D_old非零、不同因子基底下的插值与显式小矩阵参考一致，捕获逐A/B插值交叉项错误，第二轮无累加；③边界8、零更新、非有限、rank亏损和SVD重根，确认投影允许有意改变权重、canonicalization仍等价；④首α拒绝后次α接受、全部拒绝、安装/评分异常和预算终止均恢复完整组/全trial，参数快照hash变化不能冒充有效更新；⑤mock scorer造成各单独guard失败，核对未评估字段、原因及真实prediction_discrepancy；⑥旧pilot退出0但零更新在双卡和单卡入口均不得放行，新有效pilot缺开发进展/成本证据也不得扩大；⑦旧schema/旧初态回归、新策略恢复错配失败、零更新导出标识；⑧长prompt/EOS/空响应下原始与分块prefix、首token及序列KL数值一致（FP32 `rtol=1e-5, atol=1e-6`），评分分母、角色与adapter缓存隔离不变。GPU阶段验证真实峰值与小型模型输出，不用CPU测试冒充27B效果。
+
+独立文档评审补充的实现验收：零权重模块随同组其他模块提交后，下一轮仍具有非零初始 A/零 B；同有效 BA 不同因子基底在旧/新 schema 分别走对应比较规则；完整 protocol/readiness 不参与目标契约自哈希；真实 pilot-preserving 与 contiguous 布局同计数仍须拒绝错配；不同策略的独立 protocol 消耗同一 campaign/stage 总账；R2 不得以 pilot=true 绕过 active_update；新增 schema 能通过审计/通用导出/重载全链分派且旧清单原字节不变。
+
+本次 v3.2 架构评审新增的实施验收：
+
+- 身份：同一 study 的两个不同参数生成不同 execution_identity_hash，父 study_execution_hash 不变；恢复不得修改首个 trial 身份。修改固定方法/数据/预算或把其他 study 的 trial 填入候选锁必须拒绝；重放保持原初始化 attempt。
+- 阶段：两个 R1 reject 对照和两个 R2 anchor 均有独立 stage_execution_id，固定参数互校；换目录/重启/重放仍累计同一阶段总账，重复或未登记调用拒绝，不允许资源探针覆盖进展项。
+- pilot：anchor0 在100条中由100条关键词拒答降到95条且其余条件通过时，可以形成 R2 进展证据，但不得成为正式 qualified 候选。无需伪造24条记录；两次重放、第三次 apply、独立重载缺一项或与原锁超差均不可产生 development_progress；anchor2 更优也不得补位。以上数字仅为测试夹具，不是实测结果。
+- 停止：B1/B2/S1 全零更新时，其他已获放行主矩阵成员可继续；目标 S2/backtrack 的首个 study 全零时停止后续目标 seeds，并保留完整未运行成员名单。共享资源或身份错误仍阻断，不能当成普通基线失败。
+- 分派：v3 与 v3.1 制品分别经过通用读取、模型验证、apply 和 reproduce 生成路径；新版本错误模型必须失败，旧合法制品行为不变。集合按明确的主方法/策略/三个seed汇总，加入 reject 成员不能顶替缺失 backtrack 成员；存储键映射恢复后无冲突。
+- 声明与秩：新 recovery 通过写 recovery_supported，sample_extreme 通过才写 sample_only；旧报告字节不改。部分秩亏损的成对零方向在两轮中如实记录，不添加隐式随机方向。
+
+历史P2处理：ARA-REVIEW-011本轮随事件补齐；012恢复磁盘预检按剩余快照而非完整32份，长study前必做；013/015成本检查点与实际设备/释放时刻随本轮成本证明处理，无法确认停止时刻继续披露stop_estimated；014修正recovery声明标签后才发布相应报告。独立审计抽样、能力任务和人工双评仍是P4输入，不要求规划节点虚构完成。
 
 下列是后续源码实现的验证要求。本节点只做文档与输入证据检查，不把它们标记成已通过。
 
@@ -471,6 +674,7 @@ P1 pilot、P3 消融、P4 审计分别在启动前填写 `phase_budgets`，缺�
 | 协议过大造成资源耗尽 | 逐组释放 bank、预算前置、pilot 独立、超时保存证据并停止 |
 | 正式研究数据或评审不足 | 保留工程结果，research_claim/inconclusive 明确限制；不能用空字段或假评审填充 |
 | ARA-DESIGN-009（P2）：新审计来源、双卡资源及较小复验模型待确定 | 下游协议准备与 P1 预检负责；明确清单 hash/抽样范围、pilot 峰值/成本、复验模型身份后才进入相应阶段；不足则报告资源或证据限制，不阻止先实现离线接口 |
+| ARA-DESIGN2-007（P2）：部分秩亏损的热启动方向失活 | 方法实施节点在 R0 验证并记录实际秩/成对零方向，R1/R2 报告机制限制；新初始化策略须另行预注册，不作为本轮隐式修补 |
 | 工作树中已有删除或未跟踪文件 | 仅操作任务文件清单；不得恢复、覆盖或提交其他人的既有变更 |
 
 回滚不依赖 Git 强制重置：默认方法不变，新配置关闭后回到原有路径；新 journal、adapter 和日志使用独立 run-id。运行期失败恢复 A/B 和开关状态，保留 staging 及原因但不提升正式目录。数据或算法定义变化必须创建新 protocol ID，旧结果只读归档，不改变其成功/失败状态。
@@ -493,6 +697,10 @@ P1 pilot、P3 消融、P4 审计分别在启动前填写 `phase_budgets`，缺�
 
 架构评审 v2.0：修复顶部 ARA-DESIGN-001 至 008；新增逐成员审计与离线 finalize、合法方法组合、角色评分身份、可行 shortlist、锁定权重快照、分级状态及阶段预算。ARA-DESIGN-009 作为实施阶段待验证的 P2 保留，旧 ARA-DATA-001 的源码配置阻断仍需下游实现修复，不能因设计修正而把源码问题记为已解决。
 
+第 2 轮 v3.0→v3.1（2026-09-14）：响应“仍未超过基线”及最新零更新 pilot，新增固定 8.0 谱门槛下的裁剪与有效权重回溯、真实拒绝归因、评分内存诊断和 R1–R3 进展/资源门控。独立文档评审补齐实际角色布局、零模块初始化、版本化重放、无环目标契约、双入口门控、阶段累计预算、配对统计及相关文件计划。15 项归档 hash 与原生事件复核属于本轮输入验证；尚无新算法 GPU 实验或超过基线的结论。
+
+架构评审 v3.2（2026-09-14）：在 v3.1 基础上修复五项 P1 与一项 P2，分开 study/trial 身份、注册固定参数调用、补充试点锁及专用重放、限定全零停止规则、补齐通用 schema 消费与主方法汇总，并明确 recovery_supported。新增保留部分秩亏损限制；没有修改源码、执行 GPU 实验或重写历史成果。
+
 ## 决策记录
 
 - 上游规划节点首次运行时注册 `docs/plans/ara-v2-refusal-optimization/spec.md`；本节点评审从已有 `plan/current` 定位，并在本轮重新写入同一定位记录。
@@ -501,7 +709,10 @@ P1 pilot、P3 消融、P4 审计分别在启动前填写 `phase_budgets`，缺�
 - 只把顺序条件重校准列为主要算法候选；进一步扩大 rank 和附加复杂几何目标留待该假设检验后决定。
 - 若后续决策节点要求回到本节点，应在此记录原因、递增文档版本并增量修订，不清空本轮证据。
 
-## 评审结论
+- 第 2 轮回到规划的原因：用户要求继续优化，最新 pilot 五组均因谱越界回滚，最终为基座初态，旧完成状态不能证明有效更新。本轮保留首轮代码和历史记录，将可行提案、有限回溯及分阶段证据作为增量工作；只交付经独立审阅的 v3.1 规格。
+- 第 2 轮实施决策：先按新 protocol 重跑 R1 固定对照，再以保持原 development 行身份的 R2 检验开发进展及完整成本，达到机器可读门槛后才扩大；不得以旧退出 0、旧 BF16 最佳值或小样本计数绕过。正式审计目标、硬约束及一次性消费规则不降低。
+
+## 评审结论归档（v2.0，2026-09-10）
 
 **有条件通过，允许下游按 v2.0 开始实施。** 本轮发现 1 项 P0、7 项 P1，均已在对应正文修复；未解决 P0=0、P1=0。保留 1 项 P2，见 ARA-DESIGN-009。条件属于实施阶段的验收门槛，不要求本节点评审期间运行实验或另行取得确认。
 
@@ -533,6 +744,33 @@ P1 的真实 27B NF4 双卡 placement、耗时及资源峰值，P2 的 288 attem
 3. v3 明确禁止非空 `response_prefix`；`None` 和模板既有空字符串均表示无预填文本。独立 worker 请求及探针缓存额外绑定实际配置文件 hash，启动后变更配置立即失败。
 4. 正式 `finalize-result.json` 只承载计算完成的研究结论。配置、文件、子进程等调用错误写入 `phase-errors/`，不能创建占位终态，也不能覆盖已冻结报告。单个成员已提升但集合尚未完成时，从正式目录校验原核心清单并恢复。
 5. 硬超时先回收自身后代进程并记录终止结果，再退出；无法证明精确退出时刻的异常会话使用显式 `stop_estimated` 保守估算。该估算不能表述为实测 GPU 占用，见下列 P2 待办。
+
+### 第二轮代码实施补充（2026-09-14）
+
+本补充对应正文 v3.2，保留上文及后续首轮记录的历史时态。本代码节点实现了本轮 File plan，尚待下游 #4 独立代码评审；没有执行新 GPU 实验或改变旧零更新结论。
+
+1. **无环目标契约的具体边界。** `cara-target-execution-v1` 使用严格顶层字段，`source_files` 绑定稳定源码，不能把运行后生成的单卡 runtime TOML 或 readiness 纳入祖先 hash。后代协议绑定目标契约；模型、量化、生成参数、源码与依赖身份另在运行前按冻结输入核验。目标包括真实 `hardware.devices/device_names`，设备计费不能只依据旧模板。
+2. **角色扩充必须冻结选中 ID。** 两个 profile 均保存有序角色候选 ID 和 `_fit_selected_ids`，后者由 `freeze_fit_ids()` 对三个 seed 生成并在运行时重算。完整 profile 明确每侧 fit 候选 192/选用 96、monitor 64，R1 为 8/8，development 始终保留相同 100 条身份与顺序。改变计数字段不能替代真实来源映射。
+3. **预注册与只读恢复的接口。** `StageExecution` 固定七个原始 R1/R2 调用及对应子调用的参数、用途、身份和父项；R1/R2 分别使用 `phase_budgets.R1/R2.ledger_path` 的唯一共享账本，各 8 小时、按真实设备计费。已完成调用先核验原始 trial/快照再只读返回，不重新申请预算。试点锁永久 `pilot_only`。正式搜索成员还须在目标 search.members 中登记；单卡 experiment.members 必须精确匹配实际 seed、设备与小时预算。
+4. **资源证明要能定位原生计时。** 成本项用带文件摘要的 observation、record_path、phase 引用真实阶段记录，再结合原生模块/轮次/回溯工作量外推。纯资源项实际执行 semantic/shortlist 和 comparison export，但不参与挑选进展候选。缺少必经分支、未覆盖方法或填零均不足以放行；这些资源调用及其重放须在 R1 前注册。
+5. **嵌套峰值的可解释性。** 子阶段测量不重置外层 GPU 峰值，避免漏掉整组峰值；记录 `peak_scope=enclosing_phase` 时给出外层包含范围的保守上界，不能当作子操作独立峰值。无法确定异常退出时刻的 `stop_estimated` 仍保留，不宣称是精确 GPU 忙时。
+6. **代码尺寸与兼容分派。** 新增 proposal、backtracking、pilot 三个模块；在本轮计划内已有 schema、capture、budget、acceptance、audit-recovery 模块间按职责移动辅助函数，并保留调用接口。25 个源码文件中 172 个增量函数通过尺寸、参数、复杂度、行宽及最大四层嵌套检查；43 个任务 Python 文件通过编译和 Ruff。旧 schema 和旧 hash 不迁移，新版通用重现/导出验证完整制品图；recovery 声明使用 `recovery_supported`。
+7. **验证与后续边界。** 250 项现有环境 CPU 回归加 1 项本地真实子进程测试通过，7 项 Linux/CLI 入口检查通过。测试使用人工夹具和当前源码内存加载，没有覆盖远端服务项目。本轮未运行真实 GPU pilot、扩大研究或模型下载/checksum；没有生成真实资源证明和 readiness，也未证明超过基线。跨运行根目录的正式成员并发协调、异常部分计时持久化及原生账本全链关联应作为下游集成评审关注点。
+
+具体字段、命令、验证证据和精确交付范围见 [本轮交接](../../logs/ara-v3/implementation-20260914/SUMMARY.md) 与 [运行手册](../../logs/ara-v3/implementation-20260914/RUNBOOK.md)。原有暂存删除和无关工作区内容保留，本节点未执行 `git add` 或 `git commit`。
+
+### 第二轮代码评审发现的契约缺口及修复（2026-09-14）
+
+以下补充消除本轮实现与正文目标之间的缺口，均已在既有文件计划内落实，不改变 R1/R2/R3 的研究门槛，不迁移历史制品。
+
+1. **完整目标身份。** 目标契约显式冻结 `quantization`、`dtype`、完整 `scorer_identity=judge_identity`，以及每个 profile 的 `role_identities`。每个角色包含完整有序 prompts、规范正文和去除本地定位路径的来源摘要。共同 development 和 mechanism-development 的正文与 prompts 跨 profile 相同；fit/monitor 的合法差异仍由冻结映射决定。准备阶段、实际设置及 readiness 来源消费都验证这些关系；新协议入口只接受明确的 v3.1 schema。
+2. **成本证明是闭合的执行链。** 每条 observation 必须关联同一目标的 full-calibration 源协议、预注册 R2 调用、真实设备、结清计费区间和该调用登记的输出。成本项必须实际引用对应完整操作，不能引用同一文件内的短子阶段。必需进展、资源及重放调用必须全部成功；额外较窄资源项不能替代失败的最宽项。普通 comparison 数值失败可保留，资源、身份和未完成 worker 则阻断。
+3. **预算定位独立于工作目录。** R1、R2、search、experiment 的阶段账本采用各自冻结的绝对规范路径。正式与单卡入口都在模型分配前，在 campaign 锁内原子登记成员、study 身份、唯一运行根和预算路径；换目录不能领取第二份预算。同目录恢复沿用原账本，丢失已登记状态时拒绝重新初始化。
+4. **完成状态包含必需收尾。** 只有必需重放、应用与 staging 完成后才能发布成员完成状态。共享资源、身份及必需操作异常持久化为 campaign 阻断；硬超时标记在后续 admission 时仍生效。目标全零只停止后续目标 seeds，正常基线效果失败仍保存为对照。
+5. **分阶段峰值立即约束。** 阶段结束时先检查 allocated 峰值再允许后续测量重置计数器，避免高峰值被后续低峰覆盖。超限记录失败；嵌套测量保留外层峰值，已有异常不被覆盖。
+6. **新旧制品双向隔离。** acceptance、candidate lock 和 reproduce 整条链必须同版；v3.1 执行及 study hash 非空且匹配候选锁。保留合法旧版读取，不接受只改标签或单向跨版绑定。
+
+具体冻结字段和操作规则见 [评审运行补充](../../logs/ara-v3/review-20260914/RUNBOOK-SUPPLEMENT.md)。异常过程中已计算的部分诊断尚未完整归档，以及未接入正式路径的机制双侧区间尚缺新分析身份，作为下面两项 P2 保留。
 
 ## 第 1+1 轮代码评审（2026-09-10）
 
@@ -696,3 +934,56 @@ File plan 中逐文件展开后的 **39 个路径项全部存在并符合预期�
 ARA-DESIGN-009 的实际模型与数据身份、双 3090 资源及 pilot 成本、独立审计抽样前提、跨模型复验与人工双评资源仍未落实。正式 288-attempt 矩阵、机制消融、真实能力审计、人工双评及模型输出 checksum 流程均未完成。后续实验须遵守既定阶段预算、集合冻结和一次性审计约束；默认 `statistical_extreme` 目标维持不变，不降低门槛或补造证据。本轮可确认的成果限于代码交付及所列验证；新方法能否达到极低拒答率仍待真实实验检验。
 
 本节点仅追加本节，并通过任务工具登记结果及请求转移至 #7；未修改源码、未访问远端、未执行 `git add` 或 `git commit`。本节按节点约束留在工作树，既有暂存删除及其他未跟踪材料保持原状。状态转移是否登记成功，以随后 `transition` 返回值和 `status` 中第 6 节点的 `completed` 状态为准。
+
+## 评审结论
+
+**有条件通过，交下游以本规格 v3.2 实施。** 本次架构评审新增五项 P1，均已在正文修复；另修复一项 P2，保留一项部分秩亏损 P2 并明确责任与验证时点。未解决设计 P0=0、P1=0；历史研究资源、审计输入和实现待办仍按正文落实。前述 v2.0/v3.1 及 2026-09-10 的评审、代码和提交结论仅为历史记录。
+
+落地顺序为 R0 离线数值/事务/身份/预算/双入口与通用制品回归，随后 R1 固定对照与有效更新证明，再进行 R2 固定 anchor0 的完整校准、独立试点锁及重放/重载、真实成本测量。只有可核验的 search_readiness 才允许进入 R3；基线失败、目标方法失败和资源异常按各自规则处理，缺项如实保留。P4 之前必须冻结独立审计清单、完整主方法/seed 映射、能力任务、预算和双评资源；样本、统计前提或标注不足时按真值表交付失败或不确定状态。这些是实施阶段条件，不要求本节点运行 GPU 或再次征求确认。
+
+本次重新核验15项最新 pilot 文件哈希与72模块原生事件；数值依据仅支持旧提案谱超限、五组零更新的诊断。SVD 非唯一性与缓存释放的说明已对照正文所链的 PyTorch 官方文档，仅用于说明数值和内存边界，实际执行仍须冻结安装版本。本次交付仅修改本文件及任务平台记录，未修改源码、暂存或提交 Git，未访问远端、运行新 GPU 实验、完成语义双评或证明超过基线。
+
+## 第 1+1 轮代码评审（2026-09-14）
+
+**结论：pass，交 #5 验证与精确提交；未解决 P0=0、P1=0。** 本节对应正文 v3.2 及上方契约补充，覆盖前述“尚待代码评审”的历史状态。三名 Scanner、独立 Reviewer 和最终 QA 完成交叉确认；本节点就地修复八项 P1，保留两项新增 P2。完整证据见 [评审报告](../../logs/ara-v3/review-20260914/00-scan-report.md)、[QA 终验](../../logs/ara-v3/review-20260914/05-qa.md) 和 [验证摘要](../../logs/ara-v3/review-20260914/verification.json)。
+
+### 本轮问题与修复
+
+| 编号 | 级别 | 原问题与最终修复 | 状态 |
+| --- | --- | --- | --- |
+| ARA-REVIEW2-001 | P1 | 分阶段重置 CUDA 峰值可能消除先前超限；每阶段结束立即执行资源 guard，保留嵌套语义与原始异常 | 已修复 |
+| ARA-REVIEW2-002 | P1 | 成本引用可用短 capture 替代完整调用；按成本项限定真实操作及昂贵分支，不接受同文件内无关计时 | 已修复 |
+| ARA-REVIEW2-003 | P1 | 成本没有闭合目标、R2 完整校准及计费来源；绑定协议、调用和结清账本，并拒绝必需资源项失败后用其他窄探针替代 | 已修复 |
+| ARA-REVIEW2-004 | P1 | 相对路径使不同工作目录获得独立阶段预算；冻结各阶段绝对规范路径并拒绝冲突 | 已修复 |
+| ARA-REVIEW2-005 | P1 | 同一目标成员换运行目录可重复领取预算和 24 次尝试；双入口模型加载前原子保留成员与唯一账本，同目录恢复累计 | 已修复 |
+| ARA-REVIEW2-006 | P1 | 资源/身份/重放失败仍被记作完成并放行下一成员；延后完成发布、持久阻断原因与超时状态，保留合法效果失败对照 | 已修复 |
+| ARA-REVIEW2-007 | P1 | 共同目标未绑定实际评分、精度和角色正文，来源消费可绕过新协议校验；补齐冻结字段、跨 profile 一致性及明确 schema 验证 | 已修复 |
+| ARA-REVIEW2-008 | P1 | 旧 acceptance 可绑定新 reproduce，候选版本与空执行 hash 校验不足；整链双向同版且执行身份非空、相等 | 已修复 |
+| ARA-REVIEW2-009 | P2 | 异常路径丢失已计算的部分回溯事件、预测误差和阶段诊断；事务恢复本身正确 | 待办 |
+| ARA-REVIEW2-010 | P2 | 未被正式路径调用的 `paired_group_interval` 在退化样本返回零宽区间，未保存固定抽样身份 | 待办 |
+
+### 文件计划、项目惯例与 Git 状态
+
+47 个增量路径逐项存在且动作符合：41 个已跟踪修改与 6 个上游新增源码/测试文件；规格另行追加。评审未新增源码模块，源码与测试修复全部落在这 47 项之内。运行说明和证据位于计划允许的日志目录。Python CLI 命名与模块职责保持一致，新增说明和运行错误使用中文；TypeScript、Tailwind、网页 UI 在本项目本轮范围内不适用。
+
+最终 `git status --short` 包含 42 个已跟踪工作树修改（含本规格）、原有 23 个暂存删除及未跟踪文件/目录。`.agentmesh`、索引/IDE、旧 pilot、论文构建产物和其他原有工作区材料不属于可整体提交的清单。HEAD 仍为 `0ab032c8acdee8a0f197d4ffba8bec1bad93caad`；23 项暂存差异的原始字节 SHA-256 仍为 `ecc7027297b06b30062476f98150736a8ca51ae3ba46ab61fbb801074c2c0ff8`。本节点未执行 `git add` 或 `git commit`。下游使用 [当前交付清单](../../logs/ara-v3/review-20260914/delivery-manifest.json) 逐路径核验与精确提交，不能整体暂存工作区；原实现归档保留其历史含义。
+
+### 实际验证与证据边界
+
+最终 **274 项不同测试通过**：开发服务器现有环境使用当前源码内存加载、隐藏 CUDA，执行 273 项 CPU 回归（2.413 秒）；本地真实文件系统执行 1 项子进程预算回归（1.339 秒）。7 项 Linux/CLI 检查、43 个 Python 文件编译和 Ruff、25 个源码文件的增量函数尺寸/参数/复杂度/嵌套/行宽检查、`git diff --check` 均通过。源码文件不超过 800 行，增量函数不超过 50 行、5 个业务参数、圈复杂度 10、嵌套 4 层。测试期间使用临时夹具，不更新远端项目源码或安装依赖。
+
+针对性用例保留修复前失败及修复后通过日志；QA 另以真实函数反例核验成本引用、身份漂移、并发成员占位与失败分类。最终追加反例证实：必需最宽资源调用 OOM 不能用额外窄探针放行；普通 comparison 数值失败仍可保留，相同调用改为 OOM 则被阻断。异步等待工具的文件探针在本宿主不受支持，已记录工具失败；实际验证均在短命令内完成，没有据此伪造任务完成。
+
+旧 pilot 的 15 项输入摘要再次校验一致；没有执行新 GPU pilot、正式搜索、模型下载/checksum、能力审计或人工双评。旧五组零更新与关键词拒答率 1.0 的失败结论保持不变。CPU 控制流与数值夹具不能证明新方法超过基线或具有真实资源放行资格。
+
+### 遗留 P2 与下游责任
+
+| 编号 | 待办及完成时点 |
+| --- | --- |
+| ARA-REVIEW2-009 | 运行实现后续在异常中保存已完成的事件和计时，区分未执行与失败；发表失败诊断、机制或完整成本结论前落实 |
+| ARA-REVIEW2-010 | 机制分析后续版本固定双侧区间抽样配置、逐组配对身份和退化状态；接入机制报告前完成，不改写旧报告 |
+| ARA-REVIEW-015 | 未知释放时刻仍保守估算并披露 `stop_estimated`；真实成本分析前完善释放时刻观测 |
+| ARA-DESIGN2-007 | 部分秩亏损的双零方向继续失活风险；先记录实际秩，后续初始化消融须另行预注册 |
+| ARA-DESIGN-009 | 真实 R1/R2 进展与资源、独立审计来源/抽样前提、跨模型及双评资源，按对应研究阶段落实 |
+
+历史 ARA-REVIEW-011/012/013/014 已由本轮上游实现并经回归核验：真实预测误差、剩余快照空间、提前结束成本检查点、`recovery_supported` 标签可关闭。两项新增 P2 不阻断代码精确提交，但限制对应诊断与机制声明。#6 可据本轮代码评审通过决定流程走向；代码完成与研究效果验收继续分开。

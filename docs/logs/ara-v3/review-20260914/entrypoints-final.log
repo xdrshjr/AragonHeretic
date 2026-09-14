@@ -1,0 +1,10 @@
+CLI --help 通过：heretic.ara_research_runner
+CLI --help 通过：heretic.ara_pilot
+CLI --help 通过：heretic.pro6000_launch
+CLI --help 通过：heretic.pro6000_experiment
+Linux bash -n 通过：scripts/run_ara_research_96.sh
+Linux bash -n 通过：scripts/run_qwen38_27b_ara_v3_pro6000.sh
+准备 CLI --help 通过
+{"python": "3.12.13", "packages": {"torch": "2.13.0", "transformers": "5.16.1", "peft": "0.20.0", "optuna": "4.9.0", "lm_eval": "0.4.12"}}
+
+退出码：0

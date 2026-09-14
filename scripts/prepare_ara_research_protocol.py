@@ -23,7 +23,12 @@ def main():
     )
     args = parser.parse_args()
     try:
-        protocol = build_research_manifest(read_json(args.config))
+        preparation = read_json(args.config)
+        if preparation.get("schema_version") == "cara-research-protocol-v3.1":
+            from heretic.ara_research_schema import validate_target_contract
+
+            validate_target_contract(preparation["target_execution_contract"])
+        protocol = build_research_manifest(preparation)
     except (ValueError, OSError, KeyError) as error:
         print(
             json.dumps(
@@ -43,6 +48,8 @@ def main():
                 "research_status": "not_run",
                 "protocol_hash": protocol["protocol_hash"],
                 "audit_sample_shortfall": protocol["audit_sample_shortfall"],
+                "role_layout": protocol.get("role_layout", "contiguous-v3"),
+                "pilot_profile": protocol.get("pilot_profile", "smoke"),
             },
             ensure_ascii=False,
         )

@@ -1,0 +1,25 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_budget_persists_stage_failure_classification (test_ara_research_runner.StageCompletionRegressionTests.test_budget_persists_stage_failure_classification) ... ok
+test_comparison_numeric_failure_allowed_but_resource_error_blocks (test_ara_research_runner.StageCompletionRegressionTests.test_comparison_numeric_failure_allowed_but_resource_error_blocks) ... ok
+test_failed_widest_resource_cannot_use_another_narrow_probe (test_ara_research_runner.StageCompletionRegressionTests.test_failed_widest_resource_cannot_use_another_narrow_probe) ... ok
+test_complete_cost_cannot_charge_an_unrelated_subphase (test_ara_pilot.NativeResourceGateTests.test_complete_cost_cannot_charge_an_unrelated_subphase) ... ok
+test_cost_source_rejects_self_consistent_protocol_drift (test_ara_pilot.NativeResourceGateTests.test_cost_source_rejects_self_consistent_protocol_drift) ... ok
+test_cost_source_requires_registered_complete_r2_call (test_ara_pilot.NativeResourceGateTests.test_cost_source_requires_registered_complete_r2_call) ... ok
+test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds (test_ara_pilot.NativeResourceGateTests.test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds) ... ok
+test_native_phase_costs_use_frozen_formula_and_required_coverage (test_ara_pilot.NativeResourceGateTests.test_native_phase_costs_use_frozen_formula_and_required_coverage) ... ok
+test_relative_stage_ledger_is_rejected_but_linux_absolute_is_valid (test_ara_pilot.NativeResourceGateTests.test_relative_stage_ledger_is_rejected_but_linux_absolute_is_valid) ... ok
+test_single_card_budget_cannot_reuse_a_more_generous_contract (test_ara_pilot.NativeResourceGateTests.test_single_card_budget_cannot_reuse_a_more_generous_contract) ... ok
+test_file_mutation_is_rejected_before_declared_pass (test_ara_pilot.PilotTests.test_file_mutation_is_rejected_before_declared_pass) ... ok
+test_full_calibration_pilot_requires_previous_proof (test_ara_pilot.PilotTests.test_full_calibration_pilot_requires_previous_proof) ... ok
+test_legacy_summary_does_not_open_expansion (test_ara_pilot.PilotTests.test_legacy_summary_does_not_open_expansion) ... ok
+test_native_evidence_can_pass_and_is_recomputed (test_ara_pilot.PilotTests.test_native_evidence_can_pass_and_is_recomputed) ... ok
+test_parameter_identity_changes_while_study_stays_fixed (test_ara_pilot.PilotTests.test_parameter_identity_changes_while_study_stays_fixed) ... ok
+test_readiness_rechecks_self_consistent_source_precision_and_scorer (test_ara_pilot.PilotTests.test_readiness_rechecks_self_consistent_source_precision_and_scorer) ... ok
+test_target_rejects_self_or_readiness_hash (test_ara_pilot.PilotTests.test_target_rejects_self_or_readiness_hash) ... ok
+
+----------------------------------------------------------------------
+Ran 17 tests in 0.210s
+
+OK
+
+退出码：0

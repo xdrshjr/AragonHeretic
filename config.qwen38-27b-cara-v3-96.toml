@@ -35,6 +35,12 @@ export_strategy = "adapter"
 model_action = "save"
 
 [ara_v3]
+artifact_schema = "cara-research-acceptance-v3.1"
+proposal_policy = "spectral-backtrack-v1"
+backtracking_alphas = [1.0, 0.5, 0.25, 0.125, 0.0625]
+spectral_projection_margin = 0.000001
+pilot_profile = "full-calibration"
+# R1/R2 另存独立配置，并填入目标契约中的 stage_execution_id。
 variant = "sequential-refresh"
 sweeps = 2
 trajectory_policy = "refresh-each-sweep"

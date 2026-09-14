@@ -1,0 +1,21 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_initial_a_identity_is_paired_across_profiles_and_policies (test_ara_refinement.NewRefinementEvidenceTests.test_initial_a_identity_is_paired_across_profiles_and_policies) ... ok
+test_nested_phase_preserves_original_error_and_outer_peak (test_ara_refinement.NewRefinementEvidenceTests.test_nested_phase_preserves_original_error_and_outer_peak) ... ok
+test_phase_peak_cannot_be_erased_by_next_phase (test_ara_refinement.NewRefinementEvidenceTests.test_phase_peak_cannot_be_erased_by_next_phase) ... ok
+test_remaining_disk_budget_verifies_existing_snapshot (test_ara_refinement.NewRefinementEvidenceTests.test_remaining_disk_budget_verifies_existing_snapshot) ... ok
+test_anchor_keep_accounts_for_upstream_drift (test_ara_refinement.RefinementTests.test_anchor_keep_accounts_for_upstream_drift) ... ok
+test_block_rolls_back_all_factors_when_monitor_raises (test_ara_refinement.RefinementTests.test_block_rolls_back_all_factors_when_monitor_raises) ... ok
+test_effective_update_check_preserves_cancelling_factor_permutation (test_ara_refinement.RefinementTests.test_effective_update_check_preserves_cancelling_factor_permutation) ... ok
+test_effective_update_check_rejects_changed_or_nonfinite_factors (test_ara_refinement.RefinementTests.test_effective_update_check_rejects_changed_or_nonfinite_factors) ... ok
+test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) ... ok
+test_monitor_nan_is_attempt_failure (test_ara_refinement.RefinementTests.test_monitor_nan_is_attempt_failure) ... ok
+test_monitor_requires_nonincrease_and_real_improvement (test_ara_refinement.RefinementTests.test_monitor_requires_nonincrease_and_real_improvement) ... ok
+test_solver_operates_on_clones (test_ara_refinement.RefinementTests.test_solver_operates_on_clones) ... ok
+test_new_trial_reports_effective_change_and_restores_original (test_ara_refinement.WholeTrialEvidenceTests.test_new_trial_reports_effective_change_and_restores_original) ... ok
+
+----------------------------------------------------------------------
+Ran 13 tests in 0.647s
+
+OK
+
+退出码：0

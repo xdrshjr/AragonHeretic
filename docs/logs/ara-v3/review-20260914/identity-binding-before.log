@@ -1,0 +1,24 @@
+修复前回归输出摘录（2026-09-14，本地 Python 3.14.6）
+命令：加载 unittest test_ara_research_acceptance.NewResearchArtifactTests。
+本文件保存已经执行的输出；不是修复后重新运行。
+
+test_new_recovery_claim_and_full_artifact_chain ... ok
+test_new_reproduction_rejects_empty_execution_hashes ...
+  (key='execution_identity_hash') ... FAIL
+  (key='study_execution_hash') ... FAIL
+test_old_report_cannot_bind_new_reproduction ... FAIL
+test_pilot_lock_cannot_be_read_as_formal_candidate ... ok
+
+FAIL: test_new_reproduction_rejects_empty_execution_hashes
+  (key='execution_identity_hash')
+AssertionError: ValueError not raised
+
+FAIL: test_new_reproduction_rejects_empty_execution_hashes
+  (key='study_execution_hash')
+AssertionError: ValueError not raised
+
+FAIL: test_old_report_cannot_bind_new_reproduction
+AssertionError: ValueError not raised
+
+Ran 4 tests in 0.051s
+FAILED (failures=3)

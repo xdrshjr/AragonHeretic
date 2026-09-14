@@ -12,7 +12,9 @@ from pathlib import Path
 from typing import Callable
 
 from .ara_research_schema import (
-    CandidateLock,
+    parse_candidate_lock,
+    member_identity,
+    research_version,
     digest,
     exclusive_lock,
     file_digest,
@@ -20,6 +22,7 @@ from .ara_research_schema import (
     resolve_artifact,
     write_json,
 )
+from .research_audit_recovery import new_audit_metadata, validate_member_storage
 
 
 def _now() -> str:
@@ -33,6 +36,18 @@ def freeze_evaluation_plan(members: list[dict], protocol: dict) -> dict:
         for method in ("B1", "B2", "S1", "S2")
         for seed in protocol["seeds"]
     }
+    is_new = protocol.get("schema_version") == "cara-research-protocol-v3.1"
+    if is_new:
+        expected = {"B0"} | {
+            f"{method}/{policy}/{seed}"
+            for method, policy in (
+                ("B1", "reject-v1"),
+                ("B2", "reject-v1"),
+                ("S1", "spectral-backtrack-v1"),
+                ("S2", "spectral-backtrack-v1"),
+            )
+            for seed in (42, 43, 44)
+        }
     names = [member["member_id"] for member in members]
     if len(set(names)) != len(names) or not expected.issubset(names):
         raise ValueError("EvaluationPlan 必须包含基座及完整方法/seed 矩阵")
@@ -60,6 +75,8 @@ def freeze_evaluation_plan(members: list[dict], protocol: dict) -> dict:
         "execution_order": names,
         "budget": budget,
     }
+    if is_new:
+        plan.update(new_audit_metadata(protocol))
     plan["plan_hash"] = digest(plan)
     return plan
 
@@ -82,6 +99,9 @@ def _validate_audit_budget(budget, members):
 
 
 def _validate_member(member, protocol):
+    is_new = protocol.get("schema_version") == "cara-research-protocol-v3.1"
+    if is_new and member["member_id"] != "B0":
+        validate_member_storage(member)
     status = member.get("availability")
     if status == "unavailable":
         if not member.get("reason"):
@@ -93,12 +113,17 @@ def _validate_member(member, protocol):
         if member.get("kind") != "base":
             raise ValueError("B0 必须是共享基座")
         return
-    lock = CandidateLock.model_validate(member["candidate_lock"])
+    lock = parse_candidate_lock(member["candidate_lock"])
     if lock.protocol_hash != protocol["protocol_hash"]:
         raise ValueError("候选锁与审计协议身份不匹配")
     if member["candidate_lock_hash"] != digest(lock.model_dump()):
         raise ValueError("候选锁 hash 不匹配")
-    if member["member_id"] != f"{lock.method_id}-{lock.seed}":
+    expected = (
+        f"{lock.method_id}/{lock.proposal_policy}/{lock.seed}"
+        if is_new
+        else f"{lock.method_id}-{lock.seed}"
+    )
+    if member["member_id"] != expected:
         raise ValueError("审计成员方法/seed 与候选锁不匹配")
 
 
@@ -107,6 +132,26 @@ def validate_plan(plan: dict) -> None:
     payload = {key: value for key, value in plan.items() if key != "plan_hash"}
     if digest(payload) != plan.get("plan_hash"):
         raise ValueError("EvaluationPlan hash 不匹配")
+    version = research_version(plan, "evaluation-plan")
+    if version == "v3.1":
+        expected = [f"S2/spectral-backtrack-v1/{seed}" for seed in (42, 43, 44)]
+        if plan.get("primary_members") != expected:
+            raise ValueError("主方法三 seed 映射不完整")
+        if not set(expected).issubset(m["member_id"] for m in plan["members"]):
+            raise ValueError("主方法成员在集合中缺失")
+        if plan.get("primary_method") != {
+            "method_id": "S2",
+            "proposal_policy": "spectral-backtrack-v1",
+        }:
+            raise ValueError("集合主方法身份不匹配")
+        for member in plan["members"]:
+            if member["member_id"] == "B0":
+                continue
+            identity = member_identity(
+                member["method_id"], member["proposal_policy"], member["seed"]
+            )
+            if any(member.get(k) != v for k, v in identity.items()):
+                raise ValueError("成员物理存储键或结构身份不匹配")
 
 
 @dataclass(frozen=True)
@@ -146,6 +191,8 @@ def _open_ledger(plan, role, root):
             "members": {},
             "events": [],
         }
+        if plan["schema_version"].endswith("-v3.1"):
+            ledger["schema_version"] = "cara-research-audit-ledger-v3.1"
         for member in plan["members"]:
             if member["availability"] == "available":
                 key = _ledger_key(plan, member, role)
@@ -606,12 +653,15 @@ def _execute_audit_phase(args, settings, plan, scope):
     from .ara_research_runner import StudyBudget
 
     root, ledger_root, evidence_root = scope
+    devices = plan["budget"].get("devices", 2)
     limit = min(
         plan["budget"]["max_wallclock_seconds"],
-        plan["budget"]["max_gpu_hours"] * 3600 / 2,
+        plan["budget"]["max_gpu_hours"] * 3600 / devices,
     )
     try:
-        with StudyBudget(root / "audit-budget.json", limit) as budget:
+        with StudyBudget(
+            root / "audit-budget.json", limit, devices=devices
+        ) as budget:
             _iterate_audit_members(
                 args, settings, plan, (root, ledger_root, evidence_root, budget)
             )
@@ -671,7 +721,9 @@ def _evaluate_member_roles(args, settings, plan, member, scope):
     member_id = member["member_id"]
     limit = plan["budget"]["member_budgets"][member_id]["max_wallclock_seconds"]
     path = root / "member-budgets" / f"{digest(member_id)}.json"
-    with StudyBudget(path, limit) as budget:
+    with StudyBudget(
+        path, limit, devices=plan["budget"].get("devices", 2)
+    ) as budget:
         for role in pending:
             budget.check()
             context = _make_audit_context(

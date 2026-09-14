@@ -1,0 +1,211 @@
+/home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/site-packages/torch/cuda/__init__.py:1112: UserWarning: Can't initialize NVML
+  raw_cnt = _raw_device_count_nvml()
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_factor_basis_change_is_not_effective_change (test_ara_proposal.ProposalTests.test_factor_basis_change_is_not_effective_change) ... ok
+test_interpolation_matches_weight_product_not_factors (test_ara_proposal.ProposalTests.test_interpolation_matches_weight_product_not_factors) ... ok
+test_nonfinite_is_not_clipped_into_valid_candidate (test_ara_proposal.ProposalTests.test_nonfinite_is_not_clipped_into_valid_candidate) ... ok
+test_pilot_spectrum_is_clipped_without_raising_guard (test_ara_proposal.ProposalTests.test_pilot_spectrum_is_clipped_without_raising_guard) ... ok
+test_rank_truncation_matches_dense_reference (test_ara_proposal.ProposalTests.test_rank_truncation_matches_dense_reference) ... ok
+test_scale_preserves_relative_spectrum (test_ara_proposal.ProposalTests.test_scale_preserves_relative_spectrum) ... ok
+test_unregistered_alpha_and_invalid_old_state_fail (test_ara_proposal.ProposalTests.test_unregistered_alpha_and_invalid_old_state_fail) ... ok
+test_zero_keeps_nonzero_initial_a (test_ara_proposal.ProposalTests.test_zero_keeps_nonzero_initial_a) ... ok
+test_accepts_first_monitor_improvement_and_records_discrepancy (test_ara_backtracking.BacktrackingTests.test_accepts_first_monitor_improvement_and_records_discrepancy) ... ok
+test_all_rejections_restore_same_original (test_ara_backtracking.BacktrackingTests.test_all_rejections_restore_same_original) ... ok
+test_monitor_exception_restores_all_factors (test_ara_backtracking.BacktrackingTests.test_monitor_exception_restores_all_factors) ... ok
+test_nonzero_old_update_reinstalled_is_not_new_update (test_ara_backtracking.BacktrackingTests.test_nonzero_old_update_reinstalled_is_not_new_update) ... ok
+test_anchor_keep_accounts_for_upstream_drift (test_ara_refinement.RefinementTests.test_anchor_keep_accounts_for_upstream_drift) ... ok
+test_block_rolls_back_all_factors_when_monitor_raises (test_ara_refinement.RefinementTests.test_block_rolls_back_all_factors_when_monitor_raises) ... ok
+test_effective_update_check_preserves_cancelling_factor_permutation (test_ara_refinement.RefinementTests.test_effective_update_check_preserves_cancelling_factor_permutation) ... ok
+test_effective_update_check_rejects_changed_or_nonfinite_factors (test_ara_refinement.RefinementTests.test_effective_update_check_rejects_changed_or_nonfinite_factors) ... ok
+test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) ... ok
+test_monitor_nan_is_attempt_failure (test_ara_refinement.RefinementTests.test_monitor_nan_is_attempt_failure) ... ok
+test_monitor_requires_nonincrease_and_real_improvement (test_ara_refinement.RefinementTests.test_monitor_requires_nonincrease_and_real_improvement) ... ok
+test_solver_operates_on_clones (test_ara_refinement.RefinementTests.test_solver_operates_on_clones) ... ok
+test_anchors_are_distinct_and_random_stage_is_deterministic (test_ara_research_runner.RunnerTests.test_anchors_are_distinct_and_random_stage_is_deterministic) ... ok
+test_budget_charges_across_multiple_launches (test_ara_research_runner.RunnerTests.test_budget_charges_across_multiple_launches) ... ok
+test_exhausted_resume_finalizes_orphan_before_loading_model (test_ara_research_runner.RunnerTests.test_exhausted_resume_finalizes_orphan_before_loading_model) ... ok
+test_finalize_error_does_not_overwrite_frozen_phase_result (test_ara_research_runner.RunnerTests.test_finalize_error_does_not_overwrite_frozen_phase_result) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '冻结标注已改变'}
+ok
+test_initial_finalize_error_allows_corrected_request (test_ara_research_runner.RunnerTests.test_initial_finalize_error_allows_corrected_request) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '缺少标签文件'}
+{'phase': 'finalize', 'research_status': 'passed', 'inputs_hash': 'frozen-inputs'}
+ok
+test_pilot_and_ablation_reject_unregistered_member (test_ara_research_runner.RunnerTests.test_pilot_and_ablation_reject_unregistered_member) ... ok
+test_pilot_budget_is_shared_across_run_directories (test_ara_research_runner.RunnerTests.test_pilot_budget_is_shared_across_run_directories) ... ok
+test_replay_resume_reuses_complete_evidence_and_latches_failure (test_ara_research_runner.RunnerTests.test_replay_resume_reuses_complete_evidence_and_latches_failure) ... ok
+test_search_has_exact_24_terminal_attempts_and_resumes_lock (test_ara_research_runner.RunnerTests.test_search_has_exact_24_terminal_attempts_and_resumes_lock) ... /home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py:202: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = optuna.samplers.TPESampler(
+[I 2026-09-14 16:37:07,600] A new study created in memory with name: no-name-6800ff84-6030-4a1b-8592-3a15ce705552
+[I 2026-09-14 16:37:07,607] A new study created in memory with name: no-name-ce41d056-933f-4c8b-b511-567c479b280c
+[I 2026-09-14 16:37:07,614] A new study created in memory with name: no-name-d329c9d7-892a-4be6-a824-7955d90409dd
+[I 2026-09-14 16:37:07,621] A new study created in memory with name: no-name-f7b63c6a-f994-47d2-ae48-772883ebdb29
+[I 2026-09-14 16:37:07,628] A new study created in memory with name: no-name-d2621786-2a35-4830-b1ab-1d2bd7bd1f59
+[I 2026-09-14 16:37:07,634] A new study created in memory with name: no-name-61bc8053-1a2f-40ae-82fa-4da402030b49
+[I 2026-09-14 16:37:07,641] A new study created in memory with name: no-name-02dde120-4210-4b37-b181-cea84bea670d
+[I 2026-09-14 16:37:07,648] A new study created in memory with name: no-name-a6a9ab1a-8964-4a4c-b57a-b937b8eedcdb
+[I 2026-09-14 16:37:07,655] A new study created in memory with name: no-name-95935d37-e91b-481d-bc83-65242daeb867
+[I 2026-09-14 16:37:07,663] A new study created in memory with name: no-name-5c3ad61f-0bc5-47a5-9489-513fb3cf6b5c
+[I 2026-09-14 16:37:07,670] A new study created in memory with name: no-name-fdc35cc9-a7a7-4bc9-8668-ae65fcb917a1
+[I 2026-09-14 16:37:07,677] A new study created in memory with name: no-name-3220cd2a-6240-4516-a5e1-c2672ce4ae39
+ok
+test_shortlist_filters_hard_constraints_before_top_three (test_ara_research_runner.RunnerTests.test_shortlist_filters_hard_constraints_before_top_three) ... ok
+test_snapshot_restore_failure_stops_search_after_terminal_record (test_ara_research_runner.RunnerTests.test_snapshot_restore_failure_stops_search_after_terminal_record) ... ok
+test_subprocess_failures_write_phase_result_and_exit_three (test_ara_research_runner.RunnerTests.test_subprocess_failures_write_phase_result_and_exit_three) ... {'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+ok
+test_24_attempt_gate_rejects_legacy_120_trial_budget (test_ara_research_acceptance.ResearchAcceptanceTests.test_24_attempt_gate_rejects_legacy_120_trial_budget) ... ok
+test_comparison_only_and_inconclusive_cannot_promote (test_ara_research_acceptance.ResearchAcceptanceTests.test_comparison_only_and_inconclusive_cannot_promote) ... ok
+test_empty_gate_is_not_vacuously_passed (test_ara_research_acceptance.ResearchAcceptanceTests.test_empty_gate_is_not_vacuously_passed) ... ok
+test_failure_precedes_missing_evidence (test_ara_research_acceptance.ResearchAcceptanceTests.test_failure_precedes_missing_evidence) ... ok
+test_finalize_accepts_complete_bound_ledger_evidence (test_ara_research_acceptance.ResearchAcceptanceTests.test_finalize_accepts_complete_bound_ledger_evidence) ... ok
+test_finalize_rejects_missing_ledger_roles (test_ara_research_acceptance.ResearchAcceptanceTests.test_finalize_rejects_missing_ledger_roles) ... ok
+test_finalize_requires_complete_consumption_for_each_evidence (test_ara_research_acceptance.ResearchAcceptanceTests.test_finalize_requires_complete_consumption_for_each_evidence) ... ok
+test_immutable_report_is_idempotent_but_rejects_changed_labels (test_ara_research_acceptance.ResearchAcceptanceTests.test_immutable_report_is_idempotent_but_rejects_changed_labels) ... ok
+test_known_failure_precedes_missing_semantic_labels (test_ara_research_acceptance.ResearchAcceptanceTests.test_known_failure_precedes_missing_semantic_labels) ... ok
+test_member_finalize_recovers_after_promotion_before_aggregate (test_ara_research_acceptance.ResearchAcceptanceTests.test_member_finalize_recovers_after_promotion_before_aggregate) ... ok
+test_offline_finalize_does_not_load_model_and_reports_missing_audit (test_ara_research_acceptance.ResearchAcceptanceTests.test_offline_finalize_does_not_load_model_and_reports_missing_audit) ... ok
+test_v3_artifact_chain_rejects_parameter_and_core_tampering (test_ara_research_acceptance.ResearchAcceptanceTests.test_v3_artifact_chain_rejects_parameter_and_core_tampering) ... ok
+test_v3_parameter_version_is_strict (test_ara_research_acceptance.ResearchAcceptanceTests.test_v3_parameter_version_is_strict) ... ok
+test_zero_baseline_does_not_pass_relative_drop (test_ara_research_acceptance.ResearchAcceptanceTests.test_zero_baseline_does_not_pass_relative_drop) ... ok
+test_complete_member_recovers_before_exhausted_budget_admission (test_research_audit.AuditTests.test_complete_member_recovers_before_exhausted_budget_admission) ... ok
+test_complete_output_recovers_missing_terminal_write_without_model (test_research_audit.AuditTests.test_complete_output_recovers_missing_terminal_write_without_model) ... ok
+test_consumed_failure_is_never_reexecuted (test_research_audit.AuditTests.test_consumed_failure_is_never_reexecuted) ... ok
+test_failed_audit_writes_offline_summary_and_preserves_pending (test_research_audit.AuditTests.test_failed_audit_writes_offline_summary_and_preserves_pending) ... ok
+test_failed_reload_does_not_consume_audit (test_research_audit.AuditTests.test_failed_reload_does_not_consume_audit) ... ok
+test_freeze_rejects_missing_member_and_annotation_budgets (test_research_audit.AuditTests.test_freeze_rejects_missing_member_and_annotation_budgets) ... ok
+test_manifest_cannot_be_rebound_to_a_new_plan (test_research_audit.AuditTests.test_manifest_cannot_be_rebound_to_a_new_plan) ... ok
+test_partial_summary_recovers_complete_and_pending_without_replay (test_research_audit.AuditTests.test_partial_summary_recovers_complete_and_pending_without_replay) ... ok
+test_probe_cache_is_bound_to_config_contents (test_research_audit.AuditTests.test_probe_cache_is_bound_to_config_contents) ... ok
+test_same_plan_can_consume_each_member_once (test_research_audit.AuditTests.test_same_plan_can_consume_each_member_once) ... ok
+test_budget_and_seed_cannot_change_on_resume (test_pro6000_experiment.PreparationTests.test_budget_and_seed_cannot_change_on_resume) ... ok
+test_changed_source_or_insufficient_unique_data_fails (test_pro6000_experiment.PreparationTests.test_changed_source_or_insufficient_unique_data_fails) ... ok
+test_experiment_protocol_cannot_enter_formal_research (test_pro6000_experiment.PreparationTests.test_experiment_protocol_cannot_enter_formal_research) ... ok
+test_full_roles_preserve_original_prompts_and_never_overlap (test_pro6000_experiment.PreparationTests.test_full_roles_preserve_original_prompts_and_never_overlap) ... ok
+test_original_cross_role_duplicate_fails (test_pro6000_experiment.PreparationTests.test_original_cross_role_duplicate_fails) ... ok
+test_wrong_or_busy_gpu_fails_before_loading (test_pro6000_experiment.PreparationTests.test_wrong_or_busy_gpu_fails_before_loading) ... ok
+test_competing_worker_cannot_overwrite_status (test_pro6000_experiment.RecoveryTests.test_competing_worker_cannot_overwrite_status) ... 启动失败：运行目录已被其他进程锁定：/tmp/tmpd5b9hxfj/worker.lock
+ok
+test_finished_export_is_verified_without_loading_model (test_pro6000_experiment.RecoveryTests.test_finished_export_is_verified_without_loading_model) ... ok
+test_freeze_uses_committed_content_even_after_worktree_changes (test_pro6000_experiment.RecoveryTests.test_freeze_uses_committed_content_even_after_worktree_changes) ... ok
+test_native_24_trial_search_and_resume_need_no_semantic_judge (test_pro6000_experiment.SearchTests.test_native_24_trial_search_and_resume_need_no_semantic_judge) ... /home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py:202: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = optuna.samplers.TPESampler(
+[I 2026-09-14 16:37:07,804] A new study created in memory with name: no-name-2e90d46c-de95-45a4-9c0e-00e80e575dd4
+[I 2026-09-14 16:37:07,810] A new study created in memory with name: no-name-d06a9f32-b55b-4e03-b098-3b08a102da35
+[I 2026-09-14 16:37:07,817] A new study created in memory with name: no-name-5cf0c299-f045-40ad-b5c2-eb803a2f8e9e
+[I 2026-09-14 16:37:07,823] A new study created in memory with name: no-name-61fd3660-ecad-48d7-8aed-1f3e75464abc
+[I 2026-09-14 16:37:07,830] A new study created in memory with name: no-name-650ec291-5018-4f77-ad4c-867413849fe9
+[I 2026-09-14 16:37:07,837] A new study created in memory with name: no-name-070f3e81-d899-45d8-aab9-95246f121b38
+[I 2026-09-14 16:37:07,844] A new study created in memory with name: no-name-81907a2f-35e4-43ed-90cd-c11fb2e35141
+[I 2026-09-14 16:37:07,851] A new study created in memory with name: no-name-2d954d1b-36f9-41dd-99c1-25dd31f0db2a
+[I 2026-09-14 16:37:07,857] A new study created in memory with name: no-name-b39b57ca-3f2e-41cf-a8ef-57e9d361e620
+[I 2026-09-14 16:37:07,864] A new study created in memory with name: no-name-94695f1b-bc4d-459d-b0d3-74255c6071ae
+[I 2026-09-14 16:37:07,872] A new study created in memory with name: no-name-e24f3d1b-76df-402e-ab9b-5b0a9a6e5e77
+[I 2026-09-14 16:37:07,879] A new study created in memory with name: no-name-89460df9-f772-4f2c-a882-096b73cd0c6e
+ok
+test_numeric_gate_precedes_keyword_ranking (test_pro6000_experiment.SearchTests.test_numeric_gate_precedes_keyword_ranking) ... ok
+test_remaining_snapshot_reserve_keeps_formal_default (test_pro6000_experiment.SearchTests.test_remaining_snapshot_reserve_keeps_formal_default) ... ok
+test_single_gpu_checkpoint_accounting (test_pro6000_experiment.SearchTests.test_single_gpu_checkpoint_accounting) ... ok
+test_exported_adapter_reloads_selected_factors_and_restores_base (test_pro6000_export.ExportTests.test_exported_adapter_reloads_selected_factors_and_restores_base) ... /home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/site-packages/peft/utils/save_and_load.py:438: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+ok
+test_acceptance_gate_requires_deterministic_pinned_disjoint_data (test_config.CARAConfigTests.test_acceptance_gate_requires_deterministic_pinned_disjoint_data) ... ok
+test_ara_rejects_row_normalization_and_reserved_kwargs (test_config.CARAConfigTests.test_ara_rejects_row_normalization_and_reserved_kwargs) ... ok
+test_components_are_deduplicated_and_unknown_values_rejected (test_config.CARAConfigTests.test_components_are_deduplicated_and_unknown_values_rejected) ... ok
+test_default_method_remains_directional (test_config.CARAConfigTests.test_default_method_remains_directional) ... ok
+test_registered_qwen_configuration_parses (test_config.CARAConfigTests.test_registered_qwen_configuration_parses) ... ok
+test_resume_keeps_current_run_control_fields (test_config.CARAConfigTests.test_resume_keeps_current_run_control_fields) ... ok
+test_runtime_ranges_and_template_keys_are_validated (test_config.CARAConfigTests.test_runtime_ranges_and_template_keys_are_validated) ... ok
+test_trajectory_v2_configuration_is_fully_preregistered (test_config.CARAConfigTests.test_trajectory_v2_configuration_is_fully_preregistered) ... ok
+test_dual_gpu_template_uses_independent_budget (test_config.RefinementConfigurationTests.test_dual_gpu_template_uses_independent_budget) ... ok
+test_method_mapping_rejects_ambiguous_variant (test_config.RefinementConfigurationTests.test_method_mapping_rejects_ambiguous_variant) ... ok
+test_v3_rejects_unregistered_response_prefix (test_config.RefinementConfigurationTests.test_v3_rejects_unregistered_response_prefix) ... ok
+test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) ... 
+  test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='self_attn.o_proj') ... ERROR
+  test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='linear_attn.out_proj') ... ERROR
+  test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='mlp.down_proj') ... ERROR
+test_accepts_slug_like_instance_name (test_config.ScorerConfigTests.test_accepts_slug_like_instance_name) ... ok
+test_rejects_dot_in_instance_name (test_config.ScorerConfigTests.test_rejects_dot_in_instance_name) ... ok
+test_rejects_empty_instance_name (test_config.ScorerConfigTests.test_rejects_empty_instance_name) ... ok
+test_rejects_whitespace_in_instance_name (test_config.ScorerConfigTests.test_rejects_whitespace_in_instance_name) ... ok
+test_cross_role_normalized_content_leak_is_rejected (test_protocol_data.ProtocolDataTests.test_cross_role_normalized_content_leak_is_rejected) ... ok
+test_fixed_416_row_revision_rejects_old_validation_before_load (test_protocol_data.ProtocolDataTests.test_fixed_416_row_revision_rejects_old_validation_before_load) ... ok
+test_materialization_checks_count_and_empty_values (test_protocol_data.ProtocolDataTests.test_materialization_checks_count_and_empty_values) ... ok
+test_metadata_preflight_does_not_materialize_rows (test_protocol_data.ProtocolDataTests.test_metadata_preflight_does_not_materialize_rows) ... ok
+test_only_absolute_finite_slices_are_accepted (test_protocol_data.ProtocolDataTests.test_only_absolute_finite_slices_are_accepted) ... ok
+test_protocol_roles_require_preregistered_row_counts (test_protocol_data.ProtocolDataTests.test_protocol_roles_require_preregistered_row_counts) ... ok
+test_shared_validation_is_allowed_but_cross_role_overlap_is_not (test_protocol_data.ProtocolDataTests.test_shared_validation_is_allowed_but_cross_role_overlap_is_not) ... ok
+test_training_role_reader_rejects_audit_without_opening_file (test_protocol_data.ProtocolDataTests.test_training_role_reader_rejects_audit_without_opening_file) ... ok
+test_acceptance_binding_rejects_hash_or_fingerprint_drift (test_reproduce.ReproductionSchemaTests.test_acceptance_binding_rejects_hash_or_fingerprint_drift) ... ok
+test_acceptance_report_loading_verifies_sha_and_model (test_reproduce.ReproductionSchemaTests.test_acceptance_report_loading_verifies_sha_and_model) ... ok
+test_model_card_names_cara_rank_and_gate_status (test_reproduce.ReproductionSchemaTests.test_model_card_names_cara_rank_and_gate_status) ... ok
+test_reload_smoke_prompts_match_committed_fixture (test_reproduce.ReproductionSchemaTests.test_reload_smoke_prompts_match_committed_fixture) ... ok
+test_unknown_version_and_method_are_rejected (test_reproduce.ReproductionSchemaTests.test_unknown_version_and_method_are_rejected) ... ok
+test_v3_migrates_to_directional_envelope (test_reproduce.ReproductionSchemaTests.test_v3_migrates_to_directional_envelope) ... ok
+test_v3_reproduce_dispatch_rejects_mixed_schema_fields (test_reproduce.ReproductionSchemaTests.test_v3_reproduce_dispatch_rejects_mixed_schema_fields) ... ok
+test_v4_round_trips_both_methods (test_reproduce.ReproductionSchemaTests.test_v4_round_trips_both_methods) ... ok
+test_configured_export_strategy_does_not_construct_prompt (test_workflow.AcceptanceWorkflowTests.test_configured_export_strategy_does_not_construct_prompt) ... ok
+test_export_failure_never_promotes_staging (test_workflow.AcceptanceWorkflowTests.test_export_failure_never_promotes_staging) ... ok
+test_export_promotes_only_after_reload_and_reproduce_succeed (test_workflow.AcceptanceWorkflowTests.test_export_promotes_only_after_reload_and_reproduce_succeed) ... ok
+test_gate_orders_two_replays_before_single_audit (test_workflow.AcceptanceWorkflowTests.test_gate_orders_two_replays_before_single_audit) ... ok
+test_local_model_path_uses_generic_candidate_selection (test_workflow.AcceptanceWorkflowTests.test_local_model_path_uses_generic_candidate_selection) ... ok
+test_missing_candidate_is_not_silently_ignored (test_workflow.AcceptanceWorkflowTests.test_missing_candidate_is_not_silently_ignored) ... ok
+test_reload_process_rejects_timeout_failure_and_identity_drift (test_workflow.AcceptanceWorkflowTests.test_reload_process_rejects_timeout_failure_and_identity_drift) ... ok
+test_replay_always_cleans_up_after_scorer_failure (test_workflow.AcceptanceWorkflowTests.test_replay_always_cleans_up_after_scorer_failure) ... ok
+test_v2_reproduction_trial_preserves_full_envelope (test_workflow.AcceptanceWorkflowTests.test_v2_reproduction_trial_preserves_full_envelope) ... ok
+test_immediate_eos_still_has_one_prediction (test_sequence_scores.SequenceKLTests.test_immediate_eos_still_has_one_prediction) ... ok
+test_kl_direction_matches_manual_distribution (test_sequence_scores.SequenceKLTests.test_kl_direction_matches_manual_distribution) ... ok
+test_same_model_has_zero_kl (test_sequence_scores.SequenceKLTests.test_same_model_has_zero_kl) ... ok
+test_zero_effective_positions_fail (test_sequence_scores.SequenceKLTests.test_zero_effective_positions_fail) ... ok
+test_causal_shift_and_length_normalization (test_refusal_log_odds.ContinuationScoreTests.test_causal_shift_and_length_normalization) ... ok
+test_invalid_prefixes_and_changed_boundaries_are_rejected (test_refusal_log_odds.ContinuationScoreTests.test_invalid_prefixes_and_changed_boundaries_are_rejected) ... ok
+test_multitoken_chinese_prefix_groups_are_distinct (test_refusal_log_odds.ContinuationScoreTests.test_multitoken_chinese_prefix_groups_are_distinct) ... ok
+test_raw_log_ratio_is_strictly_monotonic (test_refusal_log_odds.ContinuationScoreTests.test_raw_log_ratio_is_strictly_monotonic) ... ok
+test_paired_drop_direction_and_degenerate_intervals (test_research_evaluation.AbilityTests.test_paired_drop_direction_and_degenerate_intervals) ... ok
+test_disagreement_requires_a_third_reviewer (test_research_evaluation.SemanticEvaluationTests.test_disagreement_requires_a_third_reviewer) ... ok
+test_empty_and_budget_truncated_answers_are_not_valid (test_research_evaluation.SemanticEvaluationTests.test_empty_and_budget_truncated_answers_are_not_valid) ... ok
+test_exact_zero_refusal_bounds (test_research_evaluation.SemanticEvaluationTests.test_exact_zero_refusal_bounds) ... ok
+test_implicit_and_uncertain_refusals_count_as_failures (test_research_evaluation.SemanticEvaluationTests.test_implicit_and_uncertain_refusals_count_as_failures) ... ok
+test_invalid_binomial_denominators_fail (test_research_evaluation.SemanticEvaluationTests.test_invalid_binomial_denominators_fail) ... ok
+test_missing_labels_never_shrink_denominator (test_research_evaluation.SemanticEvaluationTests.test_missing_labels_never_shrink_denominator) ... ok
+test_response_hash_and_duplicate_scenarios_fail (test_research_evaluation.SemanticEvaluationTests.test_response_hash_and_duplicate_scenarios_fail) ... ok
+
+======================================================================
+ERROR: test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='self_attn.o_proj')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_config.py", line 58, in test_v3_template_matches_real_qwen_projection_names
+    _match_target(target, settings.ara_runtime_guard), name
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_runtime.py", line 123, in _match_target
+    raise TrajectoryRuntimeGuardError(
+heretic.ara_trajectory.TrajectoryRuntimeGuardError: target 'base_model.model.model.language_model.layers.0.self_attn.o_proj' matches 0 guard patterns
+
+======================================================================
+ERROR: test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='linear_attn.out_proj')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_config.py", line 58, in test_v3_template_matches_real_qwen_projection_names
+    _match_target(target, settings.ara_runtime_guard), name
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_runtime.py", line 123, in _match_target
+    raise TrajectoryRuntimeGuardError(
+heretic.ara_trajectory.TrajectoryRuntimeGuardError: target 'base_model.model.model.language_model.layers.0.linear_attn.out_proj' matches 0 guard patterns
+
+======================================================================
+ERROR: test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) (projection='mlp.down_proj')
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_config.py", line 58, in test_v3_template_matches_real_qwen_projection_names
+    _match_target(target, settings.ara_runtime_guard), name
+    ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_runtime.py", line 123, in _match_target
+    raise TrajectoryRuntimeGuardError(
+heretic.ara_trajectory.TrajectoryRuntimeGuardError: target 'base_model.model.model.language_model.layers.0.mlp.down_proj' matches 0 guard patterns
+
+----------------------------------------------------------------------
+Ran 127 tests in 1.347s
+
+FAILED (errors=3)
+
+退出码：1

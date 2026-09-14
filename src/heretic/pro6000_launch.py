@@ -58,6 +58,26 @@ def create_run(project, options):
     if not math.isfinite(hours) or hours <= 0:
         raise ValueError("实验小时预算必须为正的有限数")
     seed = options.seed if options.seed is not None else 42
+    from .ara_pilot import (
+        bound_record,
+        validate_readiness,
+        validate_experiment_budget,
+    )
+
+    contract_path = getattr(options, "target_execution_contract", None)
+    readiness_path = getattr(options, "readiness_evidence", None)
+    if not contract_path or not readiness_path:
+        raise ValueError("新扩大实验必须提供目标执行契约和 search_readiness")
+    contract = read_json(contract_path)
+    readiness = read_json(readiness_path)
+    validate_readiness(
+        readiness,
+        {
+            "required_stage": "search_readiness",
+            "target_execution_contract": contract,
+        },
+    )
+    validate_experiment_budget(contract, readiness, seed, hours)
     stamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     name = f"ara-v3-pro6000-S2-{seed}-{stamp}-{uuid4().hex[:6]}"
     root = Path(options.run_root or DEFAULT_ROOT).resolve() / name
@@ -73,6 +93,9 @@ def create_run(project, options):
         "pilot_record": str(
             Path(options.pilot_record or DEFAULT_PILOT).resolve()
         ),
+        "artifact_version": "v3.1",
+        "target_execution_contract": bound_record(contract_path),
+        "readiness_evidence": bound_record(readiness_path),
     }
     write_json(
         root / "run.json", {**run, "run_hash": digest(run)}, immutable=True
@@ -201,6 +224,8 @@ def main():
     parser.add_argument("--run-root", type=Path)
     parser.add_argument("--model", type=Path)
     parser.add_argument("--pilot-record", type=Path)
+    parser.add_argument("--target-execution-contract", type=Path)
+    parser.add_argument("--readiness-evidence", type=Path)
     args = parser.parse_args()
     try:
         if args.status:
@@ -215,6 +240,8 @@ def main():
                     "run_root",
                     "model",
                     "pilot_record",
+                    "target_execution_contract",
+                    "readiness_evidence",
                 )
             ):
                 raise ValueError("恢复必须沿用原配置，不能同时传入新实验参数")

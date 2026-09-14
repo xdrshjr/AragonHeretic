@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import argparse
+import math
 import signal
 import sys
 import tempfile
@@ -128,6 +129,12 @@ def _finish_experiment(context, study, root):
             for name, value in selected["scores"].items()
             if isinstance(value, (int, float, str))
         }
+        result.update(_baseline_comparison(selected["scores"]))
+        result["readiness_status"] = (
+            "bound"
+            if context["protocol"].get("schema_version", "").endswith("-v3.1")
+            else "legacy/no_readiness"
+        )
         result["adapter"] = _export_adapter(context, selected, root)
         result["snapshot"] = {
             "path": selected["final_snapshot_path"],
@@ -139,14 +146,42 @@ def _finish_experiment(context, study, root):
     return result, 0 if healthy else 3
 
 
+def _baseline_comparison(scores):
+    baseline, current = scores.get("baseline_keywords"), scores.get("keywords")
+    valid = all(
+        isinstance(x, (int, float)) and math.isfinite(x)
+        for x in (baseline, current)
+    )
+    effect = "inconclusive"
+    if valid:
+        effect = "improved" if current < baseline else "no_improvement"
+    return {
+        "baseline_comparison": {
+            "baseline_keywords": baseline,
+            "candidate_keywords": current,
+            "keywords_delta": baseline - current if valid else None,
+        },
+        "effect_status": effect,
+    }
+
+
 def _run_search(root, run, settings, protocol):
+    from .ara_research_runner import _study_identity
+    from .research_budget import campaign_member
+
+    identity = {**_study_identity(settings, protocol), "execution_scope": SCOPE}
+    with campaign_member(protocol, identity, root, "experiment"):
+        return _run_experiment_search(root, run, settings, protocol)
+
+
+def _run_experiment_search(root, run, settings, protocol):
     from .ara_research_runner import (
         _ResearchSession,
         _recover_search_attempts,
         _study_identity,
         run_search,
     )
-    from .research_budget import StudyBudget
+    from .research_budget import StudyBudget, campaign_search_status
 
     search = root / "search"
     search.mkdir(exist_ok=True)
@@ -167,7 +202,9 @@ def _run_search(root, run, settings, protocol):
             protocol,
             search,
             budget,
-            snapshots=remaining + 1,
+            snapshots=25
+            if run.get("artifact_version") == "v3.1"
+            else remaining + 1,
         )
         context = session.context()
         context["identity"] = identity
@@ -180,7 +217,9 @@ def _run_search(root, run, settings, protocol):
         context["apply"] = apply
         study = run_search(context, finalize=choose_experiment_candidate)
         write_status(root, "export")
-        return _finish_experiment(context, study, root)
+        result = _finish_experiment(context, study, root)
+        campaign_search_status(protocol, identity, study, "experiment")
+        return result
 
 
 def verify_completed_result(root):
@@ -205,6 +244,27 @@ def validate_run_binding(run, settings, protocol):
         "devices": 1,
         "members": [f"S2-{run['seed']}"],
     }
+    if run.get("artifact_version") == "v3.1":
+        expected.update(
+            max_gpu_hours=run["hours"],
+            readiness_evidence=run["readiness_evidence"],
+            members=[f"S2/spectral-backtrack-v1/{run['seed']}"],
+        )
+        if settings.ara_v3.proposal_policy != "spectral-backtrack-v1":
+            raise ValueError("新实验必须显式使用冻结的新策略")
+        from .ara_pilot import (
+            validate_phase_readiness,
+            validate_experiment_budget,
+            read_bound,
+        )
+
+        validate_phase_readiness(protocol, "experiment")
+        validate_experiment_budget(
+            protocol["target_execution_contract"],
+            read_bound(run["readiness_evidence"]),
+            run["seed"],
+            run["hours"],
+        )
     if protocol["phase_budgets"] != {"experiment": expected}:
         raise ValueError("实验预算与冻结协议不一致")
     if (
@@ -259,6 +319,12 @@ def _worker_main(root, prepare_only):
         write_status(root, "interrupted", exit_code=code)
     except Exception as error:
         import traceback
+        from .ara_pilot import PilotGateError
+
+        if isinstance(error, PilotGateError):
+            code = error.exit_code
+        elif isinstance(error, (ValueError, KeyError, TypeError)):
+            code = 2
 
         write_status(
             root,

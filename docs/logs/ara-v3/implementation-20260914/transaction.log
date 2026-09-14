@@ -1,0 +1,83 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_factor_basis_change_is_not_effective_change (test_ara_proposal.ProposalTests.test_factor_basis_change_is_not_effective_change) ... ok
+test_interpolation_matches_weight_product_not_factors (test_ara_proposal.ProposalTests.test_interpolation_matches_weight_product_not_factors) ... ok
+test_nonfinite_is_not_clipped_into_valid_candidate (test_ara_proposal.ProposalTests.test_nonfinite_is_not_clipped_into_valid_candidate) ... ok
+test_pilot_spectrum_is_clipped_without_raising_guard (test_ara_proposal.ProposalTests.test_pilot_spectrum_is_clipped_without_raising_guard) ... ok
+test_rank_truncation_matches_dense_reference (test_ara_proposal.ProposalTests.test_rank_truncation_matches_dense_reference) ... ok
+test_scale_preserves_relative_spectrum (test_ara_proposal.ProposalTests.test_scale_preserves_relative_spectrum) ... ok
+test_unregistered_alpha_and_invalid_old_state_fail (test_ara_proposal.ProposalTests.test_unregistered_alpha_and_invalid_old_state_fail) ... ok
+test_zero_keeps_nonzero_initial_a (test_ara_proposal.ProposalTests.test_zero_keeps_nonzero_initial_a) ... ok
+test_accepts_first_monitor_improvement_and_records_discrepancy (test_ara_backtracking.BacktrackingTests.test_accepts_first_monitor_improvement_and_records_discrepancy) ... ok
+test_all_rejections_restore_same_original (test_ara_backtracking.BacktrackingTests.test_all_rejections_restore_same_original) ... ok
+test_monitor_exception_restores_all_factors (test_ara_backtracking.BacktrackingTests.test_monitor_exception_restores_all_factors) ... ok
+test_nonzero_old_update_reinstalled_is_not_new_update (test_ara_backtracking.BacktrackingTests.test_nonzero_old_update_reinstalled_is_not_new_update) ... ok
+test_anchor_keep_accounts_for_upstream_drift (test_ara_refinement.RefinementTests.test_anchor_keep_accounts_for_upstream_drift) ... ok
+test_block_rolls_back_all_factors_when_monitor_raises (test_ara_refinement.RefinementTests.test_block_rolls_back_all_factors_when_monitor_raises) ... ok
+test_effective_update_check_preserves_cancelling_factor_permutation (test_ara_refinement.RefinementTests.test_effective_update_check_preserves_cancelling_factor_permutation) ... ok
+test_effective_update_check_rejects_changed_or_nonfinite_factors (test_ara_refinement.RefinementTests.test_effective_update_check_rejects_changed_or_nonfinite_factors) ... ok
+test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) ... ok
+test_monitor_nan_is_attempt_failure (test_ara_refinement.RefinementTests.test_monitor_nan_is_attempt_failure) ... ok
+test_monitor_requires_nonincrease_and_real_improvement (test_ara_refinement.RefinementTests.test_monitor_requires_nonincrease_and_real_improvement) ... ok
+test_solver_operates_on_clones (test_ara_refinement.RefinementTests.test_solver_operates_on_clones) ... ok
+test_anchors_are_distinct_and_random_stage_is_deterministic (test_ara_research_runner.RunnerTests.test_anchors_are_distinct_and_random_stage_is_deterministic) ... ok
+test_budget_charges_across_multiple_launches (test_ara_research_runner.RunnerTests.test_budget_charges_across_multiple_launches) ... ok
+test_exhausted_resume_finalizes_orphan_before_loading_model (test_ara_research_runner.RunnerTests.test_exhausted_resume_finalizes_orphan_before_loading_model) ... ERROR
+test_finalize_error_does_not_overwrite_frozen_phase_result (test_ara_research_runner.RunnerTests.test_finalize_error_does_not_overwrite_frozen_phase_result) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '冻结标注已改变'}
+ok
+test_initial_finalize_error_allows_corrected_request (test_ara_research_runner.RunnerTests.test_initial_finalize_error_allows_corrected_request) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '缺少标签文件'}
+{'phase': 'finalize', 'research_status': 'passed', 'inputs_hash': 'frozen-inputs'}
+ok
+test_pilot_and_ablation_reject_unregistered_member (test_ara_research_runner.RunnerTests.test_pilot_and_ablation_reject_unregistered_member) ... ok
+test_pilot_budget_is_shared_across_run_directories (test_ara_research_runner.RunnerTests.test_pilot_budget_is_shared_across_run_directories) ... ok
+test_replay_resume_reuses_complete_evidence_and_latches_failure (test_ara_research_runner.RunnerTests.test_replay_resume_reuses_complete_evidence_and_latches_failure) ... ok
+test_search_has_exact_24_terminal_attempts_and_resumes_lock (test_ara_research_runner.RunnerTests.test_search_has_exact_24_terminal_attempts_and_resumes_lock) ... /home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py:201: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = optuna.samplers.TPESampler(
+[I 2026-09-14 16:31:25,478] A new study created in memory with name: no-name-f5d65b7f-706d-4c75-a055-8f1dfd666b73
+[I 2026-09-14 16:31:25,491] A new study created in memory with name: no-name-5725b249-e6a8-4a11-bb18-7d3738be00b3
+[I 2026-09-14 16:31:25,499] A new study created in memory with name: no-name-3feb18ca-f079-4f9c-b9c6-bc71c6e5f6f4
+[I 2026-09-14 16:31:25,506] A new study created in memory with name: no-name-ba374791-770b-4cce-b185-2cc1e9976c7a
+[I 2026-09-14 16:31:25,514] A new study created in memory with name: no-name-e576c9d4-6376-405f-a7ed-b3cb357ff1b4
+[I 2026-09-14 16:31:25,522] A new study created in memory with name: no-name-58924792-c666-4333-b068-4553ae17e0a6
+[I 2026-09-14 16:31:25,529] A new study created in memory with name: no-name-074763ac-5e8c-4841-991b-4603f300a6ac
+[I 2026-09-14 16:31:25,536] A new study created in memory with name: no-name-4244971b-f9bb-4927-91e4-3c736a09a699
+[I 2026-09-14 16:31:25,544] A new study created in memory with name: no-name-9c6fb5ec-830d-4bff-bd8b-16b5ea9e0ebc
+[I 2026-09-14 16:31:25,551] A new study created in memory with name: no-name-860e582e-9d18-46cb-bc30-f0e067409051
+[I 2026-09-14 16:31:25,558] A new study created in memory with name: no-name-c9d64e47-2c94-4ee8-a7b1-96fc4e00d50a
+[I 2026-09-14 16:31:25,566] A new study created in memory with name: no-name-4d2890fb-b2ca-4580-9032-bc0001bfcc28
+ok
+test_shortlist_filters_hard_constraints_before_top_three (test_ara_research_runner.RunnerTests.test_shortlist_filters_hard_constraints_before_top_three) ... ok
+test_snapshot_restore_failure_stops_search_after_terminal_record (test_ara_research_runner.RunnerTests.test_snapshot_restore_failure_stops_search_after_terminal_record) ... ok
+test_subprocess_failures_write_phase_result_and_exit_three (test_ara_research_runner.RunnerTests.test_subprocess_failures_write_phase_result_and_exit_three) ... {'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+ok
+test_immediate_eos_still_has_one_prediction (test_sequence_scores.SequenceKLTests.test_immediate_eos_still_has_one_prediction) ... ok
+test_kl_direction_matches_manual_distribution (test_sequence_scores.SequenceKLTests.test_kl_direction_matches_manual_distribution) ... ok
+test_same_model_has_zero_kl (test_sequence_scores.SequenceKLTests.test_same_model_has_zero_kl) ... ok
+test_zero_effective_positions_fail (test_sequence_scores.SequenceKLTests.test_zero_effective_positions_fail) ... ok
+test_causal_shift_and_length_normalization (test_refusal_log_odds.ContinuationScoreTests.test_causal_shift_and_length_normalization) ... ok
+test_invalid_prefixes_and_changed_boundaries_are_rejected (test_refusal_log_odds.ContinuationScoreTests.test_invalid_prefixes_and_changed_boundaries_are_rejected) ... ok
+test_multitoken_chinese_prefix_groups_are_distinct (test_refusal_log_odds.ContinuationScoreTests.test_multitoken_chinese_prefix_groups_are_distinct) ... ok
+test_raw_log_ratio_is_strictly_monotonic (test_refusal_log_odds.ContinuationScoreTests.test_raw_log_ratio_is_strictly_monotonic) ... ok
+
+======================================================================
+ERROR: test_exhausted_resume_finalizes_orphan_before_loading_model (test_ara_research_runner.RunnerTests.test_exhausted_resume_finalizes_orphan_before_loading_model)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_research_runner.py", line 201, in test_exhausted_resume_finalizes_orphan_before_loading_model
+    run_from_settings(settings, "search")
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py", line 661, in run_from_settings
+    _recover_search_attempts(root, _study_identity(settings, protocol))
+                                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py", line 597, in _study_identity
+    values["ara_v3"].pop(key, None)
+    ~~~~~~^^^^^^^^^^
+KeyError: 'ara_v3'
+
+----------------------------------------------------------------------
+Ran 40 tests in 1.438s
+
+FAILED (errors=1)
+
+退出码：1

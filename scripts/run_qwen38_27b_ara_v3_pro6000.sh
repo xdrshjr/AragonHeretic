@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# 一键准备并后台运行最新 S2 全量实验；日志、快照和预算保存在共享盘。
+# 新实验需 --target-execution-contract 和 --readiness-evidence。
+# 旧 --resume 沿用其冻结源码；阶段退出码由 Python 入口透传。
 set -euo pipefail
 project=$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")/.." && pwd)
 experiment_python=${HERETIC_RESEARCH_PYTHON:-/root/autodl-fs/conda-envs/heretic-dsv4/bin/python}

@@ -1,0 +1,85 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds (test_ara_pilot.NativeResourceGateTests.test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds) ... ok
+test_native_phase_costs_use_frozen_formula_and_required_coverage (test_ara_pilot.NativeResourceGateTests.test_native_phase_costs_use_frozen_formula_and_required_coverage) ... ok
+test_single_card_budget_cannot_reuse_a_more_generous_contract (test_ara_pilot.NativeResourceGateTests.test_single_card_budget_cannot_reuse_a_more_generous_contract) ... ok
+test_file_mutation_is_rejected_before_declared_pass (test_ara_pilot.PilotTests.test_file_mutation_is_rejected_before_declared_pass) ... ok
+test_full_calibration_pilot_requires_previous_proof (test_ara_pilot.PilotTests.test_full_calibration_pilot_requires_previous_proof) ... ok
+test_legacy_summary_does_not_open_expansion (test_ara_pilot.PilotTests.test_legacy_summary_does_not_open_expansion) ... ok
+test_native_evidence_can_pass_and_is_recomputed (test_ara_pilot.PilotTests.test_native_evidence_can_pass_and_is_recomputed) ... ok
+test_parameter_identity_changes_while_study_stays_fixed (test_ara_pilot.PilotTests.test_parameter_identity_changes_while_study_stays_fixed) ... ok
+test_target_rejects_self_or_readiness_hash (test_ara_pilot.PilotTests.test_target_rejects_self_or_readiness_hash) ... ok
+test_initial_a_identity_is_paired_across_profiles_and_policies (test_ara_refinement.NewRefinementEvidenceTests.test_initial_a_identity_is_paired_across_profiles_and_policies) ... ok
+test_remaining_disk_budget_verifies_existing_snapshot (test_ara_refinement.NewRefinementEvidenceTests.test_remaining_disk_budget_verifies_existing_snapshot) ... ok
+test_anchor_keep_accounts_for_upstream_drift (test_ara_refinement.RefinementTests.test_anchor_keep_accounts_for_upstream_drift) ... ok
+test_block_rolls_back_all_factors_when_monitor_raises (test_ara_refinement.RefinementTests.test_block_rolls_back_all_factors_when_monitor_raises) ... ok
+test_effective_update_check_preserves_cancelling_factor_permutation (test_ara_refinement.RefinementTests.test_effective_update_check_preserves_cancelling_factor_permutation) ... ok
+test_effective_update_check_rejects_changed_or_nonfinite_factors (test_ara_refinement.RefinementTests.test_effective_update_check_rejects_changed_or_nonfinite_factors) ... ok
+test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) ... ok
+test_monitor_nan_is_attempt_failure (test_ara_refinement.RefinementTests.test_monitor_nan_is_attempt_failure) ... ok
+test_monitor_requires_nonincrease_and_real_improvement (test_ara_refinement.RefinementTests.test_monitor_requires_nonincrease_and_real_improvement) ... ok
+test_solver_operates_on_clones (test_ara_refinement.RefinementTests.test_solver_operates_on_clones) ... ok
+test_new_trial_reports_effective_change_and_restores_original (test_ara_refinement.WholeTrialEvidenceTests.test_new_trial_reports_effective_change_and_restores_original) ... ok
+test_accepts_first_monitor_improvement_and_records_discrepancy (test_ara_backtracking.BacktrackingTests.test_accepts_first_monitor_improvement_and_records_discrepancy) ... ok
+test_all_rejections_restore_same_original (test_ara_backtracking.BacktrackingTests.test_all_rejections_restore_same_original) ... ok
+test_monitor_exception_restores_all_factors (test_ara_backtracking.BacktrackingTests.test_monitor_exception_restores_all_factors) ... ok
+test_nonzero_old_update_reinstalled_is_not_new_update (test_ara_backtracking.BacktrackingTests.test_nonzero_old_update_reinstalled_is_not_new_update) ... ok
+test_factor_basis_change_is_not_effective_change (test_ara_proposal.ProposalTests.test_factor_basis_change_is_not_effective_change) ... ok
+test_interpolation_matches_weight_product_not_factors (test_ara_proposal.ProposalTests.test_interpolation_matches_weight_product_not_factors) ... ok
+test_nonfinite_is_not_clipped_into_valid_candidate (test_ara_proposal.ProposalTests.test_nonfinite_is_not_clipped_into_valid_candidate) ... ok
+test_pilot_spectrum_is_clipped_without_raising_guard (test_ara_proposal.ProposalTests.test_pilot_spectrum_is_clipped_without_raising_guard) ... ok
+test_rank_truncation_matches_dense_reference (test_ara_proposal.ProposalTests.test_rank_truncation_matches_dense_reference) ... ok
+test_scale_preserves_relative_spectrum (test_ara_proposal.ProposalTests.test_scale_preserves_relative_spectrum) ... ok
+test_unregistered_alpha_and_invalid_old_state_fail (test_ara_proposal.ProposalTests.test_unregistered_alpha_and_invalid_old_state_fail) ... ok
+test_zero_keeps_nonzero_initial_a (test_ara_proposal.ProposalTests.test_zero_keeps_nonzero_initial_a) ... ok
+test_new_experiment_checks_readiness_before_model_allocation (test_pro6000_experiment.NewPro6000GateTests.test_new_experiment_checks_readiness_before_model_allocation) ... ok
+test_new_launcher_rejects_missing_readiness_before_creating_run (test_pro6000_experiment.NewPro6000GateTests.test_new_launcher_rejects_missing_readiness_before_creating_run) ... ok
+test_budget_and_seed_cannot_change_on_resume (test_pro6000_experiment.PreparationTests.test_budget_and_seed_cannot_change_on_resume) ... ok
+test_changed_source_or_insufficient_unique_data_fails (test_pro6000_experiment.PreparationTests.test_changed_source_or_insufficient_unique_data_fails) ... ok
+test_experiment_protocol_cannot_enter_formal_research (test_pro6000_experiment.PreparationTests.test_experiment_protocol_cannot_enter_formal_research) ... ok
+test_full_roles_preserve_original_prompts_and_never_overlap (test_pro6000_experiment.PreparationTests.test_full_roles_preserve_original_prompts_and_never_overlap) ... ok
+test_original_cross_role_duplicate_fails (test_pro6000_experiment.PreparationTests.test_original_cross_role_duplicate_fails) ... ok
+test_wrong_or_busy_gpu_fails_before_loading (test_pro6000_experiment.PreparationTests.test_wrong_or_busy_gpu_fails_before_loading) ... ok
+test_competing_worker_cannot_overwrite_status (test_pro6000_experiment.RecoveryTests.test_competing_worker_cannot_overwrite_status) ... 启动失败：运行目录已被其他进程锁定：/tmp/tmpb4faik29/worker.lock
+ok
+test_finished_export_is_verified_without_loading_model (test_pro6000_experiment.RecoveryTests.test_finished_export_is_verified_without_loading_model) ... ok
+test_freeze_uses_committed_content_even_after_worktree_changes (test_pro6000_experiment.RecoveryTests.test_freeze_uses_committed_content_even_after_worktree_changes) ... ok
+test_native_24_trial_search_and_resume_need_no_semantic_judge (test_pro6000_experiment.SearchTests.test_native_24_trial_search_and_resume_need_no_semantic_judge) ... /home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py:204: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = optuna.samplers.TPESampler(
+[I 2026-09-14 17:28:46,310] A new study created in memory with name: no-name-0f6df5e3-c259-421b-851c-6dec57b60d50
+[I 2026-09-14 17:28:46,330] A new study created in memory with name: no-name-2e00a3ee-5096-42a3-bd2d-c8a9cea92be0
+[I 2026-09-14 17:28:46,338] A new study created in memory with name: no-name-afb19d27-60da-4cfd-be67-d3710860e218
+[I 2026-09-14 17:28:46,349] A new study created in memory with name: no-name-54c6fe47-f0f5-4dd4-b87f-b817792a1a5e
+[I 2026-09-14 17:28:46,356] A new study created in memory with name: no-name-efa4e98d-f122-4c22-8671-43cb4813e045
+[I 2026-09-14 17:28:46,362] A new study created in memory with name: no-name-9e7bbcfc-61c1-4a3e-8ea5-579422b610af
+[I 2026-09-14 17:28:46,370] A new study created in memory with name: no-name-f84e701c-3b48-48db-af69-09ce07681b2c
+[I 2026-09-14 17:28:46,378] A new study created in memory with name: no-name-3c1dc79a-0be4-49b2-85ae-c0d29a7f8699
+[I 2026-09-14 17:28:46,385] A new study created in memory with name: no-name-e82d3bc8-cd30-4075-b3cc-f56542c50809
+[I 2026-09-14 17:28:46,392] A new study created in memory with name: no-name-af95fcb0-23eb-4d7b-9d59-0bfcb84cfddf
+[I 2026-09-14 17:28:46,400] A new study created in memory with name: no-name-c9e9f30e-1248-4b1a-a9b4-414020d925b8
+[I 2026-09-14 17:28:46,407] A new study created in memory with name: no-name-a952a200-b2ab-4f50-bc74-a20d2cdc9f90
+ok
+test_numeric_gate_precedes_keyword_ranking (test_pro6000_experiment.SearchTests.test_numeric_gate_precedes_keyword_ranking) ... ok
+test_remaining_snapshot_reserve_keeps_formal_default (test_pro6000_experiment.SearchTests.test_remaining_snapshot_reserve_keeps_formal_default) ... ok
+test_single_gpu_checkpoint_accounting (test_pro6000_experiment.SearchTests.test_single_gpu_checkpoint_accounting) ... ok
+test_exported_adapter_reloads_selected_factors_and_restores_base (test_pro6000_export.ExportTests.test_exported_adapter_reloads_selected_factors_and_restores_base) ... /home/xdrshjr/miniconda3/envs/aragon-heretic/lib/python3.12/site-packages/peft/utils/save_and_load.py:438: UserWarning: Could not find a config file in  - will assume that the vocabulary was not modified.
+  warnings.warn(
+ok
+test_completed_zero_update_export_is_explicitly_no_improvement (test_pro6000_export.NewPro6000ResultTests.test_completed_zero_update_export_is_explicitly_no_improvement) ... ok
+test_immediate_eos_still_has_one_prediction (test_sequence_scores.SequenceKLTests.test_immediate_eos_still_has_one_prediction) ... ok
+test_kl_direction_matches_manual_distribution (test_sequence_scores.SequenceKLTests.test_kl_direction_matches_manual_distribution) ... ok
+test_same_model_has_zero_kl (test_sequence_scores.SequenceKLTests.test_same_model_has_zero_kl) ... ok
+test_zero_effective_positions_fail (test_sequence_scores.SequenceKLTests.test_zero_effective_positions_fail) ... ok
+test_chunked_kl_matches_full_vocab_dense_reference (test_sequence_scores.StreamingSequenceTests.test_chunked_kl_matches_full_vocab_dense_reference) ... ok
+test_selected_cpu_logits_do_not_retain_long_prompt_storage (test_sequence_scores.StreamingSequenceTests.test_selected_cpu_logits_do_not_retain_long_prompt_storage) ... ok
+test_causal_shift_and_length_normalization (test_refusal_log_odds.ContinuationScoreTests.test_causal_shift_and_length_normalization) ... ok
+test_invalid_prefixes_and_changed_boundaries_are_rejected (test_refusal_log_odds.ContinuationScoreTests.test_invalid_prefixes_and_changed_boundaries_are_rejected) ... ok
+test_multitoken_chinese_prefix_groups_are_distinct (test_refusal_log_odds.ContinuationScoreTests.test_multitoken_chinese_prefix_groups_are_distinct) ... ok
+test_raw_log_ratio_is_strictly_monotonic (test_refusal_log_odds.ContinuationScoreTests.test_raw_log_ratio_is_strictly_monotonic) ... ok
+test_long_prompt_normalizes_only_selected_full_vocab_rows (test_refusal_log_odds.StreamingPrefixTests.test_long_prompt_normalizes_only_selected_full_vocab_rows) ... ok
+
+----------------------------------------------------------------------
+Ran 60 tests in 2.550s
+
+OK
+
+退出码：0

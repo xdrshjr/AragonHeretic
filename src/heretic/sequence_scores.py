@@ -55,7 +55,8 @@ def logits_on_sequence(model, sequence: TokenSequence) -> torch.Tensor:
         logits = outputs.logits[0, len(sequence.prompt_tokens) - 1 :]
         if logits.shape[0] != count:
             raise ValueError("序列 KL 因果位置数量不匹配")
-        result = logits.detach().cpu()
+        # CPU 模型也必须复制切片，避免视图继续保留完整 prompt logits。
+        result = logits.detach().to(device="cpu", copy=True)
     if not torch.isfinite(result).all():
         raise ValueError("序列 KL logits 非有限")
     return result

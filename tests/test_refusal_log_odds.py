@@ -93,5 +93,27 @@ class ContinuationScoreTests(unittest.TestCase):
         self.assertEqual(answer, ("可以", "以下是"))
 
 
+class StreamingPrefixTests(unittest.TestCase):
+    def test_long_prompt_normalizes_only_selected_full_vocab_rows(self):
+        from unittest.mock import patch
+        from heretic.continuation_scores import _selected_logprobs
+
+        logits = torch.randn(1024, 257, dtype=torch.bfloat16)
+        positions = torch.arange(1000, 1024)
+        targets = torch.arange(24)
+        expected = logits.float().log_softmax(-1)[positions, targets]
+        original = torch.log_softmax
+        shapes = []
+
+        def measured(values, dim):
+            shapes.append(tuple(values.shape))
+            return original(values, dim=dim)
+
+        with patch("torch.log_softmax", side_effect=measured):
+            actual = _selected_logprobs(logits, positions, targets)
+        self.assertTrue(torch.equal(actual, expected))
+        self.assertEqual(shapes, [(8, 257)] * 3)
+
+
 if __name__ == "__main__":
     unittest.main()

@@ -344,5 +344,55 @@ class AuditTests(unittest.TestCase):
                 evaluate_audit_member(changed, changed["members"][0], context)
 
 
+class NewAuditMemberTests(unittest.TestCase):
+    def test_new_primary_member_mapping_uses_safe_storage_keys(self):
+        from heretic.ara_research_schema import member_identity
+        from heretic.research_audit import validate_plan
+
+        legacy = evaluation_fixture()
+        members = [
+            {"member_id": "B0", "kind": "base", "availability": "available"}
+        ]
+        for method, policy in (
+            ("B1", "reject-v1"),
+            ("B2", "reject-v1"),
+            ("S1", "spectral-backtrack-v1"),
+            ("S2", "spectral-backtrack-v1"),
+        ):
+            for seed in (42, 43, 44):
+                members.append(
+                    {
+                        **member_identity(method, policy, seed),
+                        "availability": "unavailable",
+                        "reason": "未运行",
+                    }
+                )
+        protocol = {
+            "schema_version": "cara-research-protocol-v3.1",
+            "protocol_hash": "protocol",
+            "seeds": [42, 43, 44],
+            "required_level": "recovery",
+            "model_identity": {"id": "model"},
+            "generation_profiles": {"keywords": 100},
+            "phase_budgets": {"audit": legacy["budget"]},
+            "roles": {"research-audit.bad": {"identity": "bad"}},
+        }
+        plan = freeze_evaluation_plan(members, protocol)
+        validate_plan(plan)
+        self.assertEqual(
+            plan["primary_members"],
+            [f"S2/spectral-backtrack-v1/{s}" for s in (42, 43, 44)],
+        )
+        self.assertTrue(
+            all("/" not in m["member_storage_key"] for m in members[1:])
+        )
+        plan["primary_members"][0] = "S2-42"
+        plan["plan_hash"] = digest(
+            {k: v for k, v in plan.items() if k != "plan_hash"}
+        )
+        with self.assertRaises(ValueError):
+            validate_plan(plan)
+
+
 if __name__ == "__main__":
     unittest.main()

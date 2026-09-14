@@ -1,0 +1,7 @@
+{
+  "通过": true,
+  "文件": "tests/qwen38-cara/smoke-prompts.txt",
+  "本地摘要": "1b6034c3401e65bd05a0f35e998ae71963ef828adfa99120fa20be8fc80ec37d",
+  "远端摘要": "1b6034c3401e65bd05a0f35e998ae71963ef828adfa99120fa20be8fc80ec37d",
+  "说明": "该文本夹具从既有远端缓存读取；TOML 与 Python 源码均由当前工作树内存加载。"
+}

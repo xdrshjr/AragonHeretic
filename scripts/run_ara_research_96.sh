@@ -1,6 +1,7 @@
 #!/usr/bin/env bash
 # SPDX-License-Identifier: AGPL-3.0-or-later
-# 所有阶段传播真实退出码；不设置 CUDA_VISIBLE_DEVICES。
+# 新运行使用 v3.1 冻结策略及阶段放行；所有阶段透传真实退出码。
+# R1/R2 配置必须注册 stage_execution_id；不设置 CUDA_VISIBLE_DEVICES。
 set -euo pipefail
 
 research_python="${HERETIC_RESEARCH_PYTHON:-/home/xdrshjr/miniconda3/envs/aragon-heretic/bin/python}"

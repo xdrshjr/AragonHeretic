@@ -1,0 +1,619 @@
+{
+  "通过": true,
+  "摘要核验数": 102,
+  "交付路径数": 103,
+  "文件": [
+    {
+      "文件": "README.md",
+      "预期摘要": "37ed3203ac5c32432ca347b7472051b25494c5e780eb12c3022f0cc13a81678f",
+      "实际摘要": "37ed3203ac5c32432ca347b7472051b25494c5e780eb12c3022f0cc13a81678f",
+      "一致": true
+    },
+    {
+      "文件": "config.qwen38-27b-cara-v3-96.toml",
+      "预期摘要": "26e577645d2c9b564cacd3d215615642086818e723622afc4402bea869dabbdb",
+      "实际摘要": "26e577645d2c9b564cacd3d215615642086818e723622afc4402bea869dabbdb",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/RUNBOOK.md",
+      "预期摘要": "30ef318f6c9b62b75ae8e0ece8a596c9e4ce8caf07fb0a0631713bcbccca56f3",
+      "实际摘要": "30ef318f6c9b62b75ae8e0ece8a596c9e4ce8caf07fb0a0631713bcbccca56f3",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/SHA256SUMS",
+      "预期摘要": "457e779df8207eb02e8b9301b3fe057a26e041ab5b4e8e7982dbfb29f2fa0670",
+      "实际摘要": "457e779df8207eb02e8b9301b3fe057a26e041ab5b4e8e7982dbfb29f2fa0670",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/SUMMARY.md",
+      "预期摘要": "a4cf0e4581bb033e744f812561b199e317f2f017db4168fd12aaf85415eb2814",
+      "实际摘要": "a4cf0e4581bb033e744f812561b199e317f2f017db4168fd12aaf85415eb2814",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/entrypoints-final.log",
+      "预期摘要": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "实际摘要": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/entrypoints.log",
+      "预期摘要": "bf7b84f8c687308958581035b1b3d9116550b92e1b88de83cf5211ca1158f4b0",
+      "实际摘要": "bf7b84f8c687308958581035b1b3d9116550b92e1b88de83cf5211ca1158f4b0",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/file-plan.md",
+      "预期摘要": "4bdf3bd164033df7a16f38443889d763e58d1ac29e3c6499203cb61f4a8aac87",
+      "实际摘要": "4bdf3bd164033df7a16f38443889d763e58d1ac29e3c6499203cb61f4a8aac87",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/full-cpu-final.log",
+      "预期摘要": "f0c5c7005a43824bf5b2c9cb45510209ed101e5c107037977aaa03b8999ca97c",
+      "实际摘要": "f0c5c7005a43824bf5b2c9cb45510209ed101e5c107037977aaa03b8999ca97c",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/full-cpu.log",
+      "预期摘要": "94480fb850740b17b989bde4f3ecd575596ea6b241cf6daa6e72b42b6a0987ff",
+      "实际摘要": "94480fb850740b17b989bde4f3ecd575596ea6b241cf6daa6e72b42b6a0987ff",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/integration-initial.log",
+      "预期摘要": "7c9f0f6d408e2f53f0b32f41755980b27a0c12bc47e9deb85a8b1975b571904d",
+      "实际摘要": "7c9f0f6d408e2f53f0b32f41755980b27a0c12bc47e9deb85a8b1975b571904d",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/local-budget.log",
+      "预期摘要": "84fd875359d1dc3cfeea3744c339a79fc8f6a3b2b1077546b706ee7f6e441ce9",
+      "实际摘要": "84fd875359d1dc3cfeea3744c339a79fc8f6a3b2b1077546b706ee7f6e441ce9",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/nesting-final.json",
+      "预期摘要": "34dd51b1367537d41f1642bdcd6cf91ac5ac5328d8e022354aaa78aebf6ebd8c",
+      "实际摘要": "34dd51b1367537d41f1642bdcd6cf91ac5ac5328d8e022354aaa78aebf6ebd8c",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/new-chain-initial.log",
+      "预期摘要": "5b81778cfc9acf25b07b1f57ccdfb97765a2253fb9cafe8d53b6bd29dde18ec9",
+      "实际摘要": "5b81778cfc9acf25b07b1f57ccdfb97765a2253fb9cafe8d53b6bd29dde18ec9",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/numerical-resume.log",
+      "预期摘要": "4b56c6f9398cae35cd54638de0f7acfffddba3aab8646a3c81db4a53dc5d6801",
+      "实际摘要": "4b56c6f9398cae35cd54638de0f7acfffddba3aab8646a3c81db4a53dc5d6801",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/pilot-initial.log",
+      "预期摘要": "c6e7da61dca9a11a85f485dc794e5b5c9297a74c61be70c6bed7ab1c25968562",
+      "实际摘要": "c6e7da61dca9a11a85f485dc794e5b5c9297a74c61be70c6bed7ab1c25968562",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/proposal.log",
+      "预期摘要": "9ad8f4e8a6e481ffcddb58fafeec07696f076c9b17347882a7a1a62005922194",
+      "实际摘要": "9ad8f4e8a6e481ffcddb58fafeec07696f076c9b17347882a7a1a62005922194",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/resource-final.log",
+      "预期摘要": "ccfb202c87c28a20d66013c303a506532e46d946e26cc77d4df23fe53cddcbcc",
+      "实际摘要": "ccfb202c87c28a20d66013c303a506532e46d946e26cc77d4df23fe53cddcbcc",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/static-final.json",
+      "预期摘要": "bf0bfcfef3551c398b273a6d799e911453fea579d8284181aab12a422f3d2822",
+      "实际摘要": "bf0bfcfef3551c398b273a6d799e911453fea579d8284181aab12a422f3d2822",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/transaction.log",
+      "预期摘要": "f6a7177a69186741006bc5122ecb4a215766a41cd8ec256d211473e34789eaf3",
+      "实际摘要": "f6a7177a69186741006bc5122ecb4a215766a41cd8ec256d211473e34789eaf3",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/implementation-20260914/verification.json",
+      "预期摘要": "e5a99fb5e06bcf8baaed90a0a453f20cc4f0475e93803e3c0a438df3d946f20a",
+      "实际摘要": "e5a99fb5e06bcf8baaed90a0a453f20cc4f0475e93803e3c0a438df3d946f20a",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/00-scan-report.md",
+      "预期摘要": "d220788cd36120f9a98785750f88aef9cff2dac16ac264a83c8020fec6e78517",
+      "实际摘要": "d220788cd36120f9a98785750f88aef9cff2dac16ac264a83c8020fec6e78517",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/01-scanner-numerics.md",
+      "预期摘要": "54a6b26ee0163ef3b9b43f9b169f54fbbbf0a0cae4cf7dcda865548d547d11d8",
+      "实际摘要": "54a6b26ee0163ef3b9b43f9b169f54fbbbf0a0cae4cf7dcda865548d547d11d8",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/02-scanner-gates.md",
+      "预期摘要": "2a37a34495d705c5037e08a259a0462e21468af3f1ab26288007562979b3a0f2",
+      "实际摘要": "2a37a34495d705c5037e08a259a0462e21468af3f1ab26288007562979b3a0f2",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/03-scanner-identity.md",
+      "预期摘要": "f7e4c7ec8e45768abc0e68825c3a06a2be80a6dd7abab5e2e58b031674d6ede7",
+      "实际摘要": "f7e4c7ec8e45768abc0e68825c3a06a2be80a6dd7abab5e2e58b031674d6ede7",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/04-independent-review.md",
+      "预期摘要": "f0d33adade9747f8679715f1dd12a941547bfeedb74275b028b18bbb86189cff",
+      "实际摘要": "f0d33adade9747f8679715f1dd12a941547bfeedb74275b028b18bbb86189cff",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/05-qa.md",
+      "预期摘要": "20ff56a228af9c8d073b2c1b48755c6f5c0e6a1626d0854af9d3f5a3ecc82877",
+      "实际摘要": "20ff56a228af9c8d073b2c1b48755c6f5c0e6a1626d0854af9d3f5a3ecc82877",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/06-gates-fix.md",
+      "预期摘要": "4d90e63b5146df85075214769e2ec0929a60f8bd26831c557a9ea69c40a63f34",
+      "实际摘要": "4d90e63b5146df85075214769e2ec0929a60f8bd26831c557a9ea69c40a63f34",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/RUNBOOK-SUPPLEMENT.md",
+      "预期摘要": "6553d1a6282c27a0942e301a20487b83853b92a09f2ea39dd1c1007a6dcd6ee8",
+      "实际摘要": "6553d1a6282c27a0942e301a20487b83853b92a09f2ea39dd1c1007a6dcd6ee8",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/baseline.json",
+      "预期摘要": "8ce94ced8575d31e9c65d56a2481c6be01bbe17ae082e6ca8899a1c8aa7db246",
+      "实际摘要": "8ce94ced8575d31e9c65d56a2481c6be01bbe17ae082e6ca8899a1c8aa7db246",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/costs-final.log",
+      "预期摘要": "1d14234e5ae18347a6c1ef343fc1019bc7b53ad6a6d09f4d888209ef2e6c8ab2",
+      "实际摘要": "1d14234e5ae18347a6c1ef343fc1019bc7b53ad6a6d09f4d888209ef2e6c8ab2",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/cpu-initial.log",
+      "预期摘要": "6cb96ee56734ea2ad4d7d7052a166c54d95f94e51276913264cc4d38f3baefd7",
+      "实际摘要": "6cb96ee56734ea2ad4d7d7052a166c54d95f94e51276913264cc4d38f3baefd7",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/delivery-manifest.json",
+      "预期摘要": "3e1213d8ffd6702eb2135a929e58ab436348bc8c1850072749d18d4ac0d8299f",
+      "实际摘要": "3e1213d8ffd6702eb2135a929e58ab436348bc8c1850072749d18d4ac0d8299f",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/delivery-validation.json",
+      "预期摘要": "d209b647d488f14f5b85f88f2660c7767bd3d78e1eebeb0fbebc5cf2e7ab163b",
+      "实际摘要": "d209b647d488f14f5b85f88f2660c7767bd3d78e1eebeb0fbebc5cf2e7ab163b",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/entrypoints-final.log",
+      "预期摘要": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "实际摘要": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/entrypoints.log",
+      "预期摘要": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "实际摘要": "9eb3821d12ff0e5b80b48211bd7c4a3a3339239784cb9640956f7767f290c87b",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/file-plan.md",
+      "预期摘要": "e55e1d5b61c25fddf9587f52d60ed6075afc2d4b02f42d66d435b93469673fe9",
+      "实际摘要": "e55e1d5b61c25fddf9587f52d60ed6075afc2d4b02f42d66d435b93469673fe9",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/full-cpu-final.log",
+      "预期摘要": "069b98c5a74b7f1078cb6c4198523ae0da835fb4473f090bd231b85e6dfbe4f5",
+      "实际摘要": "069b98c5a74b7f1078cb6c4198523ae0da835fb4473f090bd231b85e6dfbe4f5",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/gates-after.log",
+      "预期摘要": "9c04195a75d2d4f4aa6702129cf23763bd341cdbcd88c0e511725ba06e0d0b05",
+      "实际摘要": "9c04195a75d2d4f4aa6702129cf23763bd341cdbcd88c0e511725ba06e0d0b05",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/gates-before.log",
+      "预期摘要": "f99f488272043c6ef72aa350efa052131cec69f41f05d0389d47c0a7ea24e935",
+      "实际摘要": "f99f488272043c6ef72aa350efa052131cec69f41f05d0389d47c0a7ea24e935",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/gates-integration.log",
+      "预期摘要": "c4cc7f0e7366e48bce8baeb8697476fe6a9e4fa57e940978edfc053ec9afcd5c",
+      "实际摘要": "c4cc7f0e7366e48bce8baeb8697476fe6a9e4fa57e940978edfc053ec9afcd5c",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/git-before.txt",
+      "预期摘要": "ea519f8a07de754ad3c094fb4d8760ffd1f8f0f4ecfad188813ce9f3c3e2135a",
+      "实际摘要": "ea519f8a07de754ad3c094fb4d8760ffd1f8f0f4ecfad188813ce9f3c3e2135a",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/git-status.txt",
+      "预期摘要": "781494a5b5d133b18c5bec93d9e181abdd491813f061e4504bc4f00286a7e067",
+      "实际摘要": "781494a5b5d133b18c5bec93d9e181abdd491813f061e4504bc4f00286a7e067",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/identity-binding-before.log",
+      "预期摘要": "5070a97791439890f734b3970cc2709519be8f59802741cbf90713294668f5cd",
+      "实际摘要": "5070a97791439890f734b3970cc2709519be8f59802741cbf90713294668f5cd",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/identity-binding.log",
+      "预期摘要": "46dfc3260c30f5fb06a627e735f4feea22b8220cf8c5a94e13dd25b95a691ea9",
+      "实际摘要": "46dfc3260c30f5fb06a627e735f4feea22b8220cf8c5a94e13dd25b95a691ea9",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/identity-protocol.log",
+      "预期摘要": "b359510c5db0c529912a86fe884a470a1fb4bfa39be7cee7b7b131a7b693bd3a",
+      "实际摘要": "b359510c5db0c529912a86fe884a470a1fb4bfa39be7cee7b7b131a7b693bd3a",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/local-budget.log",
+      "预期摘要": "4147a5ddf6dafa733370c12a6ed9466f6ce740e0c55fb9810265fb72bd916497",
+      "实际摘要": "4147a5ddf6dafa733370c12a6ed9466f6ce740e0c55fb9810265fb72bd916497",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/memory-after.log",
+      "预期摘要": "d845f5b5677541500bd0d3364e598ddfca722236bf91d7dc1b81a61d443b568b",
+      "实际摘要": "d845f5b5677541500bd0d3364e598ddfca722236bf91d7dc1b81a61d443b568b",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/memory-before.log",
+      "预期摘要": "f92ac890d59666c17e3252cc27ba0d4497afc5732583135f92f2ef9a03fb0328",
+      "实际摘要": "f92ac890d59666c17e3252cc27ba0d4497afc5732583135f92f2ef9a03fb0328",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/pilot-evidence-check.json",
+      "预期摘要": "9521c182aa07cf21eb675861045b3448b84ac29ec0b3ff552ffe281b89c35f98",
+      "实际摘要": "9521c182aa07cf21eb675861045b3448b84ac29ec0b3ff552ffe281b89c35f98",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/resource-completion-after.log",
+      "预期摘要": "e81924a96ef00214c31f69095363bb427bbc584a759852aeb7d11e81523836b5",
+      "实际摘要": "e81924a96ef00214c31f69095363bb427bbc584a759852aeb7d11e81523836b5",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/resource-completion-before.log",
+      "预期摘要": "e20b7731936a37501ab2255f2204bee23afe2ec03a4cf082d3c6fa5778a959ed",
+      "实际摘要": "e20b7731936a37501ab2255f2204bee23afe2ec03a4cf082d3c6fa5778a959ed",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/source-version-after.log",
+      "预期摘要": "9809d67abbd6f52e3c5dd0b0272ece0bf461441361ba140ec91517316c60601b",
+      "实际摘要": "9809d67abbd6f52e3c5dd0b0272ece0bf461441361ba140ec91517316c60601b",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/source-version-before.log",
+      "预期摘要": "854dab8e78dc38cc599732053e164a0637dd084b9f3d4333666880e44aa14822",
+      "实际摘要": "854dab8e78dc38cc599732053e164a0637dd084b9f3d4333666880e44aa14822",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/static-validation.json",
+      "预期摘要": "7aade58056f442ba0e7f5979f1b0e17f374933e13168b29b542df9ae091ff697",
+      "实际摘要": "7aade58056f442ba0e7f5979f1b0e17f374933e13168b29b542df9ae091ff697",
+      "一致": true
+    },
+    {
+      "文件": "docs/logs/ara-v3/review-20260914/verification.json",
+      "预期摘要": "c8f63a58eb6177320b6b543edae56d0d9ebbf5bec9bbc5291534f91f8221c431",
+      "实际摘要": "c8f63a58eb6177320b6b543edae56d0d9ebbf5bec9bbc5291534f91f8221c431",
+      "一致": true
+    },
+    {
+      "文件": "docs/plans/ara-v2-refusal-optimization/spec.md",
+      "预期摘要": "3242495b130c03cdfa2507c3170d798ab70e4e6641e642b49a079882f5299d8e",
+      "实际摘要": "3242495b130c03cdfa2507c3170d798ab70e4e6641e642b49a079882f5299d8e",
+      "一致": true
+    },
+    {
+      "文件": "scripts/prepare_ara_research_protocol.py",
+      "预期摘要": "55fd8332f644457d549f8d2c1074bafc97712aee800ac3e19425983bfe661686",
+      "实际摘要": "55fd8332f644457d549f8d2c1074bafc97712aee800ac3e19425983bfe661686",
+      "一致": true
+    },
+    {
+      "文件": "scripts/run_ara_research_96.sh",
+      "预期摘要": "41ce9d5a6f46c136d0ea66cd7299649a268afbb005770f8fbcba8a1eefaaa806",
+      "实际摘要": "41ce9d5a6f46c136d0ea66cd7299649a268afbb005770f8fbcba8a1eefaaa806",
+      "一致": true
+    },
+    {
+      "文件": "scripts/run_qwen38_27b_ara_v3_pro6000.sh",
+      "预期摘要": "c2f40222ff41a1d9f24c294833be7ee31e83023362c6ecf4e535e7ad0635f0c3",
+      "实际摘要": "c2f40222ff41a1d9f24c294833be7ee31e83023362c6ecf4e535e7ad0635f0c3",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/acceptance_export.py",
+      "预期摘要": "2b3c6953808031c1cdd2820781ad277eaa332598ad33b0b45f31acf56561eeca",
+      "实际摘要": "2b3c6953808031c1cdd2820781ad277eaa332598ad33b0b45f31acf56561eeca",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_backtracking.py",
+      "预期摘要": "06fcf00609cf1eeda12a18c313358f8cac789044e4d672e0c239dab5704d8519",
+      "实际摘要": "06fcf00609cf1eeda12a18c313358f8cac789044e4d672e0c239dab5704d8519",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_pilot.py",
+      "预期摘要": "37903a4a7bab71e0693ee3330c4e171590d21143af69c2669d8fb9a633ffa123",
+      "实际摘要": "37903a4a7bab71e0693ee3330c4e171590d21143af69c2669d8fb9a633ffa123",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_proposal.py",
+      "预期摘要": "4012194ca3aa08aa1ff74f52ee755c1395caf723a42e70b57c96bddafa6dd444",
+      "实际摘要": "4012194ca3aa08aa1ff74f52ee755c1395caf723a42e70b57c96bddafa6dd444",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement.py",
+      "预期摘要": "e064c6ee0a10cb100c10fdb85fee04c76aaa151eeca69f2a3da726efc5c19e56",
+      "实际摘要": "e064c6ee0a10cb100c10fdb85fee04c76aaa151eeca69f2a3da726efc5c19e56",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement_capture.py",
+      "预期摘要": "71027848f3df7de1a282ff4449d02d93fce8506dfb57a5a6b666ad0b8972bc9c",
+      "实际摘要": "71027848f3df7de1a282ff4449d02d93fce8506dfb57a5a6b666ad0b8972bc9c",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_refinement_config.py",
+      "预期摘要": "49b808715a1e1c96182e2aaf8210772ae865717f71babdaed708e1695011617b",
+      "实际摘要": "49b808715a1e1c96182e2aaf8210772ae865717f71babdaed708e1695011617b",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_research_acceptance.py",
+      "预期摘要": "151fbaad86bfaa58adcb4adfc4fa54c5fffec23f2bc38f828af0ff19c1d6190c",
+      "实际摘要": "151fbaad86bfaa58adcb4adfc4fa54c5fffec23f2bc38f828af0ff19c1d6190c",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_research_runner.py",
+      "预期摘要": "40b824cd6a2b58563a49a18638280a7924fafad7ab509ea3d8250c903f88248c",
+      "实际摘要": "40b824cd6a2b58563a49a18638280a7924fafad7ab509ea3d8250c903f88248c",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_research_schema.py",
+      "预期摘要": "5b0450f9b4b45a069b17986445dd5af9713d00b358b3dc3ecc30bcfe79581e56",
+      "实际摘要": "5b0450f9b4b45a069b17986445dd5af9713d00b358b3dc3ecc30bcfe79581e56",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/ara_runtime.py",
+      "预期摘要": "127a1fb92c6536b8bad7ea23ccb526c4736fbd1ac78e7351c76189408a894dee",
+      "实际摘要": "127a1fb92c6536b8bad7ea23ccb526c4736fbd1ac78e7351c76189408a894dee",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/artifact_schema.py",
+      "预期摘要": "b510023b29aa0feeab20e59c23c43a4bf5017e194ff44e967e330f9013a315df",
+      "实际摘要": "b510023b29aa0feeab20e59c23c43a4bf5017e194ff44e967e330f9013a315df",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/continuation_scores.py",
+      "预期摘要": "225e8229753acace1127d715f54d463e7fb3a6645408832d79fd76cd4968a4fc",
+      "实际摘要": "225e8229753acace1127d715f54d463e7fb3a6645408832d79fd76cd4968a4fc",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/pro6000_experiment.py",
+      "预期摘要": "ba2d202aa84f78906dbf97a1601f45d68b654e497b742437d3692c6c08c44cf7",
+      "实际摘要": "ba2d202aa84f78906dbf97a1601f45d68b654e497b742437d3692c6c08c44cf7",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/pro6000_launch.py",
+      "预期摘要": "b12f86f19165e4270c053cf8203aef4944622ae6c86a37c00fcfe6dddb605739",
+      "实际摘要": "b12f86f19165e4270c053cf8203aef4944622ae6c86a37c00fcfe6dddb605739",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/pro6000_prepare.py",
+      "预期摘要": "9195b556741404acd7d3a8cbc311b99dd51b9a6312160b72f440f6975a1d6bdc",
+      "实际摘要": "9195b556741404acd7d3a8cbc311b99dd51b9a6312160b72f440f6975a1d6bdc",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/reproduce.py",
+      "预期摘要": "eca6a079e5bcde042954c197775851a2291a4a69f78f25edf0539a6385b16f02",
+      "实际摘要": "eca6a079e5bcde042954c197775851a2291a4a69f78f25edf0539a6385b16f02",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/research_audit.py",
+      "预期摘要": "6437ed85111361e17afb7ecb260371810ce923afdbf9e033f8cf67bec8463e70",
+      "实际摘要": "6437ed85111361e17afb7ecb260371810ce923afdbf9e033f8cf67bec8463e70",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/research_audit_recovery.py",
+      "预期摘要": "f166b068beb6e6a0b3e7a88adf3e2e4c5d34c7ce7b126acd882b5e1bb17ac049",
+      "实际摘要": "f166b068beb6e6a0b3e7a88adf3e2e4c5d34c7ce7b126acd882b5e1bb17ac049",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/research_budget.py",
+      "预期摘要": "6de962c67d0e26d1208c66fd54a60868cc2a20058b971acfc8df093ecc2ef5d8",
+      "实际摘要": "6de962c67d0e26d1208c66fd54a60868cc2a20058b971acfc8df093ecc2ef5d8",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/research_evaluation.py",
+      "预期摘要": "4dc4450f314aa3e0b1b60527c28a96a1a2db1d3357e313e3ec8c17e01ce4e6e3",
+      "实际摘要": "4dc4450f314aa3e0b1b60527c28a96a1a2db1d3357e313e3ec8c17e01ce4e6e3",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/research_protocol.py",
+      "预期摘要": "5f6b487b44ab00fe8940d29422d9c363df61b1cad57ad994c483c77159c4b7eb",
+      "实际摘要": "5f6b487b44ab00fe8940d29422d9c363df61b1cad57ad994c483c77159c4b7eb",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/sequence_scores.py",
+      "预期摘要": "b5fa64124cfc83fd708ded9fa7fafebdf82fcdc3fdf3d2c2114948bda8a50dfd",
+      "实际摘要": "b5fa64124cfc83fd708ded9fa7fafebdf82fcdc3fdf3d2c2114948bda8a50dfd",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/trial_methods.py",
+      "预期摘要": "be2478f5a3ee56df22891b39fc0e617cae424774f0e9fa0113041c2145805f3b",
+      "实际摘要": "be2478f5a3ee56df22891b39fc0e617cae424774f0e9fa0113041c2145805f3b",
+      "一致": true
+    },
+    {
+      "文件": "src/heretic/workflow.py",
+      "预期摘要": "154dcb98c49aa10ef46376801814c83d05f08cac7de64a4209e7d314d5e39636",
+      "实际摘要": "154dcb98c49aa10ef46376801814c83d05f08cac7de64a4209e7d314d5e39636",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_acceptance_export.py",
+      "预期摘要": "20401d3787a5cd01e88f15ed67c70c6a4df296bfaf756090072c29675dcc772d",
+      "实际摘要": "20401d3787a5cd01e88f15ed67c70c6a4df296bfaf756090072c29675dcc772d",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_ara_backtracking.py",
+      "预期摘要": "0048890f17e37ac4c84db05a4d60522ec938395428f4c8a573fa2406196e7441",
+      "实际摘要": "0048890f17e37ac4c84db05a4d60522ec938395428f4c8a573fa2406196e7441",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_ara_pilot.py",
+      "预期摘要": "f83520e38de813c17c336e056c949dc7135f445d722b3fad2fb0564bea5098ea",
+      "实际摘要": "f83520e38de813c17c336e056c949dc7135f445d722b3fad2fb0564bea5098ea",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_ara_proposal.py",
+      "预期摘要": "7fcc51ad4a1912b9be98ac4716d406262314282c1b1e60d686f5922ef6f58e06",
+      "实际摘要": "7fcc51ad4a1912b9be98ac4716d406262314282c1b1e60d686f5922ef6f58e06",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_ara_refinement.py",
+      "预期摘要": "33e1a26cf85058e207498b3f86cb278dfbeab708b523a182084e9281228dbdf5",
+      "实际摘要": "33e1a26cf85058e207498b3f86cb278dfbeab708b523a182084e9281228dbdf5",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_ara_research_acceptance.py",
+      "预期摘要": "3082a2543bb9f0ea940bc7b5ca3b51dc59e4c6c86341160852123a2e862f646f",
+      "实际摘要": "3082a2543bb9f0ea940bc7b5ca3b51dc59e4c6c86341160852123a2e862f646f",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_ara_research_runner.py",
+      "预期摘要": "9f0e6ae7d5438d0f6b73912d259035e7c705bd1802ce535385226a9bfe7695f0",
+      "实际摘要": "9f0e6ae7d5438d0f6b73912d259035e7c705bd1802ce535385226a9bfe7695f0",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_config.py",
+      "预期摘要": "0c77b65b44ed1bb3d4483efb080fc1f7e22427b4e75fa51331a1b607891065f7",
+      "实际摘要": "0c77b65b44ed1bb3d4483efb080fc1f7e22427b4e75fa51331a1b607891065f7",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_pro6000_experiment.py",
+      "预期摘要": "19e85168617095cb2e5a5ac5f55d19515cb78c3f8ee6139729fadb7a97a18157",
+      "实际摘要": "19e85168617095cb2e5a5ac5f55d19515cb78c3f8ee6139729fadb7a97a18157",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_pro6000_export.py",
+      "预期摘要": "9b031d44b7b7c24f35d4db9e62175e8a0196bb6495f1ab6dc2f624b240cdf353",
+      "实际摘要": "9b031d44b7b7c24f35d4db9e62175e8a0196bb6495f1ab6dc2f624b240cdf353",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_protocol_data.py",
+      "预期摘要": "6f96e86c3282c2e104c8e433874ccec11864d3df3f39c88a71a516835d7a7bc2",
+      "实际摘要": "6f96e86c3282c2e104c8e433874ccec11864d3df3f39c88a71a516835d7a7bc2",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_refusal_log_odds.py",
+      "预期摘要": "b680550cd18353da88601241a93a4be72b4cb36aac80abf297fb71a01545c6fb",
+      "实际摘要": "b680550cd18353da88601241a93a4be72b4cb36aac80abf297fb71a01545c6fb",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_reproduce.py",
+      "预期摘要": "bc107188935167e2785f4f5e2db1da10dbc5fffb2e7b96d1fbb60adc44968b80",
+      "实际摘要": "bc107188935167e2785f4f5e2db1da10dbc5fffb2e7b96d1fbb60adc44968b80",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_research_audit.py",
+      "预期摘要": "f539217839f8d04c62d26237ec3c269644f43e866f2d76fd147d66995bd852eb",
+      "实际摘要": "f539217839f8d04c62d26237ec3c269644f43e866f2d76fd147d66995bd852eb",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_research_evaluation.py",
+      "预期摘要": "4cd896af752e5dc85c6238ac191370ef9093256db090feefca1f9a9b27451521",
+      "实际摘要": "4cd896af752e5dc85c6238ac191370ef9093256db090feefca1f9a9b27451521",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_sequence_scores.py",
+      "预期摘要": "02ce8e96249baa6cf85d474a4c4f2c13ca57885590aa8395d37a93009a5a9bca",
+      "实际摘要": "02ce8e96249baa6cf85d474a4c4f2c13ca57885590aa8395d37a93009a5a9bca",
+      "一致": true
+    },
+    {
+      "文件": "tests/test_workflow.py",
+      "预期摘要": "6948f691cf7b1e4b10969a9d632d109a015ded7d80f5f5627dd0ef92409e447e",
+      "实际摘要": "6948f691cf7b1e4b10969a9d632d109a015ded7d80f5f5627dd0ef92409e447e",
+      "一致": true
+    }
+  ]
+}

@@ -127,19 +127,13 @@ def load_reproduction_acceptance(
         raise AcceptanceGateError(str(error)) from error
 
 
-def validate_reproduction_model(model: Model, report: Mapping[str, Any] | None) -> None:
+def validate_reproduction_model(
+    model: Model, report: Mapping[str, Any] | None
+) -> None:
     """Reject a loaded base model that differs from its acceptance report."""
-    if report and report.get("schema_version") == "cara-research-acceptance-v3":
-        from .ara_research_runner import validate_research_model
-        validate_research_model(model, report)
-        return
-    if (
-        report is not None
-        and report.get("model_fingerprint") != model.model_fingerprint
-    ):
-        raise AcceptanceGateError(
-            "loaded model fingerprint does not match accepted reproduction"
-        )
+    from .ara_research_acceptance import validate_loaded_model_report
+
+    validate_loaded_model_report(model, report)
 
 
 def validate_reproduction_artifacts(

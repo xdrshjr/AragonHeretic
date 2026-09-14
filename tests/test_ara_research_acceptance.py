@@ -360,5 +360,125 @@ def _passed_report(lock, core):
     }
 
 
+def new_passed_report(root):
+    """生成可验证新版文件链的小型夹具，无模型或研究效果声明。"""
+    from test_research_audit import evaluation_fixture
+    from heretic.ara_research_schema import file_digest
+
+    member = next(
+        m for m in evaluation_fixture()["members"] if m["member_id"] == "S2-42"
+    )
+    lock = {
+        **member["candidate_lock"],
+        "schema_version": "cara-research-candidate-v3.1",
+        "proposal_policy": "spectral-backtrack-v1",
+        "study_execution_hash": "study-execution",
+        "execution_identity_hash": "trial-execution",
+    }
+    root.mkdir(parents=True, exist_ok=True)
+    (root / "weights.bin").write_bytes("测试夹具权重".encode("utf-8"))
+    report = _passed_report(
+        lock, {"weights.bin": file_digest(root / "weights.bin")}
+    )
+    report.update(
+        schema_version="cara-research-acceptance-v3.1",
+        research_claim="recovery_supported",
+    )
+    return report
+
+
+class NewResearchArtifactTests(unittest.TestCase):
+    def test_old_report_cannot_bind_new_reproduction(self):
+        from heretic.ara_research_acceptance import validate_research_binding
+        from heretic.ara_research_schema import digest, read_json
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            staging, formal = root / "staging", root / "formal"
+            report = new_passed_report(staging)
+            report["schema_version"] = "cara-research-acceptance-v3"
+            lock = report["selected_candidate"]
+            lock["schema_version"] = "cara-research-candidate-v3"
+            for key in (
+                "proposal_policy",
+                "execution_identity_hash",
+                "study_execution_hash",
+            ):
+                lock.pop(key)
+            promote_research_artifact(staging, formal, report)
+            reproduction = read_json(formal / "reproduce.json")
+            reproduction.update(
+                schema="cara-research-reproduce-v3.1",
+                execution_identity_hash="unverified-execution",
+                study_execution_hash="unverified-study",
+            )
+            self.assertEqual(reproduction["candidate_lock_hash"], digest(lock))
+            with self.assertRaisesRegex(ValueError, "版本"):
+                validate_research_binding(report, reproduction)
+
+    def test_new_reproduction_rejects_empty_execution_hashes(self):
+        from heretic.ara_research_schema import (
+            read_json,
+            validate_research_reproduce,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            staging, formal = root / "staging", root / "formal"
+            promote_research_artifact(
+                staging, formal, new_passed_report(staging)
+            )
+            reproduction = read_json(formal / "reproduce.json")
+            for key in ("execution_identity_hash", "study_execution_hash"):
+                with self.subTest(key=key), self.assertRaises(ValueError):
+                    validate_research_reproduce({**reproduction, key: ""})
+
+    def test_old_report_cannot_relabel_new_candidate(self):
+        from heretic.ara_research_schema import validate_research_report
+
+        with tempfile.TemporaryDirectory() as directory:
+            report = new_passed_report(Path(directory))
+            report["schema_version"] = "cara-research-acceptance-v3"
+            with self.assertRaisesRegex(ValueError, "版本"):
+                validate_research_report(report)
+
+    def test_new_recovery_claim_and_full_artifact_chain(self):
+        from heretic.ara_research_acceptance import (
+            _research_claim,
+            verify_research_artifact_graph,
+        )
+
+        self.assertEqual(
+            _research_claim(
+                "passed",
+                "recovery",
+                {},
+                {"schema_version": "cara-research-protocol-v3.1"},
+            ),
+            "recovery_supported",
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            staging, destination = root / "staging", root / "formal"
+            promote_research_artifact(
+                staging, destination, new_passed_report(staging)
+            )
+            verify_research_artifact_graph(destination)
+            (destination / "weights.bin").write_bytes(b"changed")
+            with self.assertRaises(ValueError):
+                verify_research_artifact_graph(destination)
+
+    def test_pilot_lock_cannot_be_read_as_formal_candidate(self):
+        from heretic.ara_research_schema import parse_candidate_lock
+
+        with self.assertRaises(ValueError):
+            parse_candidate_lock(
+                {
+                    "schema_version": "cara-pilot-candidate-lock-v1",
+                    "eligibility": "pilot_only",
+                }
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

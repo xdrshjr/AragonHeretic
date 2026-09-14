@@ -74,6 +74,215 @@ def prepare_orphan_fixture(root):
 
 
 class RunnerTests(unittest.TestCase):
+    def test_nonprimary_hard_timeout_blocks_other_campaign_members(self):
+        from heretic.research_budget import (
+            campaign_search_status,
+            reserve_campaign_member,
+        )
+        from heretic.ara_pilot import PilotGateError
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            protocol = {
+                "schema_version": "cara-research-protocol-v3.1",
+                "target_execution_hash": "target",
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "search": {"ledger_path": str(root / "matrix.json")}
+                    }
+                },
+            }
+            target = {
+                "method_id": "S2",
+                "proposal_policy": "spectral-backtrack-v1",
+                "seed": 42,
+            }
+            study = {
+                "study_hash": "study",
+                "effect_status": "passed",
+                "trials": [{"state": "COMPLETE", "update_status": "active"}],
+            }
+            campaign_search_status(protocol, target, study)
+            baseline = {
+                **target,
+                "method_id": "B1",
+                "proposal_policy": "reject-v1",
+            }
+            budget = reserve_campaign_member(
+                protocol, baseline, root / "baseline"
+            )
+            write_json(
+                budget.with_name("budget-timeout.json"),
+                {
+                    "status": "failed",
+                    "reason": "hard_wallclock_limit",
+                    "worker_pid": 123,
+                },
+            )
+            with self.assertRaises(PilotGateError):
+                campaign_search_status(protocol, {**target, "seed": 43})
+            ledger = read_json(root / "matrix.json")
+            self.assertEqual(
+                ledger["blocking_failure"]["member"], "B1/reject-v1/42"
+            )
+
+    def test_runtime_failed_primary_blocks_following_seed(self):
+        from heretic.research_budget import campaign_search_status
+        from heretic.ara_pilot import PilotGateError
+
+        with tempfile.TemporaryDirectory() as folder:
+            protocol = {
+                "schema_version": "cara-research-protocol-v3.1",
+                "target_execution_hash": "target",
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "search": {
+                            "ledger_path": str(Path(folder) / "matrix.json")
+                        }
+                    }
+                },
+            }
+            identity = {
+                "method_id": "S2",
+                "proposal_policy": "spectral-backtrack-v1",
+                "seed": 42,
+            }
+            study = {
+                "study_hash": "study",
+                "effect_status": "failed",
+                "trials": [
+                    {
+                        "state": "FAIL",
+                        "failure_category": "RuntimeError",
+                        "failure_reason": "CUDA out of memory",
+                    }
+                    for _ in range(24)
+                ],
+            }
+            campaign_search_status(protocol, identity, study)
+            with self.assertRaises(PilotGateError):
+                campaign_search_status(protocol, {**identity, "seed": 43})
+
+    def test_campaign_reservation_rejects_duplicate_directory_and_keeps_budget(
+        self,
+    ):
+        from heretic.research_budget import reserve_campaign_member
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            protocol = {
+                "schema_version": "cara-research-protocol-v3.1",
+                "target_execution_hash": "target",
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "search": {"ledger_path": str(root / "matrix.json")}
+                    }
+                },
+            }
+            identity = {
+                "method_id": "S2",
+                "proposal_policy": "spectral-backtrack-v1",
+                "seed": 42,
+            }
+            path = reserve_campaign_member(protocol, identity, root / "first")
+            write_json(
+                path, {"sessions": [{"start": 1, "stop": 4, "devices": 1}]}
+            )
+            self.assertEqual(
+                reserve_campaign_member(protocol, identity, root / "first"),
+                path,
+            )
+            self.assertEqual(StudyBudget(path).elapsed(), 3)
+            with self.assertRaises(ValueError):
+                reserve_campaign_member(protocol, identity, root / "second")
+
+    def test_started_member_cannot_reset_attempts_by_removing_study(self):
+        from heretic.research_budget import (
+            reserve_campaign_member,
+            record_campaign_study,
+        )
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            protocol = {
+                "schema_version": "cara-research-protocol-v3.1",
+                "target_execution_hash": "target",
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "search": {"ledger_path": str(root / "matrix.json")}
+                    }
+                },
+            }
+            identity = {
+                "method_id": "S2",
+                "proposal_policy": "spectral-backtrack-v1",
+                "seed": 42,
+            }
+            budget = reserve_campaign_member(protocol, identity, root / "run")
+            study = root / "run" / "study.json"
+            write_json(study, {"trials": [{"attempt": 0, "state": "COMPLETE"}]})
+            record_campaign_study(
+                {"protocol": protocol, "identity": identity}, study
+            )
+            study.unlink()
+            with self.assertRaises(ValueError):
+                reserve_campaign_member(protocol, identity, root / "run")
+            write_json(study, {"trials": []})
+            budget.unlink()
+            with self.assertRaises(ValueError):
+                reserve_campaign_member(protocol, identity, root / "run")
+
+    def test_replay_failure_latches_campaign_but_numeric_failure_does_not(self):
+        from heretic.research_budget import (
+            campaign_member,
+            campaign_search_status,
+        )
+        from heretic.ara_pilot import PilotGateError
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            protocol = {
+                "schema_version": "cara-research-protocol-v3.1",
+                "target_execution_hash": "target",
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "search": {"ledger_path": str(root / "matrix.json")}
+                    }
+                },
+            }
+            identity = {
+                "method_id": "S2",
+                "proposal_policy": "spectral-backtrack-v1",
+                "seed": 42,
+            }
+            with self.assertRaises(ValueError):
+                with campaign_member(protocol, identity, root / "run"):
+                    raise ValueError("重放指标漂移超限")
+            with self.assertRaises(PilotGateError):
+                campaign_search_status(protocol, {**identity, "seed": 43})
+            numeric_protocol = {
+                **protocol,
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "search": {"ledger_path": str(root / "numeric.json")}
+                    }
+                },
+            }
+            study = {
+                "study_hash": "study",
+                "effect_status": "failed",
+                "trials": [
+                    {"state": "COMPLETE", "update_status": "active"},
+                    {
+                        "state": "FAIL",
+                        "failure_category": "RuntimeError",
+                        "failure_reason": "solver did not converge",
+                    },
+                ],
+            }
+            campaign_search_status(numeric_protocol, identity, study)
+            campaign_search_status(numeric_protocol, {**identity, "seed": 43})
+
     def test_initial_finalize_error_allows_corrected_request(self):
         from heretic.ara_research_runner import main
 
@@ -251,7 +460,7 @@ class RunnerTests(unittest.TestCase):
         script = """
 import subprocess, sys, time
 from pathlib import Path
-from heretic.ara_research_runner import StudyBudget
+from heretic.research_budget import StudyBudget
 from heretic.ara_research_schema import write_json
 root = Path(sys.argv[1])
 with StudyBudget(root / 'outer.json', 1.0):
@@ -465,5 +674,89 @@ with StudyBudget(root / 'outer.json', 1.0):
                 self.assertEqual(len(calls), 24)
 
 
-if __name__ == "__main__":
-    unittest.main()
+class NewResearchBudgetTests(unittest.TestCase):
+    def test_target_zero_update_stops_target_seeds_only(self):
+        from heretic.research_budget import campaign_search_status
+        from heretic.ara_pilot import PilotGateError
+
+        with tempfile.TemporaryDirectory() as directory:
+            protocol = {
+                "schema_version": "cara-research-protocol-v3.1",
+                "target_execution_hash": "target",
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "search": {
+                            "ledger_path": str(Path(directory) / "matrix.json")
+                        }
+                    }
+                },
+            }
+            identity = {
+                "method_id": "S2",
+                "proposal_policy": "spectral-backtrack-v1",
+                "seed": 42,
+            }
+            study = {
+                "study_hash": "study",
+                "effect_status": "failed",
+                "trials": [{"state": "COMPLETE", "update_status": "none"}],
+            }
+            campaign_search_status(protocol, identity, study)
+            campaign_search_status(
+                protocol,
+                {**identity, "method_id": "B1", "proposal_policy": "reject-v1"},
+            )
+            with self.assertRaises(PilotGateError):
+                campaign_search_status(protocol, {**identity, "seed": 43})
+            ledger = read_json(Path(directory) / "matrix.json")
+            self.assertEqual(
+                ledger["members"]["S2/spectral-backtrack-v1/44"]["state"],
+                "not_run",
+            )
+
+    def test_completed_pilot_recovers_without_new_budget_session(self):
+        from test_ara_pilot import pilot_fixture
+        from heretic.ara_pilot import read_bound
+        from heretic.research_budget import (
+            StudyBudget,
+            completed_stage_evidence,
+        )
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            contract, evidence = pilot_fixture(root)
+            protocol, trial = (
+                read_bound(evidence["protocol"]),
+                read_bound(evidence["trial"]),
+            )
+            execution = contract["stage_executions"][0]
+            path = root / "budget.json"
+            ledger = {
+                "target_execution_hash": protocol["target_execution_hash"],
+                "sessions": [{"start": 1.0, "stop": 28801.0, "devices": 1}],
+                "calls": {
+                    execution["stage_execution_id"]: {
+                        "execution_hash": digest(execution),
+                        "state": "COMPLETE",
+                        "source_protocol_hash": protocol["protocol_hash"],
+                        "trial_path": str(root / "trial.json"),
+                        "evidence_hash": digest(trial),
+                    }
+                },
+            }
+            write_json(path, ledger)
+            budget = StudyBudget(path, devices=1)
+            result, code = completed_stage_evidence(budget, protocol, execution)
+            self.assertEqual(code, 0)
+            self.assertTrue(result["recovered_read_only"])
+            self.assertEqual(len(read_json(path)["sessions"]), 1)
+
+    def test_early_exit_still_records_unreached_cost_checkpoints(self):
+        from heretic.research_budget import write_cost_checkpoints
+
+        study = {"schema_version": "cara-research-study-v3.1", "trials": []}
+        write_cost_checkpoints(study, 1.25)
+        self.assertEqual(
+            study["cost_observation"]["unreached_checkpoints"], [4, 8, 12, 16]
+        )
+        self.assertEqual(study["cost_observation"]["actual_gpu_hours"], 1.25)

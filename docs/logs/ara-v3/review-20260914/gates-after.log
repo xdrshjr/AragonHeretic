@@ -1,0 +1,21 @@
+test_complete_cost_cannot_charge_an_unrelated_subphase (__main__.NativeResourceGateTests.test_complete_cost_cannot_charge_an_unrelated_subphase) ... ok
+test_cost_source_rejects_self_consistent_protocol_drift (__main__.NativeResourceGateTests.test_cost_source_rejects_self_consistent_protocol_drift) ... ok
+test_cost_source_requires_registered_complete_r2_call (__main__.NativeResourceGateTests.test_cost_source_requires_registered_complete_r2_call) ... ok
+test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds (__main__.NativeResourceGateTests.test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds) ... ok
+test_native_phase_costs_use_frozen_formula_and_required_coverage (__main__.NativeResourceGateTests.test_native_phase_costs_use_frozen_formula_and_required_coverage) ... ok
+test_relative_stage_ledger_is_rejected_but_linux_absolute_is_valid (__main__.NativeResourceGateTests.test_relative_stage_ledger_is_rejected_but_linux_absolute_is_valid) ... ok
+test_single_card_budget_cannot_reuse_a_more_generous_contract (__main__.NativeResourceGateTests.test_single_card_budget_cannot_reuse_a_more_generous_contract) ... ok
+test_runtime_failed_primary_blocks_following_seed (test_ara_research_runner.RunnerTests.test_runtime_failed_primary_blocks_following_seed) ... ok
+test_campaign_reservation_rejects_duplicate_directory_and_keeps_budget (test_ara_research_runner.RunnerTests.test_campaign_reservation_rejects_duplicate_directory_and_keeps_budget) ... ok
+test_started_member_cannot_reset_attempts_by_removing_study (test_ara_research_runner.RunnerTests.test_started_member_cannot_reset_attempts_by_removing_study) ... ok
+test_replay_failure_latches_campaign_but_numeric_failure_does_not (test_ara_research_runner.RunnerTests.test_replay_failure_latches_campaign_but_numeric_failure_does_not) ... ok
+test_nonprimary_hard_timeout_blocks_other_campaign_members (test_ara_research_runner.RunnerTests.test_nonprimary_hard_timeout_blocks_other_campaign_members) ... ok
+test_budget_charges_across_multiple_launches (test_ara_research_runner.RunnerTests.test_budget_charges_across_multiple_launches) ... ok
+test_target_zero_update_stops_target_seeds_only (test_ara_research_runner.NewResearchBudgetTests.test_target_zero_update_stops_target_seeds_only) ... ok
+test_early_exit_still_records_unreached_cost_checkpoints (test_ara_research_runner.NewResearchBudgetTests.test_early_exit_still_records_unreached_cost_checkpoints) ... ok
+test_single_card_member_cannot_claim_another_run_budget (test_pro6000_experiment.PreparationTests.test_single_card_member_cannot_claim_another_run_budget) ... ok
+
+----------------------------------------------------------------------
+Ran 16 tests in 0.500s
+
+OK

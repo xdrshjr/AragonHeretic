@@ -30,6 +30,8 @@ from .ara_refinement_capture import (
     generate_sequences,
     snapshot_factors,
     tensor_identity,
+    measure_research_phase,
+    extend_trial_evidence as _extend_trial_evidence,
 )
 from .ara_research_schema import digest, file_digest, write_json
 from .ara_trajectory import _soft_nearest
@@ -304,17 +306,23 @@ def _actual_ratios(model, targets, sequences, bank):
 
 
 def _block_transaction(model, context, request, parameters, frozen=None):
+    from .ara_backtracking import BacktrackingRequest, evaluate_block_proposals
+
     targets = request.targets
     before_state = tensor_identity(snapshot_factors(model.ara_targets))
-    before = context.monitor(model)
+    resources = []
+    with measure_research_phase(model, "monitor_before", resources):
+        before = context.monitor(model)
     original = snapshot_factors(targets)
-    bank = frozen or capture_reference_pair(model, request)
+    with measure_research_phase(model, "capture", resources):
+        bank = frozen or capture_reference_pair(model, request)
     bank = bind_evaluation_state(bank, before_state)
-    proposal = solve_refinement_block(
-        model,
-        bank,
-        (targets, parameters, context.config.keep_reference),
-    )
+    with measure_research_phase(model, "local_optimization", resources):
+        proposal = solve_refinement_block(
+            model,
+            bank,
+            (targets, parameters, context.config.keep_reference),
+        )
     event = {
         "before_adapter_hash": before_state,
         "accepted": False,
@@ -324,13 +332,37 @@ def _block_transaction(model, context, request, parameters, frozen=None):
         "local_statistics": proposal.statistics,
         "monitor_before": before,
         "rejection_reason": proposal.rejection_reason,
+        "phase_resources": resources,
     }
+    transaction = BacktrackingRequest(
+        model,
+        context,
+        request,
+        bank,
+        proposal,
+        parameters,
+        original,
+        before,
+        event,
+    )
+    if getattr(context.config, "proposal_policy", "reject-v1") != "reject-v1":
+        return evaluate_block_proposals(context, transaction)
+    return _evaluate_legacy_proposal(transaction)
+
+
+def _evaluate_legacy_proposal(transaction):
+    model, event = transaction.model, transaction.event
+    targets, original = transaction.capture.targets, transaction.original
+    proposal, bank = transaction.proposal, transaction.bank
+    before = transaction.before
     try:
         if proposal.is_acceptable:
             apply_snapshot(targets, proposal.factors)
-            actual = _actual_ratios(model, targets, request.sequences, bank)
+            actual = _actual_ratios(
+                model, targets, transaction.capture.sequences, bank
+            )
             event["actual_cumulative_ratios"] = actual
-            after = context.monitor(model)
+            after = transaction.artifacts.monitor(model)
             event["monitor_after"] = after
             event["accepted"] = all(
                 value <= 0.60 for value in actual.values()
@@ -429,18 +461,10 @@ def apply_refinement_trial(model, artifacts, parameters) -> dict:
     """trial 边界初始化，保存与评分对应的独立快照后恢复全体因子。"""
     original = snapshot_factors(model.ara_targets)
     started = time.time()
-    common_seed = int(
-        digest(
-            [
-                artifacts.protocol["protocol_hash"],
-                artifacts.seed,
-                artifacts.attempt,
-            ]
-        )[:15],
-        16,
-    )
+    common_seed = _trial_seed(artifacts)
     try:
         snapshot_adapter_state(model.ara_targets, common_seed)
+        artifacts.initial_factors = snapshot_factors(model.ara_targets)
         if artifacts.config.method_id in {"B1", "B2"}:
             events = apply_reference_trial(model, artifacts, parameters)
         else:
@@ -467,12 +491,37 @@ def apply_refinement_trial(model, artifacts, parameters) -> dict:
             "wallclock_seconds": time.time() - started,
             "resources": artifacts.check_budget(),
         }
+        if artifacts.protocol.get("schema_version", "").endswith("-v3.1"):
+            _extend_trial_evidence(artifacts, parameters, snapshot, evidence)
         write_json(
             artifacts.output_dir / "trial.json", evidence, immutable=True
         )
         return evidence
     finally:
         apply_snapshot(model.ara_targets, original)
+
+
+def _initialization_identity(protocol):
+    if protocol.get("schema_version") != "cara-research-protocol-v3.1":
+        return protocol["protocol_hash"]
+    return {
+        "scheme": "paired-data-v3.1",
+        "model": protocol["model_identity"],
+        "sources": protocol["initialization_sources"],
+    }
+
+
+def _trial_seed(artifacts):
+    return int(
+        digest(
+            [
+                _initialization_identity(artifacts.protocol),
+                artifacts.seed,
+                artifacts.attempt,
+            ]
+        )[:15],
+        16,
+    )
 
 
 def _capture_legacy_reference(model, artifacts):
@@ -561,22 +610,18 @@ def _apply_legacy_module(target, calibration, parameters, method):
 
 def apply_reference_trial(model, artifacts, parameters):
     """使用相同参数空间直接调用已有求解器，保留其数值行为。"""
-    from dataclasses import asdict
-
     before = tensor_identity(snapshot_factors(model.ara_targets))
-    bank, manifest = _capture_legacy_reference(model, artifacts)
-    statistics = {}
+    resources = []
+    with measure_research_phase(model, "capture", resources):
+        bank, manifest = _capture_legacy_reference(model, artifacts)
     targets = tuple(
         target
         for group in _layer_blocks(model.ara_targets, parameters, 8)
         for target in group
     )
-    for target in targets:
-        artifacts.check_budget()
-        statistics[target.full_name] = asdict(
-            _apply_legacy_module(
-                target, bank[target.key], parameters, artifacts.config.method_id
-            )
+    with measure_research_phase(model, "local_optimization", resources):
+        statistics = _optimize_reference_targets(
+            targets, bank, artifacts, parameters
         )
     after = tensor_identity(snapshot_factors(model.ara_targets))
     manifest.update(captured_state_hash=before, evaluation_state_hash=before)
@@ -591,13 +636,28 @@ def apply_reference_trial(model, artifacts, parameters):
             "bank_manifest": manifest,
             "capture_manifest_hash": digest(manifest),
             "local_statistics": statistics,
+            "phase_resources": resources,
         }
     ]
 
 
+def _optimize_reference_targets(targets, bank, artifacts, parameters):
+    from dataclasses import asdict
+
+    statistics = {}
+    for target in targets:
+        artifacts.check_budget()
+        statistics[target.full_name] = asdict(
+            _apply_legacy_module(
+                target, bank[target.key], parameters, artifacts.config.method_id
+            )
+        )
+    return statistics
+
+
 def run_paired_ablation(context, settings):
     """消融复用父候选参数，只在机制开发角色评估，单独记账。"""
-    from .ara_research_schema import CandidateLock, read_json
+    from .ara_research_schema import parse_candidate_lock, read_json
 
     config = settings.ara_v3
     if not config.parent_candidate_lock_path:
@@ -605,7 +665,7 @@ def run_paired_ablation(context, settings):
     parent = read_json(config.parent_candidate_lock_path)
     if digest(parent) != config.parent_candidate_lock_hash:
         raise ValueError("配对消融父候选锁 hash 不匹配")
-    lock = CandidateLock.model_validate(parent)
+    lock = parse_candidate_lock(parent)
     expected = "S1" if config.method_id == "F1" else "S2"
     if lock.method_id != expected or lock.seed != settings.seed:
         raise ValueError("配对消融父方法或 seed 不匹配")

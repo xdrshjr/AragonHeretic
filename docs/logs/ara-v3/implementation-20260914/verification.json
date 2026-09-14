@@ -1,0 +1,408 @@
+{
+  "日期": "2026-09-14",
+  "结论": "通过",
+  "范围": "代码实现与人工夹具验证，待独立代码评审及真实GPU实验",
+  "规格": "v3.2",
+  "新增制品版本": "v3.1",
+  "HEAD": "0ab032c8acdee8a0f197d4ffba8bec1bad93caad",
+  "file_plan_files": 47,
+  "python_files": 43,
+  "distinct_tests": 251,
+  "验证": {
+    "完整CPU回归": {
+      "passed": 250,
+      "exit_code": 0,
+      "log": "full-cpu-final.log"
+    },
+    "真实子进程预算测试": {
+      "passed": 1,
+      "exit_code": 0,
+      "log": "local-budget.log"
+    },
+    "Linux及CLI入口": {
+      "passed": 7,
+      "exit_code": 0,
+      "log": "entrypoints-final.log"
+    },
+    "增量静态约束": {
+      "files": 43,
+      "issues": []
+    },
+    "增量嵌套约束": {
+      "files": 25,
+      "changed_functions": 172,
+      "max_depth": 4,
+      "issues": []
+    },
+    "Ruff": {
+      "files": 43,
+      "exit_code": 0
+    },
+    "git diff --check": {
+      "exit_code": 0
+    }
+  },
+  "环境": {
+    "remote_python": "3.12.13",
+    "torch": "2.13.0",
+    "transformers": "5.16.1",
+    "peft": "0.20.0",
+    "optuna": "4.9.0",
+    "lm_eval": "0.4.12",
+    "local_python": "3.14",
+    "方式": "现有依赖，当前源码内存加载，最终回归显式 CUDA_VISIBLE_DEVICES 为空"
+  },
+  "复验方式": [
+    "PYTHONPATH=src python -m unittest discover -s tests -p test_ara_*.py",
+    "完整模块列表由 full-cpu-final.log 保留；真实子进程测试须直接从文件系统加载",
+    "python -m ruff check <本清单中43个Python路径>"
+  ],
+  "Git": {
+    "staged_count": 23,
+    "staged_original_bytes_equal": true,
+    "staged_sha256": "55b943ed787dacf7fcb238b3a61d18bd96f8ff20078c8f9fb0da3e6924836dcf",
+    "HEAD_unchanged": true,
+    "source_staged": false,
+    "commit_created": false
+  },
+  "未执行": [
+    "新真实GPU pilot",
+    "正式扩大搜索",
+    "能力审计",
+    "人工双评",
+    "下载模型checksum验收",
+    "研究效果超过基线证明"
+  ],
+  "文件": [
+    {
+      "path": "src/heretic/ara_proposal.py",
+      "action": "新建",
+      "responsibility": "因子级谱投影、统一缩放、权重插值、rank 截断；不访问模型或数据源",
+      "git_state": "新增未暂存",
+      "sha256": "4012194ca3aa08aa1ff74f52ee755c1395caf723a42e70b57c96bddafa6dd444"
+    },
+    {
+      "path": "src/heretic/ara_backtracking.py",
+      "action": "新建",
+      "responsibility": "固定 α 的整组事务、详细拒绝原因、异常恢复与预算检查",
+      "git_state": "新增未暂存",
+      "sha256": "06fcf00609cf1eeda12a18c313358f8cac789044e4d672e0c239dab5704d8519"
+    },
+    {
+      "path": "src/heretic/ara_pilot.py",
+      "action": "新建",
+      "responsibility": "由原生证据生成有效更新、开发进展和资源放行记录",
+      "git_state": "新增未暂存",
+      "sha256": "29932b012e553999512531eed54c358901aec27f5c071419e92712c41f83231c"
+    },
+    {
+      "path": "src/heretic/ara_refinement.py",
+      "action": "修改",
+      "responsibility": "分离原始求解与部署策略，接入回溯和真实预测误差，保留旧策略",
+      "git_state": "工作树修改",
+      "sha256": "e064c6ee0a10cb100c10fdb85fee04c76aaa151eeca69f2a3da726efc5c19e56"
+    },
+    {
+      "path": "src/heretic/ara_refinement_config.py",
+      "action": "修改",
+      "responsibility": "策略、计费设备、新版执行身份、事件和 pilot schema；旧 hash 原样校验",
+      "git_state": "工作树修改",
+      "sha256": "9371a8482950c8867c241b37016f49b095cd117e8f10dcad62ab14a815d15df7"
+    },
+    {
+      "path": "src/heretic/ara_research_schema.py",
+      "action": "修改",
+      "responsibility": "策略、计费设备、新版执行身份、事件和 pilot schema；旧 hash 原样校验",
+      "git_state": "工作树修改",
+      "sha256": "ff41a4ddb6f0678c6f786d3fa32c27d50ee2d5e079591ff509a209eb7ff74b57"
+    },
+    {
+      "path": "src/heretic/research_protocol.py",
+      "action": "修改",
+      "responsibility": "策略、计费设备、新版执行身份、事件和 pilot schema；旧 hash 原样校验",
+      "git_state": "工作树修改",
+      "sha256": "88b85e8c5563fd11dc27ceef030c96a52b4e264b2051368577c86963fb8d10e7"
+    },
+    {
+      "path": "src/heretic/ara_research_runner.py",
+      "action": "修改",
+      "responsibility": "零更新状态、策略绑定重放、回溯计费、成本检查点与放行检查",
+      "git_state": "工作树修改",
+      "sha256": "8fc93f87727bd23f0de7de79f1b0489e7e306fde8b182b3706758395ca130e7d"
+    },
+    {
+      "path": "src/heretic/research_budget.py",
+      "action": "修改",
+      "responsibility": "零更新状态、策略绑定重放、回溯计费、成本检查点与放行检查",
+      "git_state": "工作树修改",
+      "sha256": "1884db8e02cd0363dab332fb9a1b044800d74097ea7b06c7e96feacd59d8eabc"
+    },
+    {
+      "path": "src/heretic/pro6000_prepare.py",
+      "action": "修改",
+      "responsibility": "单卡新运行也使用进展放行；旧恢复保持旧身份；comparison 导出明确效果状态",
+      "git_state": "工作树修改",
+      "sha256": "0012033898498e126d540a3346d0365ba2e3ac4419fd80ac4d78c21b4821b42e"
+    },
+    {
+      "path": "src/heretic/pro6000_experiment.py",
+      "action": "修改",
+      "responsibility": "单卡新运行也使用进展放行；旧恢复保持旧身份；comparison 导出明确效果状态",
+      "git_state": "工作树修改",
+      "sha256": "7d5ca0eca4631aad7e2f699a1695ee9ca0412a5afa968dcd9782f4933ae209e5"
+    },
+    {
+      "path": "src/heretic/pro6000_launch.py",
+      "action": "修改",
+      "responsibility": "单卡新运行也使用进展放行；旧恢复保持旧身份；comparison 导出明确效果状态",
+      "git_state": "工作树修改",
+      "sha256": "b12f86f19165e4270c053cf8203aef4944622ae6c86a37c00fcfe6dddb605739"
+    },
+    {
+      "path": "src/heretic/continuation_scores.py",
+      "action": "修改",
+      "responsibility": "精确因果位置、完整词表的分块评分；逐项与原值核对",
+      "git_state": "工作树修改",
+      "sha256": "225e8229753acace1127d715f54d463e7fb3a6645408832d79fd76cd4968a4fc"
+    },
+    {
+      "path": "src/heretic/sequence_scores.py",
+      "action": "修改",
+      "responsibility": "精确因果位置、完整词表的分块评分；逐项与原值核对",
+      "git_state": "工作树修改",
+      "sha256": "b5fa64124cfc83fd708ded9fa7fafebdf82fcdc3fdf3d2c2114948bda8a50dfd"
+    },
+    {
+      "path": "src/heretic/ara_refinement_capture.py",
+      "action": "小范围修改",
+      "responsibility": "分阶段资源峰值与剩余快照预检，不改变捕获语义",
+      "git_state": "工作树修改",
+      "sha256": "c4937c08f7750685bbc2d3f0b12f4195aa0c4b975ee3897468713ce7339189e6"
+    },
+    {
+      "path": "src/heretic/ara_runtime.py",
+      "action": "小范围修改",
+      "responsibility": "分阶段资源峰值与剩余快照预检，不改变捕获语义",
+      "git_state": "工作树修改",
+      "sha256": "127a1fb92c6536b8bad7ea23ccb526c4736fbd1ac78e7351c76189408a894dee"
+    },
+    {
+      "path": "src/heretic/trial_methods.py",
+      "action": "修改",
+      "responsibility": "执行身份传递、旧新读取分派、recovery 标签修正；保留审计规则",
+      "git_state": "工作树修改",
+      "sha256": "be2478f5a3ee56df22891b39fc0e617cae424774f0e9fa0113041c2145805f3b"
+    },
+    {
+      "path": "src/heretic/reproduce.py",
+      "action": "修改",
+      "responsibility": "执行身份传递、旧新读取分派、recovery 标签修正；保留审计规则",
+      "git_state": "工作树修改",
+      "sha256": "eca6a079e5bcde042954c197775851a2291a4a69f78f25edf0539a6385b16f02"
+    },
+    {
+      "path": "src/heretic/ara_research_acceptance.py",
+      "action": "修改",
+      "responsibility": "执行身份传递、旧新读取分派、recovery 标签修正；保留审计规则",
+      "git_state": "工作树修改",
+      "sha256": "010c90d21172618582e7e4298192baa09af3b0de26048d14792fb1991ec73b71"
+    },
+    {
+      "path": "src/heretic/workflow.py",
+      "action": "小范围修改",
+      "responsibility": "`validate_reproduction_model` 显式分派 v3/v3.1，防止新制品进入旧 model_fingerprint 分支",
+      "git_state": "工作树修改",
+      "sha256": "154dcb98c49aa10ef46376801814c83d05f08cac7de64a4209e7d314d5e39636"
+    },
+    {
+      "path": "src/heretic/research_audit.py",
+      "action": "修改",
+      "responsibility": "新 method/policy/seed 成员标识、v3.1 读取与正式/比较制品分派；旧账本和制品不得迁移重写",
+      "git_state": "工作树修改",
+      "sha256": "6437ed85111361e17afb7ecb260371810ce923afdbf9e033f8cf67bec8463e70"
+    },
+    {
+      "path": "src/heretic/research_audit_recovery.py",
+      "action": "修改",
+      "responsibility": "新 method/policy/seed 成员标识、v3.1 读取与正式/比较制品分派；旧账本和制品不得迁移重写",
+      "git_state": "工作树修改",
+      "sha256": "f166b068beb6e6a0b3e7a88adf3e2e4c5d34c7ce7b126acd882b5e1bb17ac049"
+    },
+    {
+      "path": "src/heretic/artifact_schema.py",
+      "action": "修改",
+      "responsibility": "新 method/policy/seed 成员标识、v3.1 读取与正式/比较制品分派；旧账本和制品不得迁移重写",
+      "git_state": "工作树修改",
+      "sha256": "b510023b29aa0feeab20e59c23c43a4bf5017e194ff44e967e330f9013a315df"
+    },
+    {
+      "path": "src/heretic/acceptance_export.py",
+      "action": "修改",
+      "responsibility": "新 method/policy/seed 成员标识、v3.1 读取与正式/比较制品分派；旧账本和制品不得迁移重写",
+      "git_state": "工作树修改",
+      "sha256": "2b3c6953808031c1cdd2820781ad277eaa332598ad33b0b45f31acf56561eeca"
+    },
+    {
+      "path": "src/heretic/research_evaluation.py",
+      "action": "修改",
+      "responsibility": "新语义单侧配对区间、固定重采样参数、退化状态；不变更旧报告结论",
+      "git_state": "工作树修改",
+      "sha256": "4dc4450f314aa3e0b1b60527c28a96a1a2db1d3357e313e3ec8c17e01ce4e6e3"
+    },
+    {
+      "path": "scripts/prepare_ara_research_protocol.py",
+      "action": "修改",
+      "responsibility": "冻结 role_layout、profile 映射和无环目标执行契约，传递新的准备输入",
+      "git_state": "工作树修改",
+      "sha256": "55fd8332f644457d549f8d2c1074bafc97712aee800ac3e19425983bfe661686"
+    },
+    {
+      "path": "config.qwen38-27b-cara-v3-96.toml",
+      "action": "修改",
+      "responsibility": "新运行显式选择新策略与阶段；退出码透传，不覆盖冻结旧配置",
+      "git_state": "工作树修改",
+      "sha256": "26e577645d2c9b564cacd3d215615642086818e723622afc4402bea869dabbdb"
+    },
+    {
+      "path": "scripts/run_ara_research_96.sh",
+      "action": "修改",
+      "responsibility": "新运行显式选择新策略与阶段；退出码透传，不覆盖冻结旧配置",
+      "git_state": "工作树修改",
+      "sha256": "41ce9d5a6f46c136d0ea66cd7299649a268afbb005770f8fbcba8a1eefaaa806"
+    },
+    {
+      "path": "scripts/run_qwen38_27b_ara_v3_pro6000.sh",
+      "action": "修改",
+      "responsibility": "新运行显式选择新策略与阶段；退出码透传，不覆盖冻结旧配置",
+      "git_state": "工作树修改",
+      "sha256": "c2f40222ff41a1d9f24c294833be7ee31e83023362c6ecf4e535e7ad0635f0c3"
+    },
+    {
+      "path": "tests/test_ara_proposal.py",
+      "action": "新建",
+      "responsibility": "数值反例、回溯事务、旧零更新证据不得放行",
+      "git_state": "新增未暂存",
+      "sha256": "7fcc51ad4a1912b9be98ac4716d406262314282c1b1e60d686f5922ef6f58e06"
+    },
+    {
+      "path": "tests/test_ara_backtracking.py",
+      "action": "新建",
+      "responsibility": "数值反例、回溯事务、旧零更新证据不得放行",
+      "git_state": "新增未暂存",
+      "sha256": "0048890f17e37ac4c84db05a4d60522ec938395428f4c8a573fa2406196e7441"
+    },
+    {
+      "path": "tests/test_ara_pilot.py",
+      "action": "新建",
+      "responsibility": "数值反例、回溯事务、旧零更新证据不得放行",
+      "git_state": "新增未暂存",
+      "sha256": "3f23161169905cf8e09cd1d7173c33c67ff81f01d9dfdabf3eb553ed34d784fa"
+    },
+    {
+      "path": "tests/test_ara_refinement.py",
+      "action": "扩展",
+      "responsibility": "零/非零更新、两入口、恢复和导出状态一致",
+      "git_state": "工作树修改",
+      "sha256": "49b9c1211e7e8d1e097ae90431ea3dbec520b3b12c81126f1b86d93cb46e0ecd"
+    },
+    {
+      "path": "tests/test_ara_research_runner.py",
+      "action": "扩展",
+      "responsibility": "零/非零更新、两入口、恢复和导出状态一致",
+      "git_state": "工作树修改",
+      "sha256": "2a7983b5bb99fd629a53b213f37c1a31d48c42843fc0bea95ce28d10ce0140c3"
+    },
+    {
+      "path": "tests/test_pro6000_experiment.py",
+      "action": "扩展",
+      "responsibility": "零/非零更新、两入口、恢复和导出状态一致",
+      "git_state": "工作树修改",
+      "sha256": "8276e8d3a107f8c08b36b08b07e6785c8a86ffff3b5abeb035081464559820df"
+    },
+    {
+      "path": "tests/test_pro6000_export.py",
+      "action": "扩展",
+      "responsibility": "零/非零更新、两入口、恢复和导出状态一致",
+      "git_state": "工作树修改",
+      "sha256": "9b031d44b7b7c24f35d4db9e62175e8a0196bb6495f1ab6dc2f624b240cdf353"
+    },
+    {
+      "path": "tests/test_sequence_scores.py",
+      "action": "扩展",
+      "responsibility": "流式/原始数值一致、EOS、长 prompt、旧新身份不混用",
+      "git_state": "工作树修改",
+      "sha256": "02ce8e96249baa6cf85d474a4c4f2c13ca57885590aa8395d37a93009a5a9bca"
+    },
+    {
+      "path": "tests/test_refusal_log_odds.py",
+      "action": "扩展",
+      "responsibility": "流式/原始数值一致、EOS、长 prompt、旧新身份不混用",
+      "git_state": "工作树修改",
+      "sha256": "b680550cd18353da88601241a93a4be72b4cb36aac80abf297fb71a01545c6fb"
+    },
+    {
+      "path": "tests/test_reproduce.py",
+      "action": "扩展",
+      "responsibility": "流式/原始数值一致、EOS、长 prompt、旧新身份不混用",
+      "git_state": "工作树修改",
+      "sha256": "befad070d2b2dd124e487f960f7726148e18c7fc1dbc3095b9aee28b8f954886"
+    },
+    {
+      "path": "tests/test_workflow.py",
+      "action": "扩展",
+      "responsibility": "通过通用重现入口读取两版制品；模型/执行身份错误及未知 schema 拒绝",
+      "git_state": "工作树修改",
+      "sha256": "6948f691cf7b1e4b10969a9d632d109a015ded7d80f5f5627dd0ef92409e447e"
+    },
+    {
+      "path": "tests/test_research_audit.py",
+      "action": "扩展",
+      "responsibility": "新成员/旧 schema 分派、无环 hash、真实角色布局扩充、统计单双侧与退化、profile 计数边界",
+      "git_state": "工作树修改",
+      "sha256": "f539217839f8d04c62d26237ec3c269644f43e866f2d76fd147d66995bd852eb"
+    },
+    {
+      "path": "tests/test_ara_research_acceptance.py",
+      "action": "扩展",
+      "responsibility": "新成员/旧 schema 分派、无环 hash、真实角色布局扩充、统计单双侧与退化、profile 计数边界",
+      "git_state": "工作树修改",
+      "sha256": "07dd46b2d0a633617f717e3f858b85b068388eebfbc41e20cded5b86bb1c6cba"
+    },
+    {
+      "path": "tests/test_acceptance_export.py",
+      "action": "扩展",
+      "responsibility": "新成员/旧 schema 分派、无环 hash、真实角色布局扩充、统计单双侧与退化、profile 计数边界",
+      "git_state": "工作树修改",
+      "sha256": "20401d3787a5cd01e88f15ed67c70c6a4df296bfaf756090072c29675dcc772d"
+    },
+    {
+      "path": "tests/test_research_evaluation.py",
+      "action": "扩展",
+      "responsibility": "新成员/旧 schema 分派、无环 hash、真实角色布局扩充、统计单双侧与退化、profile 计数边界",
+      "git_state": "工作树修改",
+      "sha256": "4cd896af752e5dc85c6238ac191370ef9093256db090feefca1f9a9b27451521"
+    },
+    {
+      "path": "tests/test_config.py",
+      "action": "扩展",
+      "responsibility": "新成员/旧 schema 分派、无环 hash、真实角色布局扩充、统计单双侧与退化、profile 计数边界",
+      "git_state": "工作树修改",
+      "sha256": "0c77b65b44ed1bb3d4483efb080fc1f7e22427b4e75fa51331a1b607891065f7"
+    },
+    {
+      "path": "tests/test_protocol_data.py",
+      "action": "扩展",
+      "responsibility": "新成员/旧 schema 分派、无环 hash、真实角色布局扩充、统计单双侧与退化、profile 计数边界",
+      "git_state": "工作树修改",
+      "sha256": "2d7a9b8a514001e50b9ac4f64728d050507d19144734471b98dfdd1994adab80"
+    },
+    {
+      "path": "README.md",
+      "action": "后续修改/生成",
+      "responsibility": "使用说明与原生事件、阶段成本、对照差值、放行报告、哈希清单",
+      "git_state": "工作树修改",
+      "sha256": "f916b08ad7ec5a101f5ca6f8b91506a209cd33ab976ba3dbaa08df9ae1bd8e72"
+    }
+  ],
+  "问题": []
+}

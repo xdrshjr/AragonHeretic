@@ -67,6 +67,35 @@ def scores(keywords=0.05, kl=0.02):
 
 
 class PreparationTests(unittest.TestCase):
+    def test_single_card_member_cannot_claim_another_run_budget(self):
+        from heretic.research_budget import reserve_campaign_member
+
+        with tempfile.TemporaryDirectory() as folder:
+            root = Path(folder)
+            protocol = {
+                "schema_version": "cara-research-protocol-v3.1",
+                "target_execution_hash": "target",
+                "target_execution_contract": {
+                    "phase_budgets": {
+                        "experiment": {
+                            "ledger_path": str(root / "experiments.json")
+                        }
+                    }
+                },
+            }
+            identity = {
+                "method_id": "S2",
+                "proposal_policy": "spectral-backtrack-v1",
+                "seed": 42,
+            }
+            reserve_campaign_member(
+                protocol, identity, root / "first", "experiment"
+            )
+            with self.assertRaises(ValueError):
+                reserve_campaign_member(
+                    protocol, identity, root / "second", "experiment"
+                )
+
     def test_full_roles_preserve_original_prompts_and_never_overlap(self):
         rows, previous = data_fixture()
         previous["development"][0]["system"] = "冻结的独立系统提示"
@@ -323,6 +352,121 @@ class RecoveryTests(unittest.TestCase):
             self.assertEqual(
                 frozen.read_text(encoding="utf-8"), "# committed\n"
             )
+
+
+class NewPro6000GateTests(unittest.TestCase):
+    def test_new_launcher_rejects_missing_readiness_before_creating_run(self):
+        from heretic.pro6000_launch import create_run
+
+        options = SimpleNamespace(hours=8.0, seed=42)
+        with patch("heretic.pro6000_launch.freeze_source") as freeze:
+            with self.assertRaisesRegex(ValueError, "search_readiness"):
+                create_run(Path("."), options)
+            freeze.assert_not_called()
+
+    def test_new_experiment_checks_readiness_before_model_allocation(self):
+        from heretic.ara_pilot import PilotGateError
+
+        run = {
+            "artifact_version": "v3.1",
+            "seed": 42,
+            "hours": 8,
+            "readiness_evidence": {"path": "missing", "sha256": "missing"},
+        }
+        settings = SimpleNamespace(
+            ara_v3=SimpleNamespace(proposal_policy="spectral-backtrack-v1")
+        )
+        protocol = {
+            "schema_version": "cara-research-protocol-v3.1",
+            "phase_budgets": {},
+        }
+        with self.assertRaises(PilotGateError):
+            validate_run_binding(run, settings, protocol)
+
+
+if __name__ == "__main__":
+    unittest.main()
+
+
+class StageCompletionRegressionTests(unittest.TestCase):
+    def test_failed_widest_resource_cannot_use_another_narrow_probe(self):
+        from test_ara_pilot import contract_fixture, resource_fixture
+        from heretic.ara_pilot import PilotGateError
+        from heretic.research_budget import pilot_cost_prediction
+
+        contract = contract_fixture()
+        narrow = dict(
+            next(
+                row
+                for row in contract["stage_executions"]
+                if row["stage_execution_id"] == "r2-backtrack-anchor0"
+            )
+        )
+        narrow.update(
+            stage_execution_id="r2-extra-narrow-resource", purpose="resource"
+        )
+        contract["stage_executions"].append(narrow)
+        with tempfile.TemporaryDirectory() as directory:
+            with patch(
+                "test_ara_pilot.contract_fixture", return_value=contract
+            ):
+                target, resource, ledger = resource_fixture(Path(directory))
+            pilot_cost_prediction(resource, target, ledger)
+            ledger["calls"]["r2-backtrack-anchor2-resource"].update(
+                state="FAIL",
+                failure_category="RuntimeError",
+                failure_reason="CUDA out of memory",
+            )
+            with self.assertRaisesRegex(PilotGateError, "阶段"):
+                pilot_cost_prediction(resource, target, ledger)
+
+    def test_comparison_numeric_failure_allowed_but_resource_error_blocks(self):
+        from test_ara_pilot import pilot_fixture
+        from heretic.ara_pilot import _verify_stage_ledger, PilotGateError
+
+        with tempfile.TemporaryDirectory() as directory:
+            contract, evidence = pilot_fixture(Path(directory))
+            ledger = read_json(evidence["stage_ledger"]["path"])
+            execution = next(
+                row
+                for row in contract["stage_executions"]
+                if row["stage_execution_id"] == "r1-backtrack-anchor0"
+            )
+            failed = ledger["calls"]["r1-reject-anchor0"]
+            failed.update(
+                state="FAIL",
+                failure_category="RefinementNumericalError",
+                failure_reason="nonfinite proposal",
+            )
+            _verify_stage_ledger(ledger, contract, execution)
+            failed.update(
+                failure_category="RuntimeError",
+                failure_reason="CUDA out of memory",
+            )
+            with self.assertRaisesRegex(PilotGateError, "阶段"):
+                _verify_stage_ledger(ledger, contract, execution)
+
+    def test_budget_persists_stage_failure_classification(self):
+        from test_ara_pilot import resource_fixture
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            contract, _, _ = resource_fixture(root)
+            protocol = read_json(root / "protocol.json")
+            execution = next(
+                row
+                for row in contract["stage_executions"]
+                if row["stage_execution_id"] == "r2-backtrack-anchor0"
+            )
+            with self.assertRaisesRegex(RuntimeError, "CUDA out of memory"):
+                with StudyBudget(root / "budget.json", 10, devices=1) as budget:
+                    budget.bind_stage(protocol, execution)
+                    raise RuntimeError("CUDA out of memory")
+            failed = read_json(root / "budget.json")["calls"][
+                execution["stage_execution_id"]
+            ]
+            self.assertEqual(failed["failure_category"], "RuntimeError")
+            self.assertEqual(failed["failure_reason"], "CUDA out of memory")
 
 
 if __name__ == "__main__":

@@ -108,5 +108,42 @@ class ExportTests(unittest.TestCase):
             )
 
 
+class NewPro6000ResultTests(unittest.TestCase):
+    def test_completed_zero_update_export_is_explicitly_no_improvement(self):
+        from unittest.mock import patch
+        from heretic.pro6000_experiment import _finish_experiment
+
+        rows = [
+            {
+                "state": "COMPLETE",
+                "attempt": i,
+                "scores": {"baseline_keywords": 1.0, "keywords": 1.0},
+                "final_snapshot_path": "factors.pt",
+                "snapshot_file_hash": "hash",
+            }
+            for i in range(24)
+        ]
+        study = {"trials": rows, "experiment_candidate": {"attempt": 0}}
+        context = {
+            "protocol": {
+                "source_revision": "revision",
+                "protocol_hash": "p",
+                "schema_version": "cara-research-protocol-v3.1",
+            },
+            "budget": SimpleNamespace(elapsed=lambda: 3600.0),
+        }
+        with tempfile.TemporaryDirectory() as directory:
+            with patch(
+                "heretic.pro6000_experiment._export_adapter", return_value={}
+            ):
+                result, code = _finish_experiment(
+                    context, study, Path(directory)
+                )
+        self.assertEqual(code, 0)
+        self.assertEqual(result["effect_status"], "no_improvement")
+        self.assertEqual(result["research_status"], "not_run")
+        self.assertEqual(result["baseline_comparison"]["keywords_delta"], 0)
+
+
 if __name__ == "__main__":
     unittest.main()

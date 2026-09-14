@@ -218,5 +218,61 @@ class ReproductionSchemaTests(unittest.TestCase):
         self.assertIn("Acceptance gate:** passed", readme)
 
 
+class NewResearchReproductionTests(unittest.TestCase):
+    def test_loader_rejects_new_report_with_old_reproduction(self):
+        from heretic.ara_research_acceptance import promote_research_artifact
+        from heretic.ara_research_schema import read_json
+        from heretic.artifact_schema import load_bound_acceptance
+        from test_ara_research_acceptance import new_passed_report
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            staging, formal = root / "staging", root / "formal"
+            promote_research_artifact(
+                staging, formal, new_passed_report(staging)
+            )
+            reproduction = read_json(formal / "reproduce.json")
+            reproduction["schema"] = "cara-research-reproduce-v3"
+            for key in ("execution_identity_hash", "study_execution_hash"):
+                reproduction.pop(key)
+            with self.assertRaisesRegex(ValueError, "版本"):
+                load_bound_acceptance(
+                    str(formal / "reproduce.json"), reproduction, True
+                )
+
+    def test_new_reproduction_round_trip_and_parameter_binding(self):
+        import tempfile
+        from pathlib import Path
+        from heretic.ara_research_acceptance import promote_research_artifact
+        from heretic.reproduce import load_reproduction_information
+        from heretic.artifact_schema import load_bound_acceptance
+        from test_ara_research_acceptance import new_passed_report
+
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            staging, formal = root / "staging", root / "formal"
+            promote_research_artifact(
+                staging, formal, new_passed_report(staging)
+            )
+            path = formal / "reproduce.json"
+            payload = load_reproduction_information(str(path))
+            self.assertEqual(
+                normalize_reproduction_parameters(payload),
+                payload["parameters"],
+            )
+            load_bound_acceptance(str(path), payload, True)
+            payload["execution_identity_hash"] = "changed"
+            with self.assertRaises(ValueError):
+                load_bound_acceptance(str(path), payload, True)
+
+    def test_unknown_research_version_cannot_use_legacy_version_number(self):
+        from heretic.artifact_schema import parse_reproduce
+
+        with self.assertRaises(ValueError):
+            parse_reproduce(
+                {"schema": "cara-research-reproduce-v99", "version": 4}
+            )
+
+
 if __name__ == "__main__":
     unittest.main()

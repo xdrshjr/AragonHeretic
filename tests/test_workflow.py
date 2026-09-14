@@ -48,7 +48,9 @@ def gate(report_path: str = "acceptance.json") -> AcceptanceGate:
     )
 
 
-def records(keyword: float = 0.05, divergence: float = 0.1) -> list[dict[str, Any]]:
+def records(
+    keyword: float = 0.05, divergence: float = 0.1
+) -> list[dict[str, Any]]:
     return [
         {
             "name": "Keywords",
@@ -168,7 +170,9 @@ class AcceptanceWorkflowTests(unittest.TestCase):
         with (
             patch("heretic.workflow.apply_trial"),
             patch("heretic.workflow.cleanup_trial") as cleanup,
-            patch("heretic.workflow._capture_adapter_state", return_value="state"),
+            patch(
+                "heretic.workflow._capture_adapter_state", return_value="state"
+            ),
             self.assertRaisesRegex(RuntimeError, "scorer failed"),
         ):
             replay_candidate(runtime, ara_trial())
@@ -199,10 +203,14 @@ class AcceptanceWorkflowTests(unittest.TestCase):
 
         with (
             patch("heretic.workflow.replay_candidate", side_effect=replay),
-            patch("heretic.workflow._adapter_states_allclose", return_value=True),
+            patch(
+                "heretic.workflow._adapter_states_allclose", return_value=True
+            ),
             patch("heretic.workflow.audit_settings", return_value=object()),
             patch("heretic.workflow.Evaluator", side_effect=make_audit),
-            patch("heretic.workflow.parameters_from_trial", return_value=object()),
+            patch(
+                "heretic.workflow.parameters_from_trial", return_value=object()
+            ),
             patch("heretic.workflow.apply_trial"),
             patch("heretic.workflow._validate_audit_outputs"),
         ):
@@ -210,7 +218,9 @@ class AcceptanceWorkflowTests(unittest.TestCase):
         self.assertEqual(events, ["replay", "replay", "audit"])
         self.assertEqual(result, records())
 
-    def test_reload_process_rejects_timeout_failure_and_identity_drift(self) -> None:
+    def test_reload_process_rejects_timeout_failure_and_identity_drift(
+        self,
+    ) -> None:
         settings = cast(Settings, SimpleNamespace(model_dump=lambda: {}))
 
         def context(process, report):
@@ -230,7 +240,11 @@ class AcceptanceWorkflowTests(unittest.TestCase):
         timeout.terminate.assert_called_once()
 
         for process, report, message in (
-            (Mock(exitcode=1), {"status": "failed", "reason": "worker"}, "worker"),
+            (
+                Mock(exitcode=1),
+                {"status": "failed", "reason": "worker"},
+                "worker",
+            ),
             (
                 Mock(exitcode=0),
                 {"status": "passed", "model": "wrong", "scores": []},
@@ -248,7 +262,9 @@ class AcceptanceWorkflowTests(unittest.TestCase):
             ):
                 verify_reloaded_adapter(settings, Path("adapter"), "model")
 
-    def test_export_promotes_only_after_reload_and_reproduce_succeed(self) -> None:
+    def test_export_promotes_only_after_reload_and_reproduce_succeed(
+        self,
+    ) -> None:
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory) / "accepted"
             acceptance = gate(str(destination / "acceptance.json"))
@@ -259,7 +275,9 @@ class AcceptanceWorkflowTests(unittest.TestCase):
             model = SimpleNamespace(model_fingerprint="model")
             runtime = cast(
                 AcceptanceRuntime,
-                SimpleNamespace(settings=settings, model=model, artifacts=object()),
+                SimpleNamespace(
+                    settings=settings, model=model, artifacts=object()
+                ),
             )
             evidence = AcceptedExport(
                 runtime, ara_trial(), records(), "study", "cal", "journal"
@@ -288,7 +306,9 @@ class AcceptanceWorkflowTests(unittest.TestCase):
                     "heretic.workflow._artifact_hashes",
                     return_value={"adapter": "hash"},
                 ),
-                patch("heretic.workflow._acceptance_report", return_value=report),
+                patch(
+                    "heretic.workflow._acceptance_report", return_value=report
+                ),
                 patch("heretic.workflow.write_acceptance_report"),
                 patch("heretic.workflow.create_reproduce_folder") as reproduce,
             ):
@@ -299,7 +319,9 @@ class AcceptanceWorkflowTests(unittest.TestCase):
     def test_export_failure_never_promotes_staging(self) -> None:
         with tempfile.TemporaryDirectory() as directory:
             destination = Path(directory) / "accepted"
-            settings = SimpleNamespace(acceptance_gate=gate(), max_shard_size="1GB")
+            settings = SimpleNamespace(
+                acceptance_gate=gate(), max_shard_size="1GB"
+            )
             runtime = cast(
                 AcceptanceRuntime,
                 SimpleNamespace(
@@ -314,7 +336,8 @@ class AcceptanceWorkflowTests(unittest.TestCase):
             with (
                 patch("heretic.workflow._save_staging_files"),
                 patch(
-                    "heretic.workflow._runtime_diagnostics", return_value=({}, {}, {})
+                    "heretic.workflow._runtime_diagnostics",
+                    return_value=({}, {}, {}),
                 ),
                 patch("heretic.workflow._release_model_for_reload"),
                 patch(
@@ -326,6 +349,32 @@ class AcceptanceWorkflowTests(unittest.TestCase):
                 export_accepted_adapter(destination, evidence)
             self.assertFalse(destination.exists())
             self.assertTrue((Path(directory) / ".accepted.staging").is_dir())
+
+
+class ResearchVersionWorkflowTests(unittest.TestCase):
+    def test_both_research_versions_use_model_identity_gate(self):
+        from heretic.workflow import validate_reproduction_model
+
+        model = SimpleNamespace(model_fingerprint="different")
+        for version in ("v3", "v3.1"):
+            report = {"schema_version": f"cara-research-acceptance-{version}"}
+            with patch(
+                "heretic.ara_research_runner.validate_research_model"
+            ) as gate:
+                validate_reproduction_model(model, report)
+                gate.assert_called_once_with(model, report)
+
+    def test_unknown_research_version_never_falls_back_to_fingerprint(self):
+        from heretic.workflow import validate_reproduction_model
+
+        with self.assertRaises(ValueError):
+            validate_reproduction_model(
+                SimpleNamespace(model_fingerprint="same"),
+                {
+                    "schema_version": "cara-research-acceptance-v99",
+                    "model_fingerprint": "same",
+                },
+            )
 
 
 if __name__ == "__main__":

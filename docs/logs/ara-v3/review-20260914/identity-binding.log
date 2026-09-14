@@ -1,0 +1,13 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_new_recovery_claim_and_full_artifact_chain (test_ara_research_acceptance.NewResearchArtifactTests.test_new_recovery_claim_and_full_artifact_chain) ... ok
+test_new_reproduction_rejects_empty_execution_hashes (test_ara_research_acceptance.NewResearchArtifactTests.test_new_reproduction_rejects_empty_execution_hashes) ... ok
+test_old_report_cannot_bind_new_reproduction (test_ara_research_acceptance.NewResearchArtifactTests.test_old_report_cannot_bind_new_reproduction) ... ok
+test_old_report_cannot_relabel_new_candidate (test_ara_research_acceptance.NewResearchArtifactTests.test_old_report_cannot_relabel_new_candidate) ... ok
+test_pilot_lock_cannot_be_read_as_formal_candidate (test_ara_research_acceptance.NewResearchArtifactTests.test_pilot_lock_cannot_be_read_as_formal_candidate) ... ok
+
+----------------------------------------------------------------------
+Ran 5 tests in 0.055s
+
+OK
+
+退出码：0

@@ -23,6 +23,10 @@ from .ara_research_acceptance import (
 from .ara_research_schema import (
     STUDY_SCHEMA,
     CandidateLock,
+    CandidateLockV31,
+    STUDY_SCHEMA_V31,
+    study_identity as _study_identity,
+    parse_candidate_lock,
     RefinementParameters,
     digest,
     exclusive_lock,
@@ -30,10 +34,13 @@ from .ara_research_schema import (
     read_json,
     write_json,
 )
+from .ara_pilot import compare_replay
 from .research_budget import (
     ResearchBudgetExceeded,
-    StudyBudget,
-    phase_budget_path,
+    StudyBudget as StudyBudget,
+    run_budgeted_phase,
+    campaign_search_status,
+    write_cost_checkpoints as _write_checkpoints,
 )
 
 
@@ -134,7 +141,18 @@ def _candidate_lock(study, protocol, selected, shortlist, eligibility):
         != selected["snapshot_file_hash"]
     ):
         raise ValueError("候选快照文件已损坏")
-    return CandidateLock(
+    constructor, extra = CandidateLock, {}
+    if protocol.get("schema_version") == "cara-research-protocol-v3.1":
+        constructor = CandidateLockV31
+        extra = {
+            "proposal_policy": study["proposal_policy"],
+            "study_execution_hash": study["study_execution_hash"],
+            "execution_identity_hash": selected["execution_identity_hash"],
+        }
+        if selected["study_execution_hash"] != study["study_execution_hash"]:
+            raise ValueError("候选 trial 不属于当前 study")
+    return constructor(
+        **extra,
         protocol_hash=protocol["protocol_hash"],
         study_hash=study["study_hash"],
         method_id=study["method_id"],
@@ -244,7 +262,11 @@ def run_search(context: dict, *, finalize=None) -> dict:
             read_json(path)
             if path.exists()
             else {
-                "schema_version": STUDY_SCHEMA,
+                "schema_version": (
+                    STUDY_SCHEMA_V31
+                    if "study_execution_hash" in identity
+                    else STUDY_SCHEMA
+                ),
                 **identity,
                 "trials": [],
                 "study_hash": digest(identity),
@@ -260,9 +282,19 @@ def run_search(context: dict, *, finalize=None) -> dict:
                 _mark_interrupted(row)
         write_json(path, study)
         budget = context["budget"]
-        for attempt in range(len(study["trials"]), 24):
-            budget.check()
-            _run_attempt(context, study, path, attempt)
+        from .research_budget import record_campaign_study
+
+        record_campaign_study(context, path)
+        try:
+            for attempt in range(len(study["trials"]), 24):
+                budget.check()
+                _run_attempt(context, study, path, attempt)
+        finally:
+            if study["schema_version"] == STUDY_SCHEMA_V31:
+                _write_checkpoints(
+                    study, budget.elapsed() * budget.devices / 3600
+                )
+                write_json(path, study)
         (finalize or _select_and_lock)(context, study, path)
         return study
 
@@ -285,31 +317,22 @@ def _run_attempt(context, study, path, attempt):
         row.update(evidence)
     except Exception as error:
         from .ara_refinement_capture import SnapshotRestoreError
+        from .research_budget import _blocking_trial
 
         row.update(state="FAIL", failure_category=type(error).__name__)
         row["failure_reason"] = str(error)
-        if isinstance(error, (ResearchBudgetExceeded, SnapshotRestoreError)):
+        if isinstance(
+            error, (ResearchBudgetExceeded, SnapshotRestoreError)
+        ) or (
+            study.get("schema_version") == STUDY_SCHEMA_V31
+            and _blocking_trial(row)
+        ):
             write_json(path, study)
             raise
     devices = getattr(context["budget"], "devices", 2)
     row["completed_gpu_hours"] = context["budget"].elapsed() * devices / 3600
     _write_checkpoints(study, row["completed_gpu_hours"])
     write_json(path, study)
-
-
-def _write_checkpoints(study, current_hours):
-    checkpoints = study.setdefault("gpu_hours_checkpoints", {})
-    for checkpoint in (4, 8, 12, 16):
-        if current_hours < checkpoint or str(checkpoint) in checkpoints:
-            continue
-        eligible = [
-            row
-            for row in study["trials"]
-            if row["state"] == "COMPLETE"
-            and row["completed_gpu_hours"] <= checkpoint
-        ]
-        best = min(eligible, key=_trial_sort) if eligible else None
-        checkpoints[str(checkpoint)] = None if best is None else best["attempt"]
 
 
 def _select_and_lock(context, study, path):
@@ -350,62 +373,9 @@ def _select_and_lock(context, study, path):
     write_json(path, study)
 
 
-def compare_replay(reference: dict, actual: dict) -> None:
-    """从锁定搜索状态比较每次重放，不能只比较两个重放。"""
-    import torch
-    from .ara_refinement_capture import tensor_identity
-
-    for row in (reference, actual):
-        factors = torch.load(
-            row["final_snapshot_path"], map_location="cpu", weights_only=True
-        )
-        if tensor_identity(factors) != row["final_snapshot_hash"]:
-            raise ValueError("重放快照与评分时的权重身份不匹配")
-    left = torch.load(
-        reference["final_snapshot_path"], map_location="cpu", weights_only=True
-    )
-    right = torch.load(
-        actual["final_snapshot_path"], map_location="cpu", weights_only=True
-    )
-    if left.keys() != right.keys() or any(
-        not torch.allclose(left[key], right[key], rtol=1e-5, atol=1e-6)
-        for key in left
-    ):
-        raise ValueError("重放因子与锁定候选不一致")
-    for key, tolerance in (
-        ("keywords", 0.0),
-        ("first_token_kl", 0.005),
-        ("sequence_kl", 0.005),
-        ("log_odds", 1e-4),
-    ):
-        if abs(reference["scores"][key] - actual["scores"][key]) > tolerance:
-            raise ValueError(f"重放指标漂移超限：{key}")
-    if len(reference["events"]) != len(actual["events"]):
-        raise ValueError("重放层组事件数不一致")
-    _compare_replay_events(reference["events"], actual["events"])
-
-
-def _compare_replay_events(reference, actual):
-    for left_event, right_event in zip(reference, actual, strict=True):
-        for key in ("sweep", "block_id", "accepted", "rejection_reason"):
-            if left_event[key] != right_event[key]:
-                raise ValueError(f"重放层组事件不同：{key}")
-        for key in (
-            "protocol_hash",
-            "base_identity",
-            "sequences",
-            "blocks",
-            "steps",
-        ):
-            if digest(left_event["bank_manifest"][key]) != digest(
-                right_event["bank_manifest"][key]
-            ):
-                raise ValueError(f"重放捕获结构身份不同：{key}")
-
-
 def replay_locked_candidate(context, study):
     """两次完整重放加第三次 apply 均绑定原搜索状态。"""
-    lock = CandidateLock.model_validate(study["candidate_lock"])
+    lock = parse_candidate_lock(study["candidate_lock"])
     reference = study["trials"][lock.attempt]
     replays = []
     root = Path(context["run_dir"])
@@ -454,9 +424,13 @@ class _ResearchSession:
         import numpy as np
         from .model import Model
         from .research_evaluation import RoleEvaluator
-        from .ara_refinement_capture import preflight_snapshot_storage
+        from .ara_refinement_capture import (
+            preflight_snapshot_storage,
+            remaining_snapshot_count,
+        )
         from .research_protocol import fit_selection
 
+        started = time.monotonic()
         torch.manual_seed(settings.seed)
         np.random.seed(settings.seed)
         random.seed(settings.seed)
@@ -464,6 +438,9 @@ class _ResearchSession:
         self.root, self.budget = root, budget
         self.model = Model(settings)
         self.model.model.eval()
+        if protocol.get("schema_version") == "cara-research-protocol-v3.1":
+            planned = 1 if protocol.get("pilot") else snapshots
+            snapshots = remaining_snapshot_count(root, planned)
         preflight_snapshot_storage(self.model, root, snapshots=snapshots)
         protocol_root = Path(settings.ara_v3.protocol_manifest).parent
         self.fit, self.fit_ids = fit_selection(
@@ -486,6 +463,7 @@ class _ResearchSession:
             role,
             _role_prompts(protocol, protocol_root, role),
         )
+        self.load_seconds = time.monotonic() - started
 
     def check_budget(self):
         from .ara_refinement_capture import research_resource_status
@@ -496,9 +474,16 @@ class _ResearchSession:
     def apply(self, parameters, attempt, phase):
         from .ara_refinement import RefinementArtifacts, apply_refinement_trial
 
+        config = self.settings.ara_v3
+        if getattr(self, "pilot_parent_id", None):
+            config = config.model_copy(
+                update={
+                    "stage_execution_id": self.pilot_parent_id,
+                }
+            )
         artifacts = RefinementArtifacts(
             self.protocol,
-            self.settings.ara_v3,
+            config,
             self.fit,
             self.fit_ids,
             self.monitor,
@@ -508,6 +493,8 @@ class _ResearchSession:
             attempt,
             self.check_budget,
         )
+        artifacts.load_seconds = self.load_seconds
+        artifacts.invocation_phase = phase
         return apply_refinement_trial(self.model, artifacts, parameters)
 
     def semantic(self, row):
@@ -547,15 +534,6 @@ class _ResearchSession:
         }
 
 
-def _study_identity(settings, protocol):
-    return {
-        "protocol_hash": protocol["protocol_hash"],
-        "method_id": settings.ara_v3.method_id,
-        "seed": settings.seed,
-        "settings_hash": digest(settings.model_dump(mode="json")),
-    }
-
-
 def _mark_interrupted(row):
     row.update(
         state="FAIL",
@@ -589,6 +567,11 @@ def run_from_settings(settings, phase="preflight", run_dir=None):
 
         return reproduce_research_candidate(settings)
     protocol = prepare_protocol(settings)
+    if protocol.get("schema_version") == "cara-research-protocol-v3.1":
+        from .ara_pilot import validate_phase_readiness
+
+        target_phase = "pilot" if protocol.get("pilot") else "search"
+        validate_phase_readiness(protocol, target_phase)
     root = Path(run_dir or settings.study_checkpoint_dir)
     root.mkdir(parents=True, exist_ok=True)
     write_json(root / "protocol.json", protocol, immutable=True)
@@ -607,11 +590,7 @@ def run_from_settings(settings, phase="preflight", run_dir=None):
     limit = research_phase_limit(settings, protocol, phase)
     with exclusive_lock(root / "worker.lock"):
         _recover_search_attempts(root, _study_identity(settings, protocol))
-        path = phase_budget_path(settings, protocol, phase, root)
-        with exclusive_lock(path.with_suffix(".lock")):
-            with StudyBudget(path, limit) as budget:
-                context = _runtime_context(settings, protocol, root, budget)
-                return _execute_model_phase(context, settings, phase)
+        return run_budgeted_phase(settings, protocol, root, phase, limit)
 
 
 def _execute_model_phase(context, settings, phase):
@@ -620,6 +599,10 @@ def _execute_model_phase(context, settings, phase):
 
         return run_paired_ablation(context, settings)
     if phase == "pilot":
+        if context["protocol"].get("schema_version", "").endswith("-v3.1"):
+            from .ara_pilot import run_registered_pilot
+
+            return run_registered_pilot(context, settings)
         evidence = context["apply"](
             paired_parameters(settings.seed, 0), 0, "pilot"
         )
@@ -637,9 +620,14 @@ def _finish_search(context, root):
     study = run_search(context)
     if study.get("candidate_lock"):
         study["replays"] = replay_locked_candidate(context, study)
+        _write_checkpoints(
+            study,
+            context["budget"].elapsed() * context["budget"].devices / 3600,
+        )
         write_json(root / "study.json", study)
         if not (root / "member.json").exists():
             stage_research_candidate(context, study)
+    campaign_search_status(context["protocol"], context["identity"], study)
     status = study.get("effect_status", "failed")
     return {
         "phase": "search",
@@ -665,7 +653,7 @@ def main():
     root.mkdir(parents=True, exist_ok=True)
     try:
         result, code = _dispatch_phase(args)
-    except ValueError as error:
+    except (ValueError, KeyError, TypeError) as error:
         result, code = (
             {
                 "phase": args.phase,
@@ -674,6 +662,10 @@ def main():
             },
             2,
         )
+        from .ara_pilot import PilotGateError
+
+        if isinstance(error, PilotGateError):
+            code = error.exit_code
     except (RuntimeError, OSError, subprocess.SubprocessError) as error:
         result, code = _runtime_failure_result(args.phase, error), 3
     result, code = _write_phase_result(root, args.phase, (result, code))

@@ -90,22 +90,26 @@ models with Heretic.
 
 ### Pro 6000：一键运行最新 Heretic-ARA v3
 
-已准备好的 Pro 6000 服务器使用以下命令启动全量 S2 实验：
+新实验须先取得同模型、数据和硬件的 `search_readiness`，再启动全量 S2：
 
 ```bash
-bash /root/autodl-fs/AragonHeretic-v3/scripts/run_qwen38_27b_ara_v3_pro6000.sh
+bash /root/autodl-fs/AragonHeretic-v3/scripts/run_qwen38_27b_ara_v3_pro6000.sh --target-execution-contract /path/to/target.json --readiness-evidence /path/to/readiness.json --hours 8
 ```
 
 入口自动准备数据与冻结配置，后台执行 **24 次搜索（4 个锚点、8 次随机、12 次 TPE）**，
 并保存快照、指标和最佳开发集候选的 LoRA 适配器。
 默认 Qwen3.8-27B、NF4、rank 128、seed 42、S2 顺序刷新、最多 2 轮；
 每侧从 192 条 fit 候选中选 96 条，monitor 64 条，development 100 条。
-默认累计单卡时间上限为 48 小时，可在新实验启动时用 `--hours` 调整；
+`--hours` 必须与目标契约预先登记的该 seed 实验预算相同；
+省略时使用 48 小时，也必须已登记该上限。
 这是预算上限，不是完成时间预测。SSH 断开后继续运行。
 
 启动后终端会打印运行目录和日志位置。用 `--status <运行目录>` 查看进度，
 用 `--resume <运行目录>` 继续已准备或中断的实验。
 完整说明见 [Pro 6000 实验操作手册](docs/operations/pro6000-experiments.md)。
+新版门控与证据格式见 [本轮运行说明](docs/logs/ara-v3/implementation-20260914/RUNBOOK.md)。
+评审后的完整冻结要求见 [运行契约补充](docs/logs/ara-v3/review-20260914/RUNBOOK-SUPPLEMENT.md)。
+旧运行目录继续使用其冻结源码和旧策略；无有效更新的旧 pilot 不能用于新版放行。
 本入口记录开发集实验结果；论文所需的独立审计与语义评审仍需另行完成。
 
 ### 通用安装与运行
@@ -280,6 +284,12 @@ Silh = Mean silhouette coefficient of residuals for good/bad clusters
 monitor 同时通过后才接受。默认 directional 及既有 point-v1/trajectory-v2
 数值求解路径保留。
 
+2026-09-14 增量采用 `spectral-backtrack-v1`：在小矩阵上裁剪有效权重的
+奇异值，谱上限仍为 8.0，再依次尝试 `1、0.5、0.25、0.125、0.0625`。
+插值对象是 `BA`，每次失败恢复整个层组；接受要求有效权重确实变化。
+`reject-v1` 保留历史行为，`scale-v1` 和 `spectral-clip-v1` 用于诊断。
+新协议、trial、候选及验收使用 v3.1 schema，与旧制品显式分派。
+
 双 3090 模板为 `config.qwen38-27b-cara-v3-96.toml`，使用 NF4、每卡
 22 GiB 加载预算以及独立的 4+8+12 搜索。模板中的模型缓存路径需实测。
 运行前必须准备不可变的数据、源码、模型及 tokenizer 身份清单，并冻结
@@ -303,15 +313,26 @@ HF 源另提供 `dataset_spec` 和逐题 `split`。`source_files` 映射实际�
 fit 全池 192 条中按 seed 选择 96 条；monitor/机制开发/development
 分别为每侧 64/44/100 条，审计正文不会由训练加载器读取。
 
-正式搜索须先通过单独 pilot；pilot 使用另一份 `pilot=true` 协议，fit 和
-monitor 每侧各 8 条，且禁止正式提升。`phase_budgets.search.pilot_evidence`
-绑定真实 pilot 汇总的 `path`/`sha256`，汇总包含 `status` 和
-`predicted_slowest_study_seconds`，加 25% 余量后不得超过 8 小时。
+正式搜索须先通过 R1/R2，二者均为 `pilot=true`。R1 的 smoke profile
+使用每侧 8 条 fit/monitor；R2 的 full-calibration profile 使用 192 条
+fit 候选中选 96 条、64 条 monitor，development 的 100 条 ID/顺序保持不变。
+R1 原生有效更新及独立重载支持 `active_update`；R2 还要求至少五条关键词
+改善、两项 KL≤0.15、两次重放、第三次 apply、独立重载和完整成本证据。
+每次调用由目标契约中的 `stage_execution_id` 唯一注册；R1/R2 各共享八小时。
+`phase_budgets.<phase>.readiness_evidence` 引用离线派生记录的 path/sha256。
+旧 v3 的 `pilot_evidence` 仅由旧版读取路径处理，不能替代新版证据。
 pilot、ablation、audit 的预算包含 `max_wallclock_seconds`、`max_gpu_hours`
 及 `members`；audit 还固定 `annotation_deadline`、
 `member_budgets.<member_id>.max_wallclock_seconds` 及
 `annotations.roles`/`annotations.record_count`。恢复、开发语义评估和重放
 共享累计预算，硬超时留下中断证据并退出。
+
+新成员 ID 为 `方法/策略/seed`，文件目录采用独立摘要键；主方法固定为
+`S2/spectral-backtrack-v1` 的 42、43、44 三个 seed。首个目标 study 全零时
+停止后续目标 seeds，B1/B2/S1 的失败仍保留为比较结果。
+新版集合报告单独给出语义优越性的单侧配对区间；需要 B0 及各对照的盲评标签，
+三个 seed 分别通过才能支持对应优越性结论。它与绝对拒答率目标分别报告。
+recovery 通过标记 `recovery_supported`，不等同于总体拒答率低于 1%。
 
 每个 search 产生锁定候选或失败对照的 `member.json`。所有方法和 seed
 完成后，汇总到包含 `members` 数组的集合文件；没有可用结果的成员必须

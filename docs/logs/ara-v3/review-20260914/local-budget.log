@@ -1,0 +1,6 @@
+test_nested_budget_keeps_outer_deadline_and_kills_only_descendants (__main__.LocalBudgetTest.test_nested_budget_keeps_outer_deadline_and_kills_only_descendants) ... ok
+
+----------------------------------------------------------------------
+Ran 1 test in 1.339s
+
+OK

@@ -1,0 +1,22 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_full_calibration_is_not_treated_as_eight_sample_smoke (test_protocol_data.NewProfileContractTests.test_full_calibration_is_not_treated_as_eight_sample_smoke) ... ok
+test_full_mapping_keeps_development_and_requires_192_candidates (test_protocol_data.NewProfileContractTests.test_full_mapping_keeps_development_and_requires_192_candidates) ... ok
+test_hardware_model_mismatch_is_rejected_before_model_load (test_protocol_data.NewProfileContractTests.test_hardware_model_mismatch_is_rejected_before_model_load) ... ok
+test_new_protocol_consumers_reject_legacy_or_unknown_version (test_protocol_data.NewProfileContractTests.test_new_protocol_consumers_reject_legacy_or_unknown_version) ... ok
+test_target_profiles_cannot_change_development_body_identity (test_protocol_data.NewProfileContractTests.test_target_profiles_cannot_change_development_body_identity) ... ok
+test_target_rejects_scorer_precision_and_role_content_drift (test_protocol_data.NewProfileContractTests.test_target_rejects_scorer_precision_and_role_content_drift) ... ok
+test_cross_role_normalized_content_leak_is_rejected (test_protocol_data.ProtocolDataTests.test_cross_role_normalized_content_leak_is_rejected) ... ok
+test_fixed_416_row_revision_rejects_old_validation_before_load (test_protocol_data.ProtocolDataTests.test_fixed_416_row_revision_rejects_old_validation_before_load) ... ok
+test_materialization_checks_count_and_empty_values (test_protocol_data.ProtocolDataTests.test_materialization_checks_count_and_empty_values) ... ok
+test_metadata_preflight_does_not_materialize_rows (test_protocol_data.ProtocolDataTests.test_metadata_preflight_does_not_materialize_rows) ... ok
+test_only_absolute_finite_slices_are_accepted (test_protocol_data.ProtocolDataTests.test_only_absolute_finite_slices_are_accepted) ... ok
+test_protocol_roles_require_preregistered_row_counts (test_protocol_data.ProtocolDataTests.test_protocol_roles_require_preregistered_row_counts) ... ok
+test_shared_validation_is_allowed_but_cross_role_overlap_is_not (test_protocol_data.ProtocolDataTests.test_shared_validation_is_allowed_but_cross_role_overlap_is_not) ... ok
+test_training_role_reader_rejects_audit_without_opening_file (test_protocol_data.ProtocolDataTests.test_training_role_reader_rejects_audit_without_opening_file) ... ok
+
+----------------------------------------------------------------------
+Ran 14 tests in 0.113s
+
+OK
+
+退出码：0

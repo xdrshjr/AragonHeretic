@@ -8,7 +8,10 @@ from pathlib import Path
 
 from .ara_research_schema import (
     ACCEPTANCE_SCHEMA,
+    ACCEPTANCE_SCHEMA_V31,
     REPRODUCE_SCHEMA,
+    REPRODUCE_SCHEMA_V31,
+    member_identity,
     digest,
     file_digest,
     read_json,
@@ -27,10 +30,17 @@ LEVELS = ("recovery", "sample_extreme", "statistical_extreme")
 
 def validate_research_binding(report: dict, reproduction: dict) -> None:
     """校验 v3 复现与验收的候选、协议和核心制品一致性。"""
-    from .ara_research_schema import validate_research_reproduce
+    from .ara_research_schema import (
+        research_version,
+        validate_research_reproduce,
+    )
 
     validate_research_report(report)
     validate_research_reproduce(reproduction)
+    if research_version(report, "acceptance") != research_version(
+        reproduction, "reproduce"
+    ):
+        raise ValueError("新旧验收和复现版本不能混用")
     if report["status"] != "passed" or report["eligibility"] != "qualified":
         raise ValueError("研究复现没有正式通过资格")
     if report["core_hashes"] != reproduction["core_hashes"]:
@@ -42,6 +52,32 @@ def validate_research_binding(report: dict, reproduction: dict) -> None:
         raise ValueError("研究复现协议不一致")
     if lock["parameters"] != reproduction["parameters"]["payload"]:
         raise ValueError("研究复现参数与锁定候选不一致")
+    if report["schema_version"] == ACCEPTANCE_SCHEMA_V31:
+        for key in ("execution_identity_hash", "study_execution_hash"):
+            if lock[key] != reproduction[key]:
+                raise ValueError(f"复现执行身份不匹配：{key}")
+
+
+def validate_loaded_model_report(model, report):
+    """通用重现模型检查的版本分派，未知研究 schema 不能回退。"""
+    from .ara_research_schema import research_version
+    from .trial_methods import AcceptanceGateError
+
+    if report and str(report.get("schema_version", "")).startswith(
+        "cara-research-"
+    ):
+        from .ara_research_runner import validate_research_model
+
+        research_version(report, "acceptance")
+        validate_research_model(model, report)
+        return
+    if (
+        report is not None
+        and report.get("model_fingerprint") != model.model_fingerprint
+    ):
+        raise AcceptanceGateError(
+            "loaded model fingerprint does not match accepted reproduction"
+        )
 
 
 def combine_states(states) -> str:
@@ -222,7 +258,11 @@ def _build_report(artifacts, statuses, ability, summaries):
         states.append(statistical)
     status = combine_states(states)
     report = {
-        "schema_version": ACCEPTANCE_SCHEMA,
+        "schema_version": (
+            ACCEPTANCE_SCHEMA_V31
+            if protocol.get("schema_version") == "cara-research-protocol-v3.1"
+            else ACCEPTANCE_SCHEMA
+        ),
         "status": status,
         "required_level": level,
         "engineering_status": engineering,
@@ -245,6 +285,10 @@ def _build_report(artifacts, statuses, ability, summaries):
 
 def _research_claim(status, level, summaries, protocol):
     if status == "passed":
+        if level == "recovery" and protocol.get("schema_version", "").endswith(
+            "-v3.1"
+        ):
+            return "recovery_supported"
         return "statistical_supported" if level == LEVELS[2] else "sample_only"
     if status == "failed":
         return "not_supported"
@@ -279,6 +323,12 @@ def promote_research_artifact(staging: Path, destination: Path, report: dict):
         "acceptance_sha256": file_digest(staging / "acceptance.json"),
         "core_hashes": report["core_hashes"],
     }
+    if report["schema_version"] == ACCEPTANCE_SCHEMA_V31:
+        reproduce.update(
+            schema=REPRODUCE_SCHEMA_V31,
+            execution_identity_hash=lock["execution_identity_hash"],
+            study_execution_hash=lock["study_execution_hash"],
+        )
     write_json(staging / "reproduce.json", reproduce, immutable=True)
     if destination.exists():
         raise ValueError("正式目录已存在；禁止覆盖已发布结果")
@@ -378,6 +428,12 @@ def _register_staging(context, root, lock):
         "staging_manifest_hash": file_digest(root / "staging.json"),
         "study_path": (Path(context["run_dir"]) / "study.json").as_posix(),
     }
+    if lock["schema_version"].endswith("-v3.1"):
+        member.update(
+            member_identity(
+                lock["method_id"], lock["proposal_policy"], lock["seed"]
+            )
+        )
     write_json(Path(context["run_dir"]) / "member.json", member, immutable=True)
     return member
 
@@ -424,12 +480,35 @@ def reproduce_research_candidate(settings):
     lock = report["selected_candidate"]
     if lock["protocol_hash"] != protocol["protocol_hash"]:
         raise ValueError("复现配置不属于正式候选协议")
+    if lock["schema_version"].endswith("-v3.1"):
+        from .ara_research_schema import (
+            build_execution_identity,
+            RefinementParameters,
+        )
+
+        execution = build_execution_identity(
+            protocol,
+            settings.ara_v3,
+            settings.seed,
+            (
+                RefinementParameters.model_validate(lock["parameters"]),
+                lock["attempt"],
+            ),
+        )
+        if digest(execution) != lock["execution_identity_hash"]:
+            raise ValueError("复现配置的策略、seed 或执行身份不匹配")
     member = {
         "member_id": f"{lock['method_id']}-{lock['seed']}",
         "candidate_lock_hash": digest(lock),
         "staging_path": root.as_posix(),
         "staging_manifest_hash": file_digest(root / "staging.json"),
     }
+    if lock["schema_version"].endswith("-v3.1"):
+        member.update(
+            member_identity(
+                lock["method_id"], lock["proposal_policy"], lock["seed"]
+            )
+        )
     probe = _worker_probe({"member": member}, settings)
     return {
         "phase": "reproduce",
@@ -543,7 +622,8 @@ def _verify_member_envelope(plan, identity, state, envelope):
 def _finalize_member(plan, member, root, results, labels):
     from .research_audit import _verify_staging
 
-    destination = root / "models" / member["member_id"]
+    storage = member.get("member_storage_key", member["member_id"])
+    destination = root / "models" / storage
     source = member
     if not Path(member["staging_path"]).exists() and destination.exists():
         verify_research_artifact_graph(destination)
@@ -574,7 +654,7 @@ def _finalize_member(plan, member, root, results, labels):
     audit = _member_audit_input(plan, member, results, protocol)
     report = finalize_research_report(artifacts, audit, labels)
     report["model_fingerprint"] = stage["model_fingerprint"]
-    output = root / "reports" / member["member_id"] / "acceptance.json"
+    output = root / "reports" / storage / "acceptance.json"
     write_json(output, report, immutable=True)
     if report["status"] == "passed" and report["eligibility"] == "qualified":
         if staging == destination:
@@ -616,11 +696,9 @@ def finalize_evaluation_plan(plan, root: Path, labels: dict):
             reports[name] = _finalize_member(
                 plan, member, root, results, labels.get(name, {})
             )
+    primary = plan.get("primary_members", [f"S2-{s}" for s in (42, 43, 44)])
     status = combine_states(
-        [
-            reports.get(f"S2-{seed}", {}).get("status", "not_run")
-            for seed in (42, 43, 44)
-        ]
+        [reports.get(name, {}).get("status", "not_run") for name in primary]
     )
     code = {"passed": 0, "failed": 4, "inconclusive": 5}[status]
     result = {
@@ -630,5 +708,11 @@ def finalize_evaluation_plan(plan, root: Path, labels: dict):
         "inputs_hash": inputs_hash,
         "exit_code": code,
     }
+    if plan["schema_version"] == "cara-research-evaluation-plan-v3.1":
+        from .research_evaluation import compare_semantic_members
+
+        result["semantic_superiority"] = compare_semantic_members(
+            plan, results, labels
+        )
     write_json(output, result, immutable=True)
     return result, code

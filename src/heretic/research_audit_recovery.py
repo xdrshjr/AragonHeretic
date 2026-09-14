@@ -4,6 +4,36 @@
 from .ara_research_schema import digest, exclusive_lock, file_digest, write_json
 
 
+def new_audit_metadata(protocol):
+    """固定新版主方法和统计方向，旧计划不补写新字段。"""
+    return {
+        "schema_version": "cara-research-evaluation-plan-v3.1",
+        "primary_method": {
+            "method_id": "S2",
+            "proposal_policy": "spectral-backtrack-v1",
+        },
+        "primary_members": [
+            f"S2/spectral-backtrack-v1/{s}" for s in (42, 43, 44)
+        ],
+        "semantic_comparison": {
+            "analysis": "semantic-superiority-v1",
+            "seed": 20260910,
+            "replicates": 10000,
+            "role": protocol.get("primary_audit", "research-audit") + ".bad",
+        },
+    }
+
+
+def validate_member_storage(member):
+    from .ara_research_schema import member_identity
+
+    identity = member_identity(
+        member["method_id"], member["proposal_policy"], member["seed"]
+    )
+    if any(member.get(key) != value for key, value in identity.items()):
+        raise ValueError("成员结构身份与显示 ID 或存储键不一致")
+
+
 def initialize_ledgers(plan, ledger_root):
     """在生成前登记所有角色；创建 pending 记录不会消费审计。"""
     from .research_audit import _open_ledger
@@ -65,6 +95,14 @@ def collect_results(plan, scope, execution_status):
         if execution_status == "failed"
         else "passed",
     }
+    if plan["schema_version"] == "cara-research-evaluation-plan-v3.1":
+        result.update(
+            schema_version="cara-research-audit-results-v3.1",
+            member_storage_keys={
+                row["member_id"]: row.get("member_storage_key", "B0")
+                for row in plan["members"]
+            },
+        )
     write_json(
         root / "audit-history" / f"{digest(result)}.json",
         result,

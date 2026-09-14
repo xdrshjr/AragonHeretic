@@ -1,0 +1,16 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_factor_basis_change_is_not_effective_change (test_ara_proposal.ProposalTests.test_factor_basis_change_is_not_effective_change) ... ok
+test_interpolation_matches_weight_product_not_factors (test_ara_proposal.ProposalTests.test_interpolation_matches_weight_product_not_factors) ... ok
+test_nonfinite_is_not_clipped_into_valid_candidate (test_ara_proposal.ProposalTests.test_nonfinite_is_not_clipped_into_valid_candidate) ... ok
+test_pilot_spectrum_is_clipped_without_raising_guard (test_ara_proposal.ProposalTests.test_pilot_spectrum_is_clipped_without_raising_guard) ... ok
+test_rank_truncation_matches_dense_reference (test_ara_proposal.ProposalTests.test_rank_truncation_matches_dense_reference) ... ok
+test_scale_preserves_relative_spectrum (test_ara_proposal.ProposalTests.test_scale_preserves_relative_spectrum) ... ok
+test_unregistered_alpha_and_invalid_old_state_fail (test_ara_proposal.ProposalTests.test_unregistered_alpha_and_invalid_old_state_fail) ... ok
+test_zero_keeps_nonzero_initial_a (test_ara_proposal.ProposalTests.test_zero_keeps_nonzero_initial_a) ... ok
+
+----------------------------------------------------------------------
+Ran 8 tests in 0.300s
+
+OK
+
+退出码：0

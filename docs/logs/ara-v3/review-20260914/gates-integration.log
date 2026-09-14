@@ -1,0 +1,120 @@
+真实子进程预算测试单独在本地当前源码运行；其余测试加载当前内存源码。
+test_complete_cost_cannot_charge_an_unrelated_subphase (test_ara_pilot.NativeResourceGateTests.test_complete_cost_cannot_charge_an_unrelated_subphase) ... ok
+test_cost_source_rejects_self_consistent_protocol_drift (test_ara_pilot.NativeResourceGateTests.test_cost_source_rejects_self_consistent_protocol_drift) ... ok
+test_cost_source_requires_registered_complete_r2_call (test_ara_pilot.NativeResourceGateTests.test_cost_source_requires_registered_complete_r2_call) ... ok
+test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds (test_ara_pilot.NativeResourceGateTests.test_missing_expensive_branch_cannot_be_replaced_by_declared_seconds) ... ok
+test_native_phase_costs_use_frozen_formula_and_required_coverage (test_ara_pilot.NativeResourceGateTests.test_native_phase_costs_use_frozen_formula_and_required_coverage) ... ok
+test_relative_stage_ledger_is_rejected_but_linux_absolute_is_valid (test_ara_pilot.NativeResourceGateTests.test_relative_stage_ledger_is_rejected_but_linux_absolute_is_valid) ... ok
+test_single_card_budget_cannot_reuse_a_more_generous_contract (test_ara_pilot.NativeResourceGateTests.test_single_card_budget_cannot_reuse_a_more_generous_contract) ... ok
+test_file_mutation_is_rejected_before_declared_pass (test_ara_pilot.PilotTests.test_file_mutation_is_rejected_before_declared_pass) ... ok
+test_full_calibration_pilot_requires_previous_proof (test_ara_pilot.PilotTests.test_full_calibration_pilot_requires_previous_proof) ... ok
+test_legacy_summary_does_not_open_expansion (test_ara_pilot.PilotTests.test_legacy_summary_does_not_open_expansion) ... ok
+test_native_evidence_can_pass_and_is_recomputed (test_ara_pilot.PilotTests.test_native_evidence_can_pass_and_is_recomputed) ... ok
+test_parameter_identity_changes_while_study_stays_fixed (test_ara_pilot.PilotTests.test_parameter_identity_changes_while_study_stays_fixed) ... ok
+test_readiness_rechecks_self_consistent_source_precision_and_scorer (test_ara_pilot.PilotTests.test_readiness_rechecks_self_consistent_source_precision_and_scorer) ... ok
+test_target_rejects_self_or_readiness_hash (test_ara_pilot.PilotTests.test_target_rejects_self_or_readiness_hash) ... ok
+test_completed_pilot_recovers_without_new_budget_session (test_ara_research_runner.NewResearchBudgetTests.test_completed_pilot_recovers_without_new_budget_session) ... ok
+test_early_exit_still_records_unreached_cost_checkpoints (test_ara_research_runner.NewResearchBudgetTests.test_early_exit_still_records_unreached_cost_checkpoints) ... ok
+test_target_zero_update_stops_target_seeds_only (test_ara_research_runner.NewResearchBudgetTests.test_target_zero_update_stops_target_seeds_only) ... ok
+test_anchors_are_distinct_and_random_stage_is_deterministic (test_ara_research_runner.RunnerTests.test_anchors_are_distinct_and_random_stage_is_deterministic) ... ok
+test_budget_charges_across_multiple_launches (test_ara_research_runner.RunnerTests.test_budget_charges_across_multiple_launches) ... ok
+test_campaign_reservation_rejects_duplicate_directory_and_keeps_budget (test_ara_research_runner.RunnerTests.test_campaign_reservation_rejects_duplicate_directory_and_keeps_budget) ... ok
+test_exhausted_resume_finalizes_orphan_before_loading_model (test_ara_research_runner.RunnerTests.test_exhausted_resume_finalizes_orphan_before_loading_model) ... ok
+test_finalize_error_does_not_overwrite_frozen_phase_result (test_ara_research_runner.RunnerTests.test_finalize_error_does_not_overwrite_frozen_phase_result) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '冻结标注已改变'}
+ok
+test_initial_finalize_error_allows_corrected_request (test_ara_research_runner.RunnerTests.test_initial_finalize_error_allows_corrected_request) ... {'phase': 'finalize', 'research_status': 'failed', 'reason': '缺少标签文件'}
+{'phase': 'finalize', 'research_status': 'passed', 'inputs_hash': 'frozen-inputs'}
+ok
+test_pilot_and_ablation_reject_unregistered_member (test_ara_research_runner.RunnerTests.test_pilot_and_ablation_reject_unregistered_member) ... ok
+test_pilot_budget_is_shared_across_run_directories (test_ara_research_runner.RunnerTests.test_pilot_budget_is_shared_across_run_directories) ... ok
+test_replay_failure_latches_campaign_but_numeric_failure_does_not (test_ara_research_runner.RunnerTests.test_replay_failure_latches_campaign_but_numeric_failure_does_not) ... ok
+test_replay_resume_reuses_complete_evidence_and_latches_failure (test_ara_research_runner.RunnerTests.test_replay_resume_reuses_complete_evidence_and_latches_failure) ... ok
+test_runtime_failed_primary_blocks_following_seed (test_ara_research_runner.RunnerTests.test_runtime_failed_primary_blocks_following_seed) ... ok
+test_search_has_exact_24_terminal_attempts_and_resumes_lock (test_ara_research_runner.RunnerTests.test_search_has_exact_24_terminal_attempts_and_resumes_lock) ... /home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py:191: ExperimentalWarning: Argument ``constraints_func`` is an experimental feature. The interface can change in the future.
+  sampler = optuna.samplers.TPESampler(
+[I 2026-09-14 18:16:29,742] A new study created in memory with name: no-name-0132bd04-ef00-42e3-8168-5f3241906f00
+[I 2026-09-14 18:16:29,749] A new study created in memory with name: no-name-f4dd5f9a-1784-4b71-8f9e-8b60e677718b
+[I 2026-09-14 18:16:29,756] A new study created in memory with name: no-name-a68f195f-180a-431c-b989-44b6f33f443e
+[I 2026-09-14 18:16:29,762] A new study created in memory with name: no-name-86b9e2d4-e735-4a9a-b504-ef7deec1f0b5
+[I 2026-09-14 18:16:29,769] A new study created in memory with name: no-name-9e233403-a658-4451-8041-c2af71944c75
+[I 2026-09-14 18:16:29,777] A new study created in memory with name: no-name-e01dab43-3790-4d9b-99e1-e69d55066c42
+[I 2026-09-14 18:16:29,785] A new study created in memory with name: no-name-57e3cbc7-d1d3-47cf-9fe4-93debee1e416
+[I 2026-09-14 18:16:29,792] A new study created in memory with name: no-name-d4d16cc2-5c1a-4529-92d1-bf9939020a84
+[I 2026-09-14 18:16:29,799] A new study created in memory with name: no-name-753414f4-1b7b-4b07-b56d-a5bd2bec0b68
+[I 2026-09-14 18:16:29,807] A new study created in memory with name: no-name-e143d41b-3e82-483a-aebc-5f4d4f04c037
+[I 2026-09-14 18:16:29,814] A new study created in memory with name: no-name-3b132ce6-5d75-46f5-bbbf-8107beda7ed1
+[I 2026-09-14 18:16:29,821] A new study created in memory with name: no-name-b58d037b-4fef-4581-b2a6-7ce24067dbd6
+ok
+test_shortlist_filters_hard_constraints_before_top_three (test_ara_research_runner.RunnerTests.test_shortlist_filters_hard_constraints_before_top_three) ... ok
+test_snapshot_restore_failure_stops_search_after_terminal_record (test_ara_research_runner.RunnerTests.test_snapshot_restore_failure_stops_search_after_terminal_record) ... ERROR
+test_started_member_cannot_reset_attempts_by_removing_study (test_ara_research_runner.RunnerTests.test_started_member_cannot_reset_attempts_by_removing_study) ... ok
+test_subprocess_failures_write_phase_result_and_exit_three (test_ara_research_runner.RunnerTests.test_subprocess_failures_write_phase_result_and_exit_three) ... {'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'search', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' returned non-zero exit status 7.", 'failure_category': 'CalledProcessError', 'subprocess_returncode': 7}
+{'phase': 'audit', 'research_status': 'failed', 'reason': "Command '['judge']' timed out after 2.0 seconds", 'failure_category': 'TimeoutExpired', 'timeout_seconds': 2.0}
+ok
+test_new_experiment_checks_readiness_before_model_allocation (test_pro6000_experiment.NewPro6000GateTests.test_new_experiment_checks_readiness_before_model_allocation) ... ok
+test_new_launcher_rejects_missing_readiness_before_creating_run (test_pro6000_experiment.NewPro6000GateTests.test_new_launcher_rejects_missing_readiness_before_creating_run) ... ok
+test_budget_and_seed_cannot_change_on_resume (test_pro6000_experiment.PreparationTests.test_budget_and_seed_cannot_change_on_resume) ... ok
+test_changed_source_or_insufficient_unique_data_fails (test_pro6000_experiment.PreparationTests.test_changed_source_or_insufficient_unique_data_fails) ... ok
+test_experiment_protocol_cannot_enter_formal_research (test_pro6000_experiment.PreparationTests.test_experiment_protocol_cannot_enter_formal_research) ... ok
+test_full_roles_preserve_original_prompts_and_never_overlap (test_pro6000_experiment.PreparationTests.test_full_roles_preserve_original_prompts_and_never_overlap) ... ok
+test_original_cross_role_duplicate_fails (test_pro6000_experiment.PreparationTests.test_original_cross_role_duplicate_fails) ... ok
+test_single_card_member_cannot_claim_another_run_budget (test_pro6000_experiment.PreparationTests.test_single_card_member_cannot_claim_another_run_budget) ... ok
+test_wrong_or_busy_gpu_fails_before_loading (test_pro6000_experiment.PreparationTests.test_wrong_or_busy_gpu_fails_before_loading) ... ok
+test_competing_worker_cannot_overwrite_status (test_pro6000_experiment.RecoveryTests.test_competing_worker_cannot_overwrite_status) ... 启动失败：运行目录已被其他进程锁定：/tmp/tmp20n7bz8h/worker.lock
+ok
+test_finished_export_is_verified_without_loading_model (test_pro6000_experiment.RecoveryTests.test_finished_export_is_verified_without_loading_model) ... ok
+test_freeze_uses_committed_content_even_after_worktree_changes (test_pro6000_experiment.RecoveryTests.test_freeze_uses_committed_content_even_after_worktree_changes) ... ok
+test_native_24_trial_search_and_resume_need_no_semantic_judge (test_pro6000_experiment.SearchTests.test_native_24_trial_search_and_resume_need_no_semantic_judge) ... ERROR
+test_numeric_gate_precedes_keyword_ranking (test_pro6000_experiment.SearchTests.test_numeric_gate_precedes_keyword_ranking) ... ok
+test_remaining_snapshot_reserve_keeps_formal_default (test_pro6000_experiment.SearchTests.test_remaining_snapshot_reserve_keeps_formal_default) ... ok
+test_single_gpu_checkpoint_accounting (test_pro6000_experiment.SearchTests.test_single_gpu_checkpoint_accounting) ... ok
+test_full_calibration_is_not_treated_as_eight_sample_smoke (test_protocol_data.NewProfileContractTests.test_full_calibration_is_not_treated_as_eight_sample_smoke) ... ok
+test_full_mapping_keeps_development_and_requires_192_candidates (test_protocol_data.NewProfileContractTests.test_full_mapping_keeps_development_and_requires_192_candidates) ... ok
+test_hardware_model_mismatch_is_rejected_before_model_load (test_protocol_data.NewProfileContractTests.test_hardware_model_mismatch_is_rejected_before_model_load) ... ok
+test_new_protocol_consumers_reject_legacy_or_unknown_version (test_protocol_data.NewProfileContractTests.test_new_protocol_consumers_reject_legacy_or_unknown_version) ... ok
+test_target_profiles_cannot_change_development_body_identity (test_protocol_data.NewProfileContractTests.test_target_profiles_cannot_change_development_body_identity) ... ok
+test_target_rejects_scorer_precision_and_role_content_drift (test_protocol_data.NewProfileContractTests.test_target_rejects_scorer_precision_and_role_content_drift) ... ok
+test_cross_role_normalized_content_leak_is_rejected (test_protocol_data.ProtocolDataTests.test_cross_role_normalized_content_leak_is_rejected) ... ok
+test_fixed_416_row_revision_rejects_old_validation_before_load (test_protocol_data.ProtocolDataTests.test_fixed_416_row_revision_rejects_old_validation_before_load) ... ok
+test_materialization_checks_count_and_empty_values (test_protocol_data.ProtocolDataTests.test_materialization_checks_count_and_empty_values) ... ok
+test_metadata_preflight_does_not_materialize_rows (test_protocol_data.ProtocolDataTests.test_metadata_preflight_does_not_materialize_rows) ... ok
+test_only_absolute_finite_slices_are_accepted (test_protocol_data.ProtocolDataTests.test_only_absolute_finite_slices_are_accepted) ... ok
+test_protocol_roles_require_preregistered_row_counts (test_protocol_data.ProtocolDataTests.test_protocol_roles_require_preregistered_row_counts) ... ok
+test_shared_validation_is_allowed_but_cross_role_overlap_is_not (test_protocol_data.ProtocolDataTests.test_shared_validation_is_allowed_but_cross_role_overlap_is_not) ... ok
+test_training_role_reader_rejects_audit_without_opening_file (test_protocol_data.ProtocolDataTests.test_training_role_reader_rejects_audit_without_opening_file) ... ok
+
+======================================================================
+ERROR: test_snapshot_restore_failure_stops_search_after_terminal_record (test_ara_research_runner.RunnerTests.test_snapshot_restore_failure_stops_search_after_terminal_record)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_ara_research_runner.py", line 311, in test_snapshot_restore_failure_stops_search_after_terminal_record
+    run_search(context)
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py", line 264, in run_search
+    record_campaign_study(context, path)
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/research_budget.py", line 139, in record_campaign_study
+    protocol = context["protocol"]
+               ~~~~~~~^^^^^^^^^^^^
+KeyError: 'protocol'
+
+======================================================================
+ERROR: test_native_24_trial_search_and_resume_need_no_semantic_judge (test_pro6000_experiment.SearchTests.test_native_24_trial_search_and_resume_need_no_semantic_judge)
+----------------------------------------------------------------------
+Traceback (most recent call last):
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/tests/test_pro6000_experiment.py", line 193, in test_native_24_trial_search_and_resume_need_no_semantic_judge
+    study = run_search(context, finalize=choose_experiment_candidate)
+            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/ara_research_runner.py", line 264, in run_search
+    record_campaign_study(context, path)
+  File "/home/xdrshjr/.cache/ara-v3-code-check-ff8102e2/src/heretic/research_budget.py", line 139, in record_campaign_study
+    protocol = context["protocol"]
+               ~~~~~~~^^^^^^^^^^^^
+KeyError: 'protocol'
+
+----------------------------------------------------------------------
+Ran 63 tests in 0.434s
+
+FAILED (errors=2)
+
+退出码：1

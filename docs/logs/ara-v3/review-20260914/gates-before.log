@@ -1,0 +1,8 @@
+??????????????????????????? Traceback ????????
+test_complete_cost_cannot_charge_an_unrelated_subphase ... FAIL (PilotGateError not raised)
+test_relative_stage_ledger_is_rejected_but_linux_absolute_is_valid ... FAIL (ValueError not raised)
+test_runtime_failed_primary_blocks_following_seed ... FAIL (PilotGateError not raised)
+test_campaign_reservation_rejects_duplicate_directory_and_keeps_budget ... ERROR (reserve_campaign_member ImportError)
+test_single_card_member_cannot_claim_another_run_budget ... ERROR (reserve_campaign_member ImportError)
+Ran 5 tests in 0.020s
+FAILED (failures=3, errors=2)

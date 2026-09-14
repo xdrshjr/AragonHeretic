@@ -1,0 +1,22 @@
+{
+  "通过": true,
+  "命令": [
+    "D:\\Tools\\Anaconda\\python.exe",
+    "-m",
+    "heretic.ara_research_runner",
+    "--config",
+    "config.qwen38-27b-cara-v3-96.toml",
+    "--run-dir",
+    "E:/TAKO-PROJECTS/heretic/.agentmesh/node5r2-check/preflight",
+    "--phase",
+    "preflight"
+  ],
+  "退出码": 2,
+  "预期退出码": 2,
+  "未创建study": true,
+  "结果": {
+    "phase": "preflight",
+    "reason": "缺少冻结 protocol.json；请先完成独立数据准备",
+    "research_status": "failed"
+  }
+}

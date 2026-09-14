@@ -317,10 +317,41 @@ def validate_reproduce_v2(payload: Mapping[str, Any]) -> None:
     parse_parameter_envelope(payload["parameters"])
 
 
+def verify_reproduced_weights(destination, reproduction):
+    """按版本核验重现输出；研究制品必须验证完整验收链。"""
+    from .utils import get_file_sha256
+    from rich import print as rich_print
+
+    if reproduction is None:
+        return
+    if str(reproduction.get("schema", "")).startswith("cara-research-"):
+        from .ara_research_acceptance import verify_research_artifact_graph
+        from .ara_research_schema import read_json, validate_research_reproduce
+
+        validate_research_reproduce(reproduction)
+        verify_research_artifact_graph(destination)
+        if read_json(destination / "reproduce.json") != reproduction:
+            raise ValueError("重现输出与请求的制品身份不一致")
+        return
+    hashes = reproduction.get(
+        "hashes", reproduction.get("core_artifact_hashes", {})
+    )
+    for filename, expected in hashes.items():
+        if not filename.endswith((".safetensors", ".bin")):
+            continue
+        path = destination / filename
+        if not path.is_file():
+            raise RuntimeError(f"reproduced file is missing: {filename}")
+        if get_file_sha256(path).lower() != expected.lower():
+            raise RuntimeError(f"reproduced file hash mismatch: {filename}")
+        rich_print(f"[bold]{filename}:[/] [green]Hash matches[/]")
+
+
 def parse_reproduce(payload: Mapping[str, Any]) -> Mapping[str, Any]:
     """Dispatch legacy reproduce v3/v4 or strict trajectory-v2 envelopes."""
-    if payload.get("schema") == "cara-research-reproduce-v3":
+    if str(payload.get("schema", "")).startswith("cara-research-"):
         from .ara_research_schema import validate_research_reproduce
+
         validate_research_reproduce(dict(payload))
         return payload
     if payload.get("schema") == REPRODUCE_SCHEMA:
@@ -336,8 +367,12 @@ def validate_acceptance_reproduce_binding(
     reproduce: Mapping[str, Any],
 ) -> None:
     """Validate the immutable cross-file identity fields without disk access."""
-    if reproduce.get("schema") == "cara-research-reproduce-v3":
+    if reproduce.get("schema") in {
+        "cara-research-reproduce-v3",
+        "cara-research-reproduce-v3.1",
+    }:
         from .ara_research_acceptance import validate_research_binding
+
         validate_research_binding(dict(acceptance), dict(reproduce))
         return
     validate_acceptance_v2(acceptance)
@@ -354,8 +389,13 @@ def validate_acceptance_reproduce_binding(
     ):
         if acceptance[field] != reproduce[field]:
             raise ValueError(f"publication identity mismatch: {field}")
-    if acceptance["trajectory_fingerprint"] != reproduce["trajectory_manifest_sha256"]:
-        raise ValueError("acceptance and reproduce trajectory identities differ")
+    if (
+        acceptance["trajectory_fingerprint"]
+        != reproduce["trajectory_manifest_sha256"]
+    ):
+        raise ValueError(
+            "acceptance and reproduce trajectory identities differ"
+        )
 
 
 def _bound_report_bytes(source: str, name: str, same_directory: bool) -> bytes:
@@ -377,7 +417,9 @@ def load_bound_acceptance(
 ) -> dict[str, Any] | None:
     """Load and validate the acceptance report bound to a reproduction file."""
     is_v2 = reproduction.get("schema") in {
-        REPRODUCE_SCHEMA, "cara-research-reproduce-v3"
+        REPRODUCE_SCHEMA,
+        "cara-research-reproduce-v3",
+        "cara-research-reproduce-v3.1",
     }
     binding = reproduction.get("acceptance")
     if is_v2:
@@ -508,8 +550,12 @@ def verify_artifact_graph(root: str | Path) -> None:
     reproduce_path = base / "reproduce.json"
     acceptance = json.loads(acceptance_path.read_text(encoding="utf-8"))
     reproduce = json.loads(reproduce_path.read_text(encoding="utf-8"))
-    if reproduce.get("schema") == "cara-research-reproduce-v3":
+    if reproduce.get("schema") in {
+        "cara-research-reproduce-v3",
+        "cara-research-reproduce-v3.1",
+    }:
         from .ara_research_acceptance import verify_research_artifact_graph
+
         verify_research_artifact_graph(base)
         return
     validate_acceptance_v2(acceptance)
