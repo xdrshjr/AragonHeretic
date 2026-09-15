@@ -1,0 +1,62 @@
+[
+  {
+    "block_id": 0,
+    "sweep": 0,
+    "layers": "16-23",
+    "module_count": 16,
+    "accepted": false,
+    "rejection_reason": "proposal_rejected",
+    "min_max_singular_value": 13.575751304626465,
+    "max_max_singular_value": 27.63074493408203,
+    "max_local_update_ratio": 0.2461075484752655,
+    "adapter_unchanged": true
+  },
+  {
+    "block_id": 1,
+    "sweep": 0,
+    "layers": "24-31",
+    "module_count": 16,
+    "accepted": false,
+    "rejection_reason": "proposal_rejected",
+    "min_max_singular_value": 13.19041633605957,
+    "max_max_singular_value": 24.297863006591797,
+    "max_local_update_ratio": 0.22212466597557068,
+    "adapter_unchanged": true
+  },
+  {
+    "block_id": 2,
+    "sweep": 0,
+    "layers": "32-39",
+    "module_count": 16,
+    "accepted": false,
+    "rejection_reason": "proposal_rejected",
+    "min_max_singular_value": 17.426429748535156,
+    "max_max_singular_value": 25.0716609954834,
+    "max_local_update_ratio": 0.24139124155044556,
+    "adapter_unchanged": true
+  },
+  {
+    "block_id": 3,
+    "sweep": 0,
+    "layers": "40-47",
+    "module_count": 16,
+    "accepted": false,
+    "rejection_reason": "proposal_rejected",
+    "min_max_singular_value": 14.447938919067383,
+    "max_max_singular_value": 25.821054458618164,
+    "max_local_update_ratio": 0.23587796092033386,
+    "adapter_unchanged": true
+  },
+  {
+    "block_id": 4,
+    "sweep": 0,
+    "layers": "48-51",
+    "module_count": 8,
+    "accepted": false,
+    "rejection_reason": "proposal_rejected",
+    "min_max_singular_value": 17.590585708618164,
+    "max_max_singular_value": 24.431921005249023,
+    "max_local_update_ratio": 0.2442905306816101,
+    "adapter_unchanged": true
+  }
+]

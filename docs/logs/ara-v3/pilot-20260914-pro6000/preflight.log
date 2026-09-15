@@ -1,0 +1,32 @@
+test_anchor_keep_accounts_for_upstream_drift (test_ara_refinement.RefinementTests.test_anchor_keep_accounts_for_upstream_drift) ... ok
+test_block_rolls_back_all_factors_when_monitor_raises (test_ara_refinement.RefinementTests.test_block_rolls_back_all_factors_when_monitor_raises) ... ok
+test_effective_update_check_preserves_cancelling_factor_permutation (test_ara_refinement.RefinementTests.test_effective_update_check_preserves_cancelling_factor_permutation) ... ok
+test_effective_update_check_rejects_changed_or_nonfinite_factors (test_ara_refinement.RefinementTests.test_effective_update_check_rejects_changed_or_nonfinite_factors) ... ok
+test_high_rank_canonicalization_preserves_effective_update (test_ara_refinement.RefinementTests.test_high_rank_canonicalization_preserves_effective_update) ... ok
+test_monitor_nan_is_attempt_failure (test_ara_refinement.RefinementTests.test_monitor_nan_is_attempt_failure) ... ok
+test_monitor_requires_nonincrease_and_real_improvement (test_ara_refinement.RefinementTests.test_monitor_requires_nonincrease_and_real_improvement) ... ok
+test_solver_operates_on_clones (test_ara_refinement.RefinementTests.test_solver_operates_on_clones) ... ok
+test_acceptance_gate_requires_deterministic_pinned_disjoint_data (test_config.CARAConfigTests.test_acceptance_gate_requires_deterministic_pinned_disjoint_data) ... ok
+test_ara_rejects_row_normalization_and_reserved_kwargs (test_config.CARAConfigTests.test_ara_rejects_row_normalization_and_reserved_kwargs) ... ok
+test_components_are_deduplicated_and_unknown_values_rejected (test_config.CARAConfigTests.test_components_are_deduplicated_and_unknown_values_rejected) ... ok
+test_default_method_remains_directional (test_config.CARAConfigTests.test_default_method_remains_directional) ... ok
+test_registered_qwen_configuration_parses (test_config.CARAConfigTests.test_registered_qwen_configuration_parses) ... ok
+test_resume_keeps_current_run_control_fields (test_config.CARAConfigTests.test_resume_keeps_current_run_control_fields) ... ok
+test_runtime_ranges_and_template_keys_are_validated (test_config.CARAConfigTests.test_runtime_ranges_and_template_keys_are_validated) ... ok
+test_trajectory_v2_configuration_is_fully_preregistered (test_config.CARAConfigTests.test_trajectory_v2_configuration_is_fully_preregistered) ... ok
+test_dual_gpu_template_uses_independent_budget (test_config.RefinementConfigurationTests.test_dual_gpu_template_uses_independent_budget) ... ok
+test_method_mapping_rejects_ambiguous_variant (test_config.RefinementConfigurationTests.test_method_mapping_rejects_ambiguous_variant) ... ok
+test_v3_rejects_unregistered_response_prefix (test_config.RefinementConfigurationTests.test_v3_rejects_unregistered_response_prefix) ... ok
+test_v3_template_matches_real_qwen_projection_names (test_config.RefinementConfigurationTests.test_v3_template_matches_real_qwen_projection_names) ... ok
+test_accepts_slug_like_instance_name (test_config.ScorerConfigTests.test_accepts_slug_like_instance_name) ... ok
+test_rejects_dot_in_instance_name (test_config.ScorerConfigTests.test_rejects_dot_in_instance_name) ... ok
+test_rejects_empty_instance_name (test_config.ScorerConfigTests.test_rejects_empty_instance_name) ... ok
+test_rejects_whitespace_in_instance_name (test_config.ScorerConfigTests.test_rejects_whitespace_in_instance_name) ... ok
+
+----------------------------------------------------------------------
+Ran 24 tests in 107.335s
+
+OK
+{"phase": "prepare", "research_status": "not_run", "protocol_hash": "469022a4a90f8ae94b54df7c8a7443f048e3c6aaaedef1a65b5a63214f16b747", "audit_sample_shortfall": {"good": 300, "bad": 300}}
+ARA v3 阶段：preflight；运行目录：/root/autodl-tmp/ara-v3-pro6000-latest-pilot-20260914T055809Z/preflight
+{'phase': 'preflight', 'research_status': 'not_run', 'protocol_hash': '469022a4a90f8ae94b54df7c8a7443f048e3c6aaaedef1a65b5a63214f16b747'}

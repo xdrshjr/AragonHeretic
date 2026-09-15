@@ -1,0 +1,10 @@
+{
+  "tag": "ara-v3-pro6000-latest-pilot-20260914T055809Z",
+  "record_dir": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-latest-pilot-20260914T055809Z",
+  "work_dir": "/root/autodl-tmp/ara-v3-pro6000-latest-pilot-20260914T055809Z",
+  "config": "/root/autodl-fs/AragonHeretic-v3/config.qwen38-27b-ara-v3-pro6000-pilot-20260914T055809Z.toml",
+  "preparation": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-latest-pilot-20260914T055809Z/preparation.json",
+  "protocol": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-latest-pilot-20260914T055809Z/protocol/protocol.json",
+  "runner": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-latest-pilot-20260914T055809Z/run-pilot.sh",
+  "source_revision": "0ab032c8acdee8a0f197d4ffba8bec1bad93caad"
+}

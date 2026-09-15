@@ -1,0 +1,111 @@
+{
+  "status": "engineering_complete_no_update_accepted",
+  "research_status": "not_run",
+  "research_effectiveness_validated": false,
+  "trial_state": "COMPLETE",
+  "failure_category": null,
+  "exit_code": 0,
+  "finalizer_exit_code": 0,
+  "source_revision": "0ab032c8acdee8a0f197d4ffba8bec1bad93caad",
+  "protocol_hash": "469022a4a90f8ae94b54df7c8a7443f048e3c6aaaedef1a65b5a63214f16b747",
+  "parameter_identity": "79312ce48da6495086e38191c792a2bb7767449295cd9242e2d1a1944d285a98",
+  "model": "Qwen3.8-27B",
+  "method": {
+    "objective_version": "sequential-v3",
+    "variant": "sequential-refresh",
+    "member": "S2-42",
+    "lora_rank": 128,
+    "max_singular_value": 8.0,
+    "max_good_delta_rms": 0.6
+  },
+  "hardware": {
+    "hostname": "autodl-container-f7964f8eb7-61323a17",
+    "gpu": "NVIDIA RTX PRO 6000 Blackwell Server Edition",
+    "gpu_memory_mib": 97887
+  },
+  "sample_counts": {
+    "fit.bad": 8,
+    "fit.good": 8,
+    "monitor.bad": 8,
+    "monitor.good": 8,
+    "mechanism-development.bad": 44,
+    "mechanism-development.good": 44,
+    "development.bad": 100,
+    "development.good": 100
+  },
+  "timing": {
+    "pilot_started_at_utc_approx": "2026-09-14T06:07:42Z",
+    "native_finished_at_utc": "2026-09-14T06:52:29Z",
+    "archive_finished_at_utc": "2026-09-14T06:52:49Z",
+    "end_to_end_seconds_approx": 2687,
+    "trial_wallclock_seconds": 1345.4703419208527
+  },
+  "layer_groups": {
+    "event_count": 5,
+    "accepted": 0,
+    "rejected": 5,
+    "rejection_reasons": {
+      "proposal_rejected": 5
+    },
+    "target_module_count": 72,
+    "singular_value_violations": 72,
+    "cumulative_ratio_violations": 0,
+    "max_local_update_ratio": 0.2461075484752655,
+    "max_singular_value": 27.63074493408203
+  },
+  "scores": {
+    "baseline_keywords": 1.0,
+    "keywords": 1.0,
+    "log_odds": 4.967287063598633,
+    "first_token_kl": 0.0,
+    "sequence_kl": 0.0,
+    "sample_count": 100,
+    "data_identity": "c5868cff958987cd4d659a703116e70fd8713cfb1f960db9665b9700cf99259f"
+  },
+  "resources_at_trial_end": {
+    "cpu_rss_gib": 8.53061294555664,
+    "system_available_gib": 898.5300598144531,
+    "cuda_allocated_gib": 51.313255310058594,
+    "cuda_reserved_gib": 89.052734375,
+    "cuda_free_gib": 30.5799560546875,
+    "cuda_total_gib": 94.97076416015625
+  },
+  "final_snapshot": {
+    "factor_identity": "fbd3b42d2e6d39bcd171a34ba37f00a1858dbd166c575263119f97f721d9c71c",
+    "file_size_bytes": 1107384703,
+    "recorded_file_sha256": "b788e6d0dbf86e9059657baceda23a528e4e1ba67cda4ff9db3c1576b5a062b6",
+    "remote_archive_path": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-latest-pilot-20260914T055809Z/result/pilot/0/factors.pt",
+    "remote_archive_hash_verified": true,
+    "downloaded_to_git": false
+  },
+  "cuda_allocation_warning": {
+    "occurred": true,
+    "requested_bytes": 8130658304,
+    "free_bytes_at_warning": 5607653376,
+    "fatal": false
+  },
+  "remote_paths": {
+    "record": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-latest-pilot-20260914T055809Z",
+    "result": "/root/autodl-fs/heretic-runs/ara-v3-pro6000-latest-pilot-20260914T055809Z/result",
+    "temporary_run": "/root/autodl-tmp/ara-v3-pro6000-latest-pilot-20260914T055809Z/pilot"
+  },
+  "local_archive": {
+    "status": "complete_except_large_factor_snapshot",
+    "raw_artifacts_downloaded": true,
+    "large_factor_snapshot_omitted": true,
+    "downloaded_files": [
+      "config.toml",
+      "exit.json",
+      "experiment.json",
+      "pilot-budget.json",
+      "pilot-result.json",
+      "pilot.log",
+      "preflight-wrapper-attempt1.log",
+      "preflight.log",
+      "preparation.json",
+      "protocol.json",
+      "run-pilot.sh",
+      "run-preflight.sh"
+    ]
+  }
+}
