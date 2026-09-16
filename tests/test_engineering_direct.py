@@ -1,8 +1,15 @@
 # SPDX-License-Identifier: AGPL-3.0-or-later
 
+import sys
+import tempfile
 import unittest
+from pathlib import Path
+from unittest.mock import patch
+
+from pydantic import ValidationError
 
 from heretic.engineering_direct import (
+    _load_settings,
     build_parser,
     data_ranges,
     select_trial,
@@ -25,6 +32,56 @@ def _trial(attempt, *, accepted=True, keywords=0.5, first_kl=0.1, seq_kl=0.1):
 
 
 class EngineeringDirectTests(unittest.TestCase):
+    def test_settings_load_with_engineering_cli_arguments(self):
+        arguments = [
+            "--model",
+            "/models/Qwen3.8-27B",
+            "--run-root",
+            "/heretic-runs",
+            "--seed",
+            "42",
+            "--fit-samples",
+            "96",
+            "--monitor-samples",
+            "64",
+            "--development-samples",
+            "100",
+            "--trials",
+            "24",
+            "--max-hours",
+            "48",
+        ]
+        options = build_parser().parse_args(arguments)
+        argv = ["engineering_direct.py", *arguments]
+        with patch.object(sys, "argv", argv):
+            settings = _load_settings(options, Path("test-run"))
+            self.assertIs(sys.argv, argv)
+
+        self.assertEqual(settings.model, str(options.model.resolve()))
+        self.assertEqual(settings.device_map, "cuda:0")
+        self.assertEqual(settings.seed, 42)
+        self.assertEqual(settings.ara_v3.proposal_policy, "spectral-backtrack-v1")
+        self.assertEqual(
+            settings.study_checkpoint_dir, str(Path("test-run") / "trials")
+        )
+
+    def test_settings_restore_cli_arguments_after_validation_error(self):
+        root = Path(__file__).resolve().parents[1]
+        template = root / "config.qwen38-27b-cara-v3-96.toml"
+        invalid = template.read_text(encoding="utf-8").replace(
+            "ara_lora_rank = 128", "ara_lora_rank = 0"
+        )
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "invalid.toml"
+            path.write_text(invalid, encoding="utf-8")
+            arguments = ["--config-template", str(path)]
+            options = build_parser().parse_args(arguments)
+            argv = ["engineering_direct.py", *arguments]
+            with patch.object(sys, "argv", argv):
+                with self.assertRaises(ValidationError):
+                    _load_settings(options, Path("test-run"))
+                self.assertIs(sys.argv, argv)
+
     def test_default_cli_is_small_direct_run(self):
         options = build_parser().parse_args([])
 

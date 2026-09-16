@@ -143,7 +143,13 @@ def _load_settings(options, run_dir: Path):
         max_cuda_allocated_gib=88.0,
         max_capture_cpu_gib=64.0,
     )
-    return Settings.model_validate(values)
+    # Settings has its own CLI parser; engineering arguments are already parsed.
+    original_argv = sys.argv
+    try:
+        sys.argv = [original_argv[0]]
+        return Settings.model_validate(values)
+    finally:
+        sys.argv = original_argv
 
 
 def _load_partitions(settings, ranges: dict) -> dict:
