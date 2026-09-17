@@ -126,22 +126,25 @@ def _load_settings(options, run_dir: Path):
         values = tomllib.load(stream)
     values.update(
         model=str(options.model.resolve()),
-        device_map="cuda:0",
-        max_memory={"0": "88GiB", "cpu": "64GiB"},
         study_checkpoint_dir=str(run_dir / "trials"),
         seed=options.seed,
     )
+    if options.config_template is None:
+        values.update(
+            device_map="cuda:0",
+            max_memory={"0": "88GiB", "cpu": "64GiB"},
+        )
+        values["ara_runtime_guard"].update(
+            required_target_devices=["cuda:0"],
+            max_cuda_allocated_gib=88.0,
+            max_capture_cpu_gib=64.0,
+        )
     values["ara_v3"].update(
         artifact_schema="cara-research-acceptance-v3.1",
         proposal_policy="spectral-backtrack-v1",
         backtracking_alphas=[1.0, 0.5, 0.25, 0.125, 0.0625],
         pilot_profile="full-calibration",
         protocol_manifest=str(run_dir / "engineering-protocol.json"),
-    )
-    values["ara_runtime_guard"].update(
-        required_target_devices=["cuda:0"],
-        max_cuda_allocated_gib=88.0,
-        max_capture_cpu_gib=64.0,
     )
     # Settings has its own CLI parser; engineering arguments are already parsed.
     original_argv = sys.argv
@@ -150,6 +153,20 @@ def _load_settings(options, run_dir: Path):
         return Settings.model_validate(values)
     finally:
         sys.argv = original_argv
+
+
+def _check_hardware(options) -> None:
+    """Keep the legacy hardware check; custom templates use CUDA visibility."""
+    if options.config_template is None:
+        from .pro6000_prepare import check_hardware
+
+        check_hardware()
+        return
+    import torch
+
+    if not torch.cuda.is_available():
+        raise ValueError("a CUDA GPU is required for engineering adaptation")
+    # The template's module, placement and resource guards run after loading.
 
 
 def _load_partitions(settings, ranges: dict) -> dict:
@@ -423,14 +440,13 @@ def execute(options) -> dict:
 
     from .ara_research_schema import exclusive_lock, write_json
     from .model import Model
-    from .pro6000_prepare import check_hardware
 
     if run_dir.exists() and any(run_dir.iterdir()):
         raise ValueError(f"run directory is not empty: {run_dir}")
     run_dir.mkdir(parents=True, exist_ok=True)
     write_json(run_dir / "engineering-config.json", resolved, immutable=True)
     with exclusive_lock(run_dir / "worker.lock"):
-        check_hardware()
+        _check_hardware(options)
         settings = _load_settings(options, run_dir)
         partitions = _load_partitions(settings, ranges)
         model = Model(settings)

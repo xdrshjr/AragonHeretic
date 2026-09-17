@@ -4,11 +4,13 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from pydantic import ValidationError
 
 from heretic.engineering_direct import (
+    _check_hardware,
     _load_settings,
     build_parser,
     data_ranges,
@@ -32,6 +34,44 @@ def _trial(attempt, *, accepted=True, keywords=0.5, first_kl=0.1, seq_kl=0.1):
 
 
 class EngineeringDirectTests(unittest.TestCase):
+    def test_qwen3_template_preserves_model_inventory_and_memory_limits(self):
+        root = Path(__file__).resolve().parents[1]
+        options = build_parser().parse_args(
+            [
+                "--model", "/models/Qwen3-1.7B",
+                "--config-template", str(root / "config.qwen3-1.7b-ara-v3.toml"),
+            ]
+        )
+        settings = _load_settings(options, Path("test-run"))
+
+        self.assertIsNone(settings.model_commit)
+        self.assertEqual(settings.quantization, "none")
+        self.assertEqual(settings.device_map, "cuda:0")
+        self.assertEqual(settings.max_memory["0"], "22GiB")
+        guard = settings.ara_runtime_guard
+        self.assertEqual(guard.expected_target_total, 56)
+        self.assertEqual(guard.max_cuda_allocated_gib, 22.0)
+        self.assertEqual(guard.required_target_devices, ["cuda:0"])
+        self.assertEqual(
+            [(t.count, t.in_features, t.out_features) for t in guard.targets],
+            [(28, 2048, 2048), (28, 6144, 2048)],
+        )
+        self.assertEqual(settings.ara_v3.sweeps, 2)
+        self.assertEqual(settings.ara_v3.proposal_policy, "spectral-backtrack-v1")
+
+    def test_custom_template_accepts_cuda_without_pro6000_restriction(self):
+        options = build_parser().parse_args(["--config-template", "custom.toml"])
+        torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: True))
+        with patch.dict(sys.modules, {"torch": torch}):
+            _check_hardware(options)
+
+    def test_custom_template_rejects_missing_cuda(self):
+        options = build_parser().parse_args(["--config-template", "custom.toml"])
+        torch = SimpleNamespace(cuda=SimpleNamespace(is_available=lambda: False))
+        with patch.dict(sys.modules, {"torch": torch}):
+            with self.assertRaisesRegex(ValueError, "CUDA GPU is required"):
+                _check_hardware(options)
+
     def test_settings_load_with_engineering_cli_arguments(self):
         arguments = [
             "--model",

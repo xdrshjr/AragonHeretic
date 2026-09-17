@@ -21,6 +21,9 @@ wheels/
 # Study checkpoints
 checkpoints/
 
+# Evaluation outputs
+/eval-runs/
+
 # Residual plots
 plots/
 
